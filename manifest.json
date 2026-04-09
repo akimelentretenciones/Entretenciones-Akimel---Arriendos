@@ -1,0 +1,25 @@
+{
+  "name": "AKIMEL — Arriendos",
+  "short_name": "AKIMEL",
+  "description": "Sistema de arriendos Entretenciones AKIMEL",
+  "start_url": "/Entretenciones-Akimel---Arriendos/",
+  "scope": "/Entretenciones-Akimel---Arriendos/",
+  "display": "standalone",
+  "background_color": "#041e42",
+  "theme_color": "#0071ce",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
