@@ -236,6 +236,7 @@ select:focus{border-color:var(--blue)}
   <div class="header-right">
     <div class="conn"><div class="status-dot" id="connDot"></div><span id="connText">Conectando...</span></div>
     <span style="font-size:11px;color:rgba(255,255,255,.5);display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="userEmail"></span>
+    <button class="btn btn-white btn-sm" onclick="actualizarDatos()" title="Actualizar datos">🔄 Actualizar</button>
     <button class="btn btn-white btn-sm" onclick="exportarCSV()">⬇ Exportar</button>
     <button class="btn btn-white btn-sm" onclick="cerrarSesion()" title="Cerrar sesión">🚪</button>
     <button class="btn btn-primary btn-sm" onclick="goTab('subir')">+ Agregar Chat</button>
@@ -296,14 +297,15 @@ select:focus{border-color:var(--blue)}
     <div class="kpi"><div class="kpi-label">Top comuna</div><div class="kpi-value" id="k7">—</div><div class="kpi-sub" id="k7s">—</div></div>
     <div class="kpi yellow"><div class="kpi-label">Equipo estrella</div><div class="kpi-value" id="k8">—</div><div class="kpi-sub" id="k8s">—</div></div>
   </div>
-  <div class="chart-full"><div class="chart-title">Ingresos mensuales</div><div style="position:relative;height:200px"><canvas id="cMensual"></canvas></div></div>
   <div class="charts-row">
-    <div class="chart-card"><div class="chart-title">Actividad por día</div><div style="position:relative;height:180px"><canvas id="cDias"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Top equipos</div><div style="position:relative;height:180px"><canvas id="cEquipos"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Monto por Comuna</div><div style="position:relative;height:220px"><canvas id="cComunas"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Monto por día</div><div style="position:relative;height:220px"><canvas id="cDias"></canvas></div></div>
   </div>
+  <div class="chart-full"><div class="chart-title">Monto por Semana y Año</div><div style="position:relative;height:220px"><canvas id="cSemanas"></canvas></div></div>
+  <div class="chart-full"><div class="chart-title">Pendiente por Mes y Año</div><div style="position:relative;height:220px"><canvas id="cMensual"></canvas></div></div>
   <div class="charts-row">
-    <div class="chart-card"><div class="chart-title">Top comunas</div><div style="position:relative;height:220px"><canvas id="cComunas"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Ticket promedio mensual</div><div style="position:relative;height:220px"><canvas id="cTicket"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Monto por Año</div><div style="position:relative;height:200px"><canvas id="cAnio"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Top equipos</div><div style="position:relative;height:200px"><canvas id="cEquipos"></canvas></div></div>
   </div>
 </div>
 
@@ -410,8 +412,9 @@ select:focus{border-color:var(--blue)}
       <div id="panelPegar">
         <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Copia el chat completo de WhatsApp y pégalo aquí:</div>
         <textarea class="paste-area" id="pasteArea" placeholder="[01-04-26, 10:00:00 a.m.] Alamiro Maximiliano: Nombre Juan Pérez&#10;Rio illapel 44&#10;San Joaquín&#10;18 de abril&#10;15:00&#10;+56971978155&#10;Inflable Marvel&#10;Mesa jockey&#10;Taca Taca&#10;Pendiente: 124.000"></textarea>
-        <div style="display:flex;gap:8px;margin-top:12px">
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="procesarTexto()">⚡ Procesar chat</button>
+          <button class="btn btn-ghost" onclick="pegarPortapapeles()">📋 Pegar</button>
           <button class="btn btn-ghost" onclick="document.getElementById('pasteArea').value=''">Limpiar</button>
         </div>
       </div>
@@ -523,6 +526,7 @@ select:focus{border-color:var(--blue)}
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getFirestore, collection, getDocs, writeBatch, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
@@ -539,6 +543,7 @@ const app = initializeApp({
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+Chart.register(ChartDataLabels);
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
 let CAL_YEAR=new Date().getFullYear(), CAL_MONTH=new Date().getMonth(), CAL_DIA_SEL=null;
 
@@ -569,6 +574,12 @@ for(const item of INVENTARIO){
     const k=kw.trim().toLowerCase(); if(k) MAPEO[k]=item.nombre;
   }
 }
+// Alias adicionales para el parser
+MAPEO['disparador']='Disparadores';
+MAPEO['disparadores']='Disparadores';
+MAPEO['carrusel pony']='Carrusel Pony';
+MAPEO['carrusel']='Carrusel Pony';
+MAPEO['pony']='Carrusel Pony';
 
 const MESES_N=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MESES_FULL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -814,7 +825,10 @@ function calcularSemana(f){
 }
 function estandarizar(equipos){
   if(!equipos) return equipos;
+  // Separar también por " y " para casos como "Disparador y Carrusel pony"
+  equipos=equipos.replace(/\s+y\s+/gi,',');
   const partes=equipos.split(/[,\/+]/);
+
   const res=[];
   for(let p of partes){
     p=p.trim();if(!p) continue;
@@ -882,9 +896,10 @@ function parsearChat(texto){
     const hm=bloque.match(/hora[^:]*:\s*(?:a las\s*)?(\d{1,2})[:\.](\d{2})/i)
       ||bloque.match(/(?:a las\s*)(\d{1,2})[:\.](\d{2})/i)
       ||bloque.match(/(\d{1,2})[:\.](\d{2})\s*(?:hrs?|horas?|am|pm)/i)
+      ||bloque.match(/(?:^|\n)\s*(\d{1,2})\s+hrs?\s*(?:\n|$)/im)
       ||bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*(?:\n|$)/m)
       ||bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*$/m);
-    if(hm) hora=hm[1]+':'+hm[2];
+    if(hm) hora=hm[2]?hm[1]+':'+hm[2]:hm[1]+':00';
     let tel='';
     const tm=bloque.match(/(?:celular|telefono|numero)[:\s]*(\+?[\d\s\-]{8,})/i)
       ||bloque.match(/(?<!\d)(\+?56[\s\-]?9[\d\s\-]{8,})/i)
@@ -1242,35 +1257,115 @@ function renderDashboard(){
   document.getElementById('k3').textContent=act.length+can.length;document.getElementById('k3s').textContent=can.length+' cancelados';
   const tasa=act.length+can.length?((can.length/(act.length+can.length))*100).toFixed(1):0;
   document.getElementById('k4').textContent=tasa+'%';document.getElementById('k4s').textContent=can.length+' de '+(act.length+can.length);
-  const meses={},dias={},comunas={},eqC={};
-  for(const a of act){
-    if(a.fecha){const m=a.fecha.split('/')[1];if(!meses[m])meses[m]={count:0,monto:0};meses[m].count++;meses[m].monto+=a.pendiente;}
-    if(a.dia) dias[a.dia]=(dias[a.dia]||0)+1;
-    if(a.comuna) comunas[a.comuna]=(comunas[a.comuna]||0)+1;
+  const meses={},diasPorAnio={},comunas={},eqC={};
+  const mesesPorAnio={},semanasPorAnio={},montosPorAnio={};
+  // Usar todos los arriendos (no solo act) para el filtro de año correcto
+  const arrBase=AÑO_DASH==='ambos'?ARRIENDOS:ARRIENDOS.filter(a=>a.anio===AÑO_DASH);
+  for(const a of arrBase.filter(a=>a.estado!=='Cancelado'&&a.pendiente>0)){
+    const anio=a.anio||'';
+    const pend=a.pendiente||0;
+    // Acumuladores globales
+    if(a.fecha){const m=a.fecha.split('/')[1];if(!meses[m])meses[m]={count:0,monto:0};meses[m].count++;meses[m].monto+=pend;}
+    if(a.dia){if(!diasPorAnio[anio])diasPorAnio[anio]={};diasPorAnio[anio][a.dia]=(diasPorAnio[anio][a.dia]||0)+pend;}
+    if(a.comuna){if(!comunas[a.comuna])comunas[a.comuna]={count:0,monto:0};comunas[a.comuna].count++;comunas[a.comuna].monto+=pend;}
     if(a.equipos) for(const eq of a.equipos.split(',')){const e=eq.trim();if(e)eqC[e]=(eqC[e]||0)+1;}
+    // Por año
+    montosPorAnio[anio]=(montosPorAnio[anio]||0)+pend;
+    // Por mes y año
+    if(a.fecha){const m=a.fecha.split('/')[1];if(!mesesPorAnio[anio])mesesPorAnio[anio]={};mesesPorAnio[anio][m]=(mesesPorAnio[anio][m]||0)+pend;}
+    // Por semana y año
+    const sem=isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'));
+    if(sem){if(!semanasPorAnio[anio])semanasPorAnio[anio]={};semanasPorAnio[anio][sem]=(semanasPorAnio[anio][sem]||0)+pend;}
   }
   const mM=Object.entries(meses).sort((a,b)=>b[1].monto-a[1].monto)[0];
   if(mM){document.getElementById('k5').textContent=MESES_N[parseInt(mM[0])];document.getElementById('k5s').textContent=clp(mM[1].monto);}
-  const tD=Object.entries(dias).sort((a,b)=>b[1]-a[1])[0];
-  if(tD){document.getElementById('k6').textContent=tD[0];document.getElementById('k6s').textContent=tD[1]+' arriendos';}
-  const tC=Object.entries(comunas).sort((a,b)=>b[1]-a[1])[0];
-  if(tC){document.getElementById('k7').textContent=tC[0];document.getElementById('k7s').textContent=tC[1]+' arriendos';}
+  const allDias=Object.values(diasPorAnio).reduce((acc,obj)=>{Object.entries(obj).forEach(([k,v])=>acc[k]=(acc[k]||0)+v);return acc;},{});
+  const tD=Object.entries(allDias).sort((a,b)=>b[1]-a[1])[0];
+  if(tD){document.getElementById('k6').textContent=tD[0];document.getElementById('k6s').textContent=clp(tD[1]);}
+  const tC=Object.entries(comunas).sort((a,b)=>b[1].monto-a[1].monto)[0];
+  if(tC){document.getElementById('k7').textContent=tC[0];document.getElementById('k7s').textContent=clp(tC[1].monto);}
   const tE=Object.entries(eqC).sort((a,b)=>b[1]-a[1])[0];
   if(tE){document.getElementById('k8').textContent=tE[0];document.getElementById('k8s').textContent=tE[1]+' arriendos';}
 
   Object.values(CHARTS).forEach(c=>{try{c.destroy()}catch{}});
-  const mesOrd=Array.from({length:12},(_,i)=>(i+1).toString().padStart(2,'0')).filter(m=>meses[m]);
-  const labM=mesOrd.map(m=>MESES_N[parseInt(m)]),datM=mesOrd.map(m=>meses[m].monto),datT=mesOrd.map(m=>meses[m].count?Math.round(meses[m].monto/meses[m].count):0);
-  const dV=DIAS_ORD.map(d=>dias[d]||0),maxD=Math.max(...dV,1);
+
+  // Formato de montos con puntos (ej: 1.234.567)
+  const fmtM=v=>'$'+Math.round(v).toLocaleString('es-CL');
+  const fmtK=v=>'$'+(v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'k':v);
+
+  // Opciones base con labels de monto encima de cada barra
+  const bO={responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},datalabels:{display:false}},
+    scales:{x:{ticks:{font:{size:9},autoSkip:false},grid:{display:false}},
+            y:{ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,0.05)'}}}};
+
+  // Opciones con datalabels (montos encima barras)
+  const withLabels=(color)=>({...bO,
+    plugins:{...bO.plugins,
+      datalabels:{display:true,anchor:'end',align:'top',font:{size:8,weight:'600'},
+        color:color||'#041e42',formatter:v=>v>0?fmtM(v):''}
+    }
+  });
+
+  // ── Monto por Comuna (horizontal) ──
+  const topComs=Object.entries(comunas).sort((a,b)=>b[1].monto-a[1].monto).slice(0,10);
+  CHARTS.comunas=new Chart(document.getElementById('cComunas'),{type:'bar',
+    data:{labels:topComs.map(c=>c[0]),datasets:[{data:topComs.map(c=>c[1].monto),backgroundColor:'#0071ce',borderRadius:4}]},
+    options:{...bO,indexAxis:'y',plugins:{...bO.plugins,
+      datalabels:{display:true,anchor:'end',align:'right',font:{size:8,weight:'600'},color:'#041e42',formatter:v=>fmtM(v)}},
+      scales:{x:{ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,0.05)'}},
+              y:{ticks:{font:{size:9}},grid:{display:false}}}}});
+
+  // ── Monto por día (barras por año) ──
+  const años2025=DIAS_ORD.map(d=>diasPorAnio['2025']?.[d]||0);
+  const años2026=DIAS_ORD.map(d=>diasPorAnio['2026']?.[d]||0);
+  CHARTS.dias=new Chart(document.getElementById('cDias'),{type:'bar',
+    data:{labels:DIAS_ORD,datasets:[
+      {label:'2025',data:años2025,backgroundColor:'#0071ce',borderRadius:3},
+      {label:'2026',data:años2026,backgroundColor:'#5fb446',borderRadius:3}
+    ]},
+    options:{...bO,plugins:{legend:{display:true,position:'top',labels:{font:{size:10},boxWidth:12}},
+      datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
+        formatter:v=>v>0?fmtM(v):''}}}});
+
+  // ── Monto por Semana y Año ──
+  const semsAll=new Set([...Object.keys(semanasPorAnio['2025']||{}), ...Object.keys(semanasPorAnio['2026']||{})]);
+  const semsOrd=[...semsAll].map(Number).sort((a,b)=>a-b);
+  CHARTS.semanas=new Chart(document.getElementById('cSemanas'),{type:'bar',
+    data:{labels:semsOrd,datasets:[
+      {label:'2025',data:semsOrd.map(s=>semanasPorAnio['2025']?.[s]||0),backgroundColor:'#ffc220',borderRadius:3},
+      {label:'2026',data:semsOrd.map(s=>semanasPorAnio['2026']?.[s]||0),backgroundColor:'#fa6400',borderRadius:3}
+    ]},
+    options:{...bO,plugins:{legend:{display:true,position:'top',labels:{font:{size:10},boxWidth:12}},
+      datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
+        formatter:v=>v>0?fmtM(v):''}}}});
+
+  // ── Pendiente por Mes y Año ──
+  const mesOrd=Array.from({length:12},(_,i)=>(i+1).toString().padStart(2,'0'));
+  CHARTS.mensual=new Chart(document.getElementById('cMensual'),{type:'bar',
+    data:{labels:mesOrd.map(m=>MESES_N[parseInt(m)]),datasets:[
+      {label:'2025',data:mesOrd.map(m=>mesesPorAnio['2025']?.[m]||0),backgroundColor:'#0071ce',borderRadius:3},
+      {label:'2026',data:mesOrd.map(m=>mesesPorAnio['2026']?.[m]||0),backgroundColor:'#5fb446',borderRadius:3}
+    ]},
+    options:{...bO,plugins:{legend:{display:true,position:'top',labels:{font:{size:10},boxWidth:12}},
+      datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
+        formatter:v=>v>0?fmtM(v):''}}}});
+
+  // ── Monto por Año ──
+  const aniosDisp=Object.keys(montosPorAnio).sort();
+  CHARTS.anio=new Chart(document.getElementById('cAnio'),{type:'bar',
+    data:{labels:aniosDisp,datasets:[{data:aniosDisp.map(a=>montosPorAnio[a]),backgroundColor:'#0071ce',borderRadius:6}]},
+    options:{...bO,plugins:{legend:{display:false},
+      datalabels:{display:true,anchor:'end',align:'top',font:{size:11,weight:'700'},color:'#041e42',
+        formatter:v=>fmtM(v)}}}});
+
+  // ── Top Equipos ──
   const topEqs=Object.entries(eqC).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const topComs=Object.entries(comunas).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const bO={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},autoSkip:false},grid:{display:false}},y:{ticks:{font:{size:9}},grid:{color:'rgba(0,0,0,0.05)'}}}};
-  const kO={...bO,scales:{...bO.scales,y:{...bO.scales.y,ticks:{...bO.scales.y.ticks,callback:v=>'$'+(v/1000)+'k'}}}};
-  CHARTS.mensual=new Chart(document.getElementById('cMensual'),{type:'bar',data:{labels:labM,datasets:[{data:datM,backgroundColor:'#0071ce',borderRadius:4}]},options:kO});
-  CHARTS.dias=new Chart(document.getElementById('cDias'),{type:'bar',data:{labels:DIAS_ORD,datasets:[{data:dV,backgroundColor:dV.map(v=>v===maxD?'#5fb446':'rgba(0,113,206,0.3)'),borderRadius:4}]},options:bO});
-  CHARTS.equipos=new Chart(document.getElementById('cEquipos'),{type:'bar',data:{labels:topEqs.map(e=>e[0]),datasets:[{data:topEqs.map(e=>e[1]),backgroundColor:PALETA,borderRadius:4}]},options:{...bO,indexAxis:'y',scales:{x:{ticks:{font:{size:9}},grid:{color:'rgba(0,0,0,0.05)'}},y:{ticks:{font:{size:9}},grid:{display:false}}}}});
-  CHARTS.comunas=new Chart(document.getElementById('cComunas'),{type:'bar',data:{labels:topComs.map(c=>c[0]),datasets:[{data:topComs.map(c=>c[1]),backgroundColor:PALETA,borderRadius:4}]},options:{...bO,indexAxis:'y',scales:{x:{ticks:{font:{size:9}},grid:{color:'rgba(0,0,0,0.05)'}},y:{ticks:{font:{size:9}},grid:{display:false}}}}});
-  CHARTS.ticket=new Chart(document.getElementById('cTicket'),{type:'line',data:{labels:labM,datasets:[{data:datT,borderColor:'#0071ce',backgroundColor:'rgba(0,113,206,0.08)',tension:.3,fill:true,pointRadius:3,pointBackgroundColor:'#0071ce'}]},options:kO});
+  CHARTS.equipos=new Chart(document.getElementById('cEquipos'),{type:'bar',
+    data:{labels:topEqs.map(e=>e[0]),datasets:[{data:topEqs.map(e=>e[1]),backgroundColor:PALETA,borderRadius:4}]},
+    options:{...bO,indexAxis:'y',plugins:{legend:{display:false},
+      datalabels:{display:true,anchor:'end',align:'right',font:{size:9,weight:'600'},color:'#041e42',formatter:v=>v}},
+      scales:{x:{ticks:{font:{size:9}},grid:{color:'rgba(0,0,0,0.05)'}},y:{ticks:{font:{size:9}},grid:{display:false}}}}});
 }
 
 // ===== EXPORT =====
@@ -1282,6 +1377,19 @@ window.exportarCSV=function(){
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='Base_Arriendos_Akimel.csv';a.click();
   toast('✅ CSV exportado','ok');
+};
+
+window.actualizarDatos=function(){
+  toast('🔄 Actualizando...','ok');
+  cargarArriendos();
+};
+
+window.pegarPortapapeles=async function(){
+  try{
+    const text=await navigator.clipboard.readText();
+    document.getElementById('pasteArea').value=text;
+    toast('✅ Texto pegado','ok');
+  }catch(e){toast('⚠ Usa Ctrl+V para pegar','err');}
 };
 
 window.goTab=function(tab){
@@ -1325,6 +1433,17 @@ window.setHoyDisp=function(){
   renderDisponibilidad();
 };
 
+function getDiasConArriendos(){
+  const dias=new Set();
+  ARRIENDOS.forEach(a=>{
+    if(a.fecha&&a.estado!=='Cancelado'){
+      const[d,m,y]=a.fecha.split('/');
+      if(d&&m&&y) dias.add(`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`);
+    }
+  });
+  return dias;
+}
+
 window.cambiarDiaDisp=function(dir){
   const input=document.getElementById('fechaDisp');
   const val=input.value||fechaHoy();
@@ -1337,6 +1456,15 @@ window.cambiarDiaDisp=function(dir){
 window.renderDisponibilidad=function(){
   const input=document.getElementById('fechaDisp');
   if(!input.value) return;
+  // Verificar que la fecha tenga al menos 1 arriendo
+  const fechaStr=inputAFecha(input.value);
+  const tieneArriendos=ARRIENDOS.some(a=>a.fecha===fechaStr&&a.estado!=='Cancelado');
+  if(!tieneArriendos){
+    document.getElementById('dispResumen').innerHTML=`<div style="text-align:center;padding:30px;color:var(--text3)">📭 Sin arriendos para esta fecha</div>`;
+    document.getElementById('dispGrid').innerHTML='';
+    document.getElementById('dispArriendos').innerHTML='';
+    return;
+  }
   const fechaStr=inputAFecha(input.value);
   const{usados,arriendosDia}=calcularUsados(fechaStr);
 
