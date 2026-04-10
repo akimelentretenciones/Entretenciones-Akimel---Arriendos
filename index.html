@@ -247,7 +247,6 @@ select:focus{border-color:var(--blue)}
   <div class="nav-tab active" onclick="goTab('dashboard')" id="tab-dashboard">📊 Dashboard</div>
   <div class="nav-tab" onclick="goTab('calendario')" id="tab-calendario">📅 Disponibilidad</div>
   <div class="nav-tab" onclick="goTab('arriendos')" id="tab-arriendos">📋 Arriendos</div>
-  <div class="nav-tab" onclick="goTab('disponibilidad')" id="tab-disponibilidad">📆 Disponibilidad por día</div>
   <div class="nav-tab" onclick="goTab('subir')" id="tab-subir">➕ Agregar Chat</div>
 </div>
 
@@ -256,89 +255,96 @@ select:focus{border-color:var(--blue)}
 <!-- DASHBOARD -->
 <div class="section active" id="sec-dashboard">
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-    <div class="year-tabs" style="margin-bottom:0">
-      <button class="year-tab active" onclick="setYear('ambos',this)">2025 + 2026</button>
-      <button class="year-tab" onclick="setYear('2025',this)">2025</button>
-      <button class="year-tab" onclick="setYear('2026',this)">2026</button>
+    <!-- Filtro multi-selección Dashboard -->
+    <div style="position:relative" id="dashFiltroFechaWrap">
+      <button onclick="toggleDashFiltroFecha()" style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;font-family:'Sora',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:var(--shadow);min-width:160px;justify-content:space-between">
+        <span id="dashFiltroFechaLabel">📅 Todas las fechas</span>
+        <span>▾</span>
+      </button>
+      <div id="dashFiltroFechaPanel" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:220px;padding:8px;margin-top:4px;max-height:400px;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+          <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase">Filtrar por período</span>
+          <span onclick="limpiarDashFiltros()" style="font-size:11px;color:var(--blue);cursor:pointer;font-weight:600">✕ Limpiar</span>
+        </div>
+        <div id="dashFiltroFechaTree"></div>
+        <button onclick="aplicarDashFiltroFecha()" style="width:100%;margin-top:8px;padding:8px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">Aplicar filtro</button>
+      </div>
     </div>
     <button class="btn btn-primary btn-sm" onclick="setDashSemanaActual()">📅 Esta semana</button>
     <select id="dashFiltroSemana" onchange="renderDashboard()" style="font-size:12px">
       <option value="">Todas las semanas</option>
-      <option value="1">Semana 1</option><option value="2">Semana 2</option><option value="3">Semana 3</option>
-      <option value="4">Semana 4</option><option value="5">Semana 5</option><option value="6">Semana 6</option>
-      <option value="7">Semana 7</option><option value="8">Semana 8</option><option value="9">Semana 9</option>
-      <option value="10">Semana 10</option><option value="11">Semana 11</option><option value="12">Semana 12</option>
-      <option value="13">Semana 13</option><option value="14">Semana 14</option><option value="15">Semana 15</option>
-      <option value="16">Semana 16</option><option value="17">Semana 17</option><option value="18">Semana 18</option>
-      <option value="19">Semana 19</option><option value="20">Semana 20</option><option value="21">Semana 21</option>
-      <option value="22">Semana 22</option><option value="23">Semana 23</option><option value="24">Semana 24</option>
-      <option value="25">Semana 25</option><option value="26">Semana 26</option><option value="27">Semana 27</option>
-      <option value="28">Semana 28</option><option value="29">Semana 29</option><option value="30">Semana 30</option>
-      <option value="31">Semana 31</option><option value="32">Semana 32</option><option value="33">Semana 33</option>
-      <option value="34">Semana 34</option><option value="35">Semana 35</option><option value="36">Semana 36</option>
-      <option value="37">Semana 37</option><option value="38">Semana 38</option><option value="39">Semana 39</option>
-      <option value="40">Semana 40</option><option value="41">Semana 41</option><option value="42">Semana 42</option>
-      <option value="43">Semana 43</option><option value="44">Semana 44</option><option value="45">Semana 45</option>
-      <option value="46">Semana 46</option><option value="47">Semana 47</option><option value="48">Semana 48</option>
-      <option value="49">Semana 49</option><option value="50">Semana 50</option><option value="51">Semana 51</option>
-      <option value="52">Semana 52</option>
+      <option value="1">Sem 1</option><option value="2">Sem 2</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option><option value="7">Sem 7</option><option value="8">Sem 8</option><option value="9">Sem 9</option><option value="10">Sem 10</option><option value="11">Sem 11</option><option value="12">Sem 12</option><option value="13">Sem 13</option><option value="14">Sem 14</option><option value="15">Sem 15</option><option value="16">Sem 16</option><option value="17">Sem 17</option><option value="18">Sem 18</option><option value="19">Sem 19</option><option value="20">Sem 20</option><option value="21">Sem 21</option><option value="22">Sem 22</option><option value="23">Sem 23</option><option value="24">Sem 24</option><option value="25">Sem 25</option><option value="26">Sem 26</option><option value="27">Sem 27</option><option value="28">Sem 28</option><option value="29">Sem 29</option><option value="30">Sem 30</option><option value="31">Sem 31</option><option value="32">Sem 32</option><option value="33">Sem 33</option><option value="34">Sem 34</option><option value="35">Sem 35</option><option value="36">Sem 36</option><option value="37">Sem 37</option><option value="38">Sem 38</option><option value="39">Sem 39</option><option value="40">Sem 40</option><option value="41">Sem 41</option><option value="42">Sem 42</option><option value="43">Sem 43</option><option value="44">Sem 44</option><option value="45">Sem 45</option><option value="46">Sem 46</option><option value="47">Sem 47</option><option value="48">Sem 48</option><option value="49">Sem 49</option><option value="50">Sem 50</option><option value="51">Sem 51</option><option value="52">Sem 52</option>
     </select>
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dashFiltroSemana').value='';renderDashboard()">✕ Limpiar</button>
+    <button class="btn btn-ghost btn-sm" onclick="limpiarDashFiltros()">✕ Limpiar</button>
+    <!-- Hidden inputs para compatibilidad -->
+    <input type="hidden" id="dashFiltroAnio" value="">
+    <input type="hidden" id="dashFiltroMes" value="">
   </div>
   <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Total por cobrar</div><div class="kpi-value" id="k1">—</div><div class="kpi-sub" id="k1s">—</div></div>
+    <div class="kpi"><div class="kpi-label">Total Monto</div><div class="kpi-value" id="k1">—</div><div class="kpi-sub" id="k1s">—</div></div>
     <div class="kpi green"><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="k2">—</div><div class="kpi-sub">por arriendo</div></div>
     <div class="kpi yellow"><div class="kpi-label">Total arriendos</div><div class="kpi-value" id="k3">—</div><div class="kpi-sub" id="k3s">—</div></div>
     <div class="kpi orange"><div class="kpi-label">Tasa cancelación</div><div class="kpi-value" id="k4">—</div><div class="kpi-sub" id="k4s">—</div></div>
   </div>
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Mejor mes</div><div class="kpi-value" id="k5">—</div><div class="kpi-sub" id="k5s">—</div></div>
-    <div class="kpi green"><div class="kpi-label">Día más activo</div><div class="kpi-value" id="k6">—</div><div class="kpi-sub" id="k6s">—</div></div>
-    <div class="kpi"><div class="kpi-label">Top comuna</div><div class="kpi-value" id="k7">—</div><div class="kpi-sub" id="k7s">—</div></div>
-    <div class="kpi yellow"><div class="kpi-label">Equipo estrella</div><div class="kpi-value" id="k8">—</div><div class="kpi-sub" id="k8s">—</div></div>
-  </div>
+
   <div class="charts-row">
     <div class="chart-card"><div class="chart-title">Monto por Comuna</div><div style="position:relative;height:220px"><canvas id="cComunas"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">Monto por día</div><div style="position:relative;height:220px"><canvas id="cDias"></canvas></div></div>
   </div>
   <div class="chart-full"><div class="chart-title">Monto por Semana y Año</div><div style="position:relative;height:220px"><canvas id="cSemanas"></canvas></div></div>
-  <div class="chart-full"><div class="chart-title">Pendiente por Mes y Año</div><div style="position:relative;height:220px"><canvas id="cMensual"></canvas></div></div>
+  <div class="chart-full"><div class="chart-title">Monto por Mes y Año</div><div style="position:relative;height:220px"><canvas id="cMensual"></canvas></div></div>
   <div class="charts-row">
     <div class="chart-card"><div class="chart-title">Monto por Año</div><div style="position:relative;height:200px"><canvas id="cAnio"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">Top equipos</div><div style="position:relative;height:200px"><canvas id="cEquipos"></canvas></div></div>
   </div>
 </div>
 
-<!-- DISPONIBILIDAD / CALENDARIO -->
+<!-- DISPONIBILIDAD UNIFICADA -->
 <div class="section" id="sec-calendario">
-  <div class="cal-header-row">
-    <button class="btn btn-ghost btn-sm" onclick="calCambiarMes(-1)">← Anterior</button>
-    <h2 id="calTitulo"></h2>
-    <button class="btn btn-ghost btn-sm" onclick="calCambiarMes(1)">Siguiente →</button>
-    <button class="btn btn-primary btn-sm" onclick="calHoy()">Hoy</button>
-    <span style="font-size:12px;color:var(--text3);margin-left:8px">Haz clic en un día para ver disponibilidad detallada</span>
+  <!-- Modo: calendario o día -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+    <div style="display:flex;background:var(--bg3);border-radius:10px;padding:3px;gap:2px">
+      <button id="btn-modo-cal" onclick="setModoDisp('cal')" style="padding:6px 16px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;background:var(--blue);color:#fff">📅 Calendario</button>
+      <button id="btn-modo-dia" onclick="setModoDisp('dia')" style="padding:6px 16px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;background:transparent;color:var(--text3)">⚡ Por día</button>
+    </div>
+    <div id="disp-cal-controls" style="display:flex;align-items:center;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="calCambiarMes(-1)">← Ant</button>
+      <h2 id="calTitulo" style="font-size:16px;font-weight:800;color:var(--blue3);min-width:160px;text-align:center"></h2>
+      <button class="btn btn-ghost btn-sm" onclick="calCambiarMes(1)">Sig →</button>
+      <button class="btn btn-primary btn-sm" onclick="calHoy()">Hoy</button>
+    </div>
+    <div id="disp-dia-controls" style="display:none;align-items:center;gap:8px;flex-wrap:wrap">
+      <input type="date" id="fechaDisp" style="background:#fff;border:2px solid var(--blue);border-radius:10px;padding:8px 14px;color:var(--text);font-size:13px;font-family:'Sora',sans-serif;font-weight:600;outline:none" onchange="renderDisponibilidad()">
+      <button class="btn btn-primary btn-sm" onclick="setHoyDisp()">📅 Hoy</button>
+      <button class="btn btn-ghost btn-sm" onclick="cambiarDiaDisp(-1)">← Ayer</button>
+      <button class="btn btn-ghost btn-sm" onclick="cambiarDiaDisp(1)">Mañana →</button>
+    </div>
   </div>
 
-  <!-- Leyenda -->
-  <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><div style="width:12px;height:12px;border-radius:50%;background:var(--green)"></div>Disponible</div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><div style="width:12px;height:12px;border-radius:50%;background:var(--yellow)"></div>Parcial</div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><div style="width:12px;height:12px;border-radius:50%;background:var(--orange)"></div>Casi lleno</div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><div style="width:12px;height:12px;border-radius:50%;background:var(--red)"></div>Agotado</div>
+  <!-- VISTA CALENDARIO -->
+  <div id="vista-cal">
+    <!-- Leyenda -->
+    <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--green);display:inline-block"></span>Disponible</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--yellow);display:inline-block"></span>Parcial</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--orange);display:inline-block"></span>Casi lleno</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--red);display:inline-block"></span>Agotado</span>
+      <span style="font-size:11px;color:var(--text3);margin-left:4px">· Solo se muestran días con arriendos</span>
+    </div>
+    <div id="calGrid"></div>
+    <div class="inv-panel" id="invPanel" style="margin-top:20px">
+      <div class="inv-panel-title" id="invPanelTitle">Selecciona un día</div>
+      <div class="inv-panel-sub" id="invPanelSub">Haz clic en cualquier día con arriendos</div>
+      <div class="inv-categorias" id="invCategorias"></div>
+      <div id="invArriendosDia"></div>
+    </div>
   </div>
 
-  <div class="cal-weekdays">
-    <div class="cal-weekday">Lun</div><div class="cal-weekday">Mar</div><div class="cal-weekday">Mié</div>
-    <div class="cal-weekday">Jue</div><div class="cal-weekday">Vie</div><div class="cal-weekday">Sáb</div><div class="cal-weekday">Dom</div>
-  </div>
-  <div class="cal-grid" id="calGrid"></div>
-
-  <!-- Panel inventario día seleccionado -->
-  <div class="inv-panel" id="invPanel">
-    <div class="inv-panel-title" id="invPanelTitle">Selecciona un día</div>
-    <div class="inv-panel-sub" id="invPanelSub">Haz clic en cualquier día del calendario para ver la disponibilidad de equipos</div>
-    <div class="inv-categorias" id="invCategorias"></div>
-    <div id="invArriendosDia"></div>
+  <!-- VISTA POR DÍA -->
+  <div id="vista-dia" style="display:none">
+    <div id="dispResumen" style="margin-bottom:20px"></div>
+    <div id="dispGrid"></div>
+    <div id="dispArriendos" style="margin-top:20px"></div>
   </div>
 </div>
 
@@ -351,42 +357,40 @@ select:focus{border-color:var(--blue)}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <input class="search-box" placeholder="Buscar..." id="searchInput" oninput="filtrar()">
-      <select id="filtroAnio" onchange="filtrar()"><option value="">Todos los años</option><option value="2025">2025</option><option value="2026">2026</option></select>
-      <select id="filtroMes" onchange="filtrar()">
-        <option value="">Todos los meses</option>
-        <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
-        <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
-        <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
-        <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
-      </select>
+      
+      <!-- Filtro multi-selección Año/Mes -->
+      <div style="position:relative" id="filtroFechaWrap">
+        <button onclick="toggleFiltroFecha()" style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;font-family:'Sora',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:var(--shadow);min-width:160px;justify-content:space-between">
+          <span id="filtroFechaLabel">📅 Todas las fechas</span>
+          <span>▾</span>
+        </button>
+        <div id="filtroFechaPanel" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:220px;padding:8px;margin-top:4px;max-height:400px;overflow-y:auto">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+            <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase">Filtrar por período</span>
+            <span onclick="limpiarFiltroFecha()" style="font-size:11px;color:var(--blue);cursor:pointer;font-weight:600">✕ Limpiar</span>
+          </div>
+          <div id="filtroFechaTree"></div>
+          <button onclick="aplicarFiltroFecha()" style="width:100%;margin-top:8px;padding:8px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">Aplicar filtro</button>
+        </div>
+      </div>
+
+      <!-- Filtro semana -->
       <button class="btn btn-primary btn-sm" onclick="filtrarSemanaActual()" id="btnSemanaActual">📅 Semana actual</button>
       <select id="filtroSemana" onchange="filtrar()">
         <option value="">Todas las semanas</option>
-        <option value="1">Semana 1</option><option value="2">Semana 2</option><option value="3">Semana 3</option>
-        <option value="4">Semana 4</option><option value="5">Semana 5</option><option value="6">Semana 6</option>
-        <option value="7">Semana 7</option><option value="8">Semana 8</option><option value="9">Semana 9</option>
-        <option value="10">Semana 10</option><option value="11">Semana 11</option><option value="12">Semana 12</option>
-        <option value="13">Semana 13</option><option value="14">Semana 14</option><option value="15">Semana 15</option>
-        <option value="16">Semana 16</option><option value="17">Semana 17</option><option value="18">Semana 18</option>
-        <option value="19">Semana 19</option><option value="20">Semana 20</option><option value="21">Semana 21</option>
-        <option value="22">Semana 22</option><option value="23">Semana 23</option><option value="24">Semana 24</option>
-        <option value="25">Semana 25</option><option value="26">Semana 26</option><option value="27">Semana 27</option>
-        <option value="28">Semana 28</option><option value="29">Semana 29</option><option value="30">Semana 30</option>
-        <option value="31">Semana 31</option><option value="32">Semana 32</option><option value="33">Semana 33</option>
-        <option value="34">Semana 34</option><option value="35">Semana 35</option><option value="36">Semana 36</option>
-        <option value="37">Semana 37</option><option value="38">Semana 38</option><option value="39">Semana 39</option>
-        <option value="40">Semana 40</option><option value="41">Semana 41</option><option value="42">Semana 42</option>
-        <option value="43">Semana 43</option><option value="44">Semana 44</option><option value="45">Semana 45</option>
-        <option value="46">Semana 46</option><option value="47">Semana 47</option><option value="48">Semana 48</option>
-        <option value="49">Semana 49</option><option value="50">Semana 50</option><option value="51">Semana 51</option>
-        <option value="52">Semana 52</option>
+        <option value="1">Sem 1</option><option value="2">Sem 2</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option><option value="7">Sem 7</option><option value="8">Sem 8</option><option value="9">Sem 9</option><option value="10">Sem 10</option><option value="11">Sem 11</option><option value="12">Sem 12</option><option value="13">Sem 13</option><option value="14">Sem 14</option><option value="15">Sem 15</option><option value="16">Sem 16</option><option value="17">Sem 17</option><option value="18">Sem 18</option><option value="19">Sem 19</option><option value="20">Sem 20</option><option value="21">Sem 21</option><option value="22">Sem 22</option><option value="23">Sem 23</option><option value="24">Sem 24</option><option value="25">Sem 25</option><option value="26">Sem 26</option><option value="27">Sem 27</option><option value="28">Sem 28</option><option value="29">Sem 29</option><option value="30">Sem 30</option><option value="31">Sem 31</option><option value="32">Sem 32</option><option value="33">Sem 33</option><option value="34">Sem 34</option><option value="35">Sem 35</option><option value="36">Sem 36</option><option value="37">Sem 37</option><option value="38">Sem 38</option><option value="39">Sem 39</option><option value="40">Sem 40</option><option value="41">Sem 41</option><option value="42">Sem 42</option><option value="43">Sem 43</option><option value="44">Sem 44</option><option value="45">Sem 45</option><option value="46">Sem 46</option><option value="47">Sem 47</option><option value="48">Sem 48</option><option value="49">Sem 49</option><option value="50">Sem 50</option><option value="51">Sem 51</option><option value="52">Sem 52</option>
       </select>
+
+      <!-- Filtros ocultos para compatibilidad con filtrar() -->
+      <input type="hidden" id="filtroAnio" value="">
+      <input type="hidden" id="filtroMes" value="">
+
       <select id="filtroEstado" onchange="filtrar()"><option value="">Todos</option><option value="Pendiente">Pendiente</option><option value="Cancelado">Cancelado</option></select>
     </div>
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>Equipos</th><th>Pendiente</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>Equipos</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
       <tbody id="tablaBody"><tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
     </table>
   </div>
@@ -441,24 +445,7 @@ select:focus{border-color:var(--blue)}
   </div>
 </div>
 
-<!-- DISPONIBILIDAD RÁPIDA -->
-<div class="section" id="sec-disponibilidad">
-  <div style="max-width:900px;margin:0 auto">
-    <div style="font-size:16px;font-weight:800;color:var(--blue3);margin-bottom:4px">⚡ Disponibilidad rápida</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Selecciona una fecha para ver de inmediato qué juegos están disponibles</div>
 
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">
-      <input type="date" id="fechaDisp" style="background:#fff;border:2px solid var(--blue);border-radius:10px;padding:10px 16px;color:var(--text);font-size:14px;font-family:'Sora',sans-serif;font-weight:600;outline:none;box-shadow:var(--shadow)" onchange="renderDisponibilidad()">
-      <button class="btn btn-primary" onclick="setHoyDisp()">📅 Hoy</button>
-      <button class="btn btn-ghost" onclick="cambiarDiaDisp(-1)">← Ayer</button>
-      <button class="btn btn-ghost" onclick="cambiarDiaDisp(1)">Mañana →</button>
-    </div>
-
-    <div id="dispResumen" style="margin-bottom:20px"></div>
-    <div id="dispGrid"></div>
-    <div id="dispArriendos" style="margin-top:20px"></div>
-  </div>
-</div>
 
 </div><!-- /main -->
 
@@ -504,7 +491,7 @@ select:focus{border-color:var(--blue)}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="edit-field">
-        <label class="edit-label">Pendiente ($)</label>
+        <label class="edit-label">Monto ($)</label>
         <input class="edit-input" type="number" id="editPendiente" placeholder="85000">
       </div>
       <div class="edit-field">
@@ -1079,65 +1066,71 @@ function renderCalendario(){
   document.getElementById('calTitulo').textContent=MESES_FULL[CAL_MONTH]+' '+CAL_YEAR;
   const grid=document.getElementById('calGrid');
   const hoy=new Date();
-  const primerDia=new Date(CAL_YEAR,CAL_MONTH,1).getDay();
   const diasMes=new Date(CAL_YEAR,CAL_MONTH+1,0).getDate();
-  const diasAntMes=new Date(CAL_YEAR,CAL_MONTH,0).getDate();
-  const offset=primerDia===0?6:primerDia-1;
+  const DIAS_ORD_SHORT=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
-  // Pre-calcular inventario por día del mes
-  const invPorDia={};
+  // Solo mostrar días con arriendos
+  const diasConArr=[];
   for(let d=1;d<=diasMes;d++){
     const fechaStr=String(d).padStart(2,'0')+'/'+String(CAL_MONTH+1).padStart(2,'0')+'/'+CAL_YEAR;
+    const arriendosDia=ARRIENDOS.filter(a=>a.fecha===fechaStr&&a.estado!=='Cancelado');
+    if(arriendosDia.length===0) continue;
     const{usados}=calcularUsados(fechaStr);
-    // Calcular resumen por categoría
     const resumen={Inflable:{disp:0,total:0},Electrónico:{disp:0,total:0},Interior:{disp:0,total:0}};
-    let totalArr=ARRIENDOS.filter(a=>a.fecha===fechaStr&&a.estado!=='Cancelado').length;
     for(const item of INVENTARIO){
       const ocu=usados[item.nombre]||0;
       const disp=Math.max(0,item.total-ocu);
       resumen[item.cat].disp+=disp;
       resumen[item.cat].total+=item.total;
     }
-    invPorDia[d]={resumen,totalArr};
+    const dt=new Date(CAL_YEAR,CAL_MONTH,d);
+    diasConArr.push({d,fechaStr,arriendosDia,resumen,diaNom:DIAS_ORD[dt.getDay()===0?6:dt.getDay()-1]});
   }
 
-  let html='';
-  for(let i=offset-1;i>=0;i--) html+=`<div class="cal-day other-month"><div class="cal-day-num">${diasAntMes-i}</div></div>`;
+  if(diasConArr.length===0){
+    grid.innerHTML=`<div style="text-align:center;padding:48px;color:var(--text3)">📭 Sin arriendos en ${MESES_FULL[CAL_MONTH]} ${CAL_YEAR}</div>`;
+    return;
+  }
 
-  for(let d=1;d<=diasMes;d++){
+  // Grid compacto estilo calendario — solo días con arriendos
+  let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">';
+  for(const{d,fechaStr,arriendosDia,resumen,diaNom} of diasConArr){
     const isHoy=d===hoy.getDate()&&CAL_MONTH===hoy.getMonth()&&CAL_YEAR===hoy.getFullYear();
     const isSel=CAL_DIA_SEL===d;
-    const{resumen,totalArr}=invPorDia[d];
 
-    // Mini inventario por categoría
-    let miniHtml='<div class="cal-mini-inv">';
+    // Dots de inventario por categoría
     const cats=[['Inflable','🏰'],['Electrónico','🎮'],['Interior','🏓']];
+    let dotsHtml='<div style="display:flex;flex-direction:column;gap:2px;margin-top:6px">';
     for(const[cat,icon] of cats){
       const r=resumen[cat];
       if(r.total===0) continue;
       const pct=r.disp/r.total;
       const dot=pct>=1?'dot-green':pct>0.5?'dot-yellow':pct>0?'dot-orange':'dot-red';
       const cls=pct>=1?'green':pct>0.5?'yellow':pct>0?'orange':'red';
-      miniHtml+=`<div class="cal-inv-row">
+      dotsHtml+=`<div class="cal-inv-row">
         <div class="cal-inv-dot ${dot}"></div>
         <span class="cal-inv-name">${cat}</span>
         <span class="cal-inv-count ${cls}">${r.disp}/${r.total}</span>
       </div>`;
     }
-    miniHtml+='</div>';
+    dotsHtml+='</div>';
 
-    html+=`<div class="cal-day${isHoy?' today':''}${isSel?' selected':''}" onclick="mostrarInventarioDia(${d})">
-      <div class="cal-day-num">
-        <span>${d}</span>
-        ${totalArr>0?`<span class="cal-day-badge">${totalArr}</span>`:''}
+    html+=`<div onclick="mostrarInventarioDia(${d})"
+      style="background:#fff;border:2px solid ${isSel?'var(--blue)':isHoy?'var(--blue)':'var(--border)'};
+      border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;min-height:90px"
+      onmouseover="this.style.borderColor='var(--blue)';this.style.boxShadow='var(--shadow)'"
+      onmouseout="this.style.borderColor='${isSel||isHoy?'var(--blue)':'var(--border)'}';this.style.boxShadow=''">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">${diaNom}</div>
+          <div style="font-size:22px;font-weight:800;color:${isHoy?'var(--blue)':'var(--text)'};line-height:1.1">${d}</div>
+        </div>
+        <span style="background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px">${arriendosDia.length}</span>
       </div>
-      ${miniHtml}
+      ${dotsHtml}
     </div>`;
   }
-
-  const total=offset+diasMes;
-  const rest=total%7===0?0:7-(total%7);
-  for(let i=1;i<=rest;i++) html+=`<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+  html+='</div>';
   grid.innerHTML=html;
 }
 
@@ -1163,26 +1156,38 @@ window.calHoy=function(){
 window.filtrarSemanaActual=function(){
   const hoy=new Date();
   const semanaActual=isoWeek(hoy);
-  // Solo cambia semana, limpia mes y año para no bloquear
+  const anioActual=String(hoy.getFullYear());
+  seleccionFecha.clear(); // limpiar multi-selección
   document.getElementById('filtroSemana').value=String(semanaActual);
-  document.getElementById('filtroAnio').value='';
+  document.getElementById('filtroAnio').value=anioActual;
   document.getElementById('filtroMes').value='';
+  document.getElementById('filtroFechaLabel').textContent=`📅 ${anioActual}`;
   document.getElementById('filtroEstado').value='';
   document.getElementById('searchInput').value='';
   filtrar();
-  toast('📅 Semana '+semanaActual,'ok');
+  toast('📅 Semana '+semanaActual+' · '+anioActual,'ok');
 };
 
 window.filtrar=function(){
   const q=document.getElementById('searchInput').value.toLowerCase();
-  const anio=document.getElementById('filtroAnio').value;
-  const mes=document.getElementById('filtroMes').value;
+  const anio=document.getElementById('filtroAnio').value||'';
+  const mes=document.getElementById('filtroMes').value||'';
   const estado=document.getElementById('filtroEstado').value;
   const semana=document.getElementById('filtroSemana').value;
   FILTRADOS=ARRIENDOS.filter(a=>{
     if(q&&!`${a.cliente} ${a.comuna} ${a.equipos} ${a.direccion}`.toLowerCase().includes(q)) return false;
-    if(anio&&a.anio!==anio) return false;
-    if(mes&&a.fecha&&a.fecha.split('/')[1]!==mes) return false;
+    // Multi-selección de fecha
+    if(seleccionFecha.size>0){
+      if(!a.fecha) return false;
+      const parts=a.fecha.split('/');
+      if(parts.length<3) return false;
+      const key=parts[2]+'/'+parts[1];
+      if(!seleccionFecha.has(key)) return false;
+    } else {
+      // Filtros simples de año/mes (usados por semana actual)
+      if(anio&&a.anio!==anio) return false;
+      if(mes&&a.fecha&&a.fecha.split('/')[1]!==mes) return false;
+    }
     if(semana){
       const s=isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'));
       if(String(s)!==semana) return false;
@@ -1236,15 +1241,57 @@ window.eliminarArriendo=async function(id){
 window.setYear=function(y,btn){document.querySelectorAll('.year-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');AÑO_DASH=y;renderDashboard();};
 
 window.setDashSemanaActual=function(){
-  const s=isoWeek(new Date());
+  const hoy=new Date();
+  const s=isoWeek(hoy);
+  const anioActual=String(hoy.getFullYear());
   document.getElementById('dashFiltroSemana').value=String(s);
+  // Fijar año actual
+  document.getElementById('dashFiltroAnio').value=anioActual;
+  document.getElementById('dashFiltroMes').value='';
+  document.getElementById('dashFiltroFechaLabel').textContent='📅 '+anioActual;
   renderDashboard();
-  toast('📅 Semana '+s,'ok');
+  toast('📅 Semana '+s+' · '+anioActual,'ok');
+};
+
+window.limpiarDashFiltros=function(){
+  seleccionDashFecha.clear();
+  document.getElementById('dashFiltroSemana').value='';
+  document.getElementById('dashFiltroAnio').value='';
+  document.getElementById('dashFiltroFechaLabel').textContent='📅 Todas las fechas';
+  renderDashboard();
+};
+
+window.toggleDashFiltroFecha=function(){
+  const panel=document.getElementById('dashFiltroFechaPanel');
+  const isOpen=panel.style.display==='block';
+  if(!isOpen){
+    const tree=buildFechaTree(ARRIENDOS);
+    document.getElementById('dashFiltroFechaTree').innerHTML=renderFechaTree(tree,seleccionDashFecha,'dash');
+  }
+  panel.style.display=isOpen?'none':'block';
+};
+
+window.aplicarDashFiltroFecha=function(){
+  document.getElementById('dashFiltroFechaPanel').style.display='none';
+  document.getElementById('dashFiltroFechaLabel').textContent='📅 '+getFechaLabel(seleccionDashFecha);
+  document.getElementById('dashFiltroSemana').value='';
+  renderDashboard();
 };
 
 function renderDashboard(){
   const semDash=document.getElementById('dashFiltroSemana')?.value||'';
-  let arr=AÑO_DASH==='ambos'?ARRIENDOS:ARRIENDOS.filter(a=>a.anio===AÑO_DASH);
+  const anioFiltro=document.getElementById('dashFiltroAnio')?.value||'';
+  let arr=ARRIENDOS;
+  if(seleccionDashFecha.size>0){
+    arr=arr.filter(a=>{
+      if(!a.fecha) return false;
+      const parts=a.fecha.split('/');
+      if(parts.length<3) return false;
+      return seleccionDashFecha.has(parts[2]+'/'+parts[1]);
+    });
+  } else if(anioFiltro){
+    arr=arr.filter(a=>a.anio===anioFiltro);
+  }
   if(semDash) arr=arr.filter(a=>{
     const s=isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'));
     return String(s)===semDash;
@@ -1277,15 +1324,7 @@ function renderDashboard(){
     const sem=isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'));
     if(sem){if(!semanasPorAnio[anio])semanasPorAnio[anio]={};semanasPorAnio[anio][sem]=(semanasPorAnio[anio][sem]||0)+pend;}
   }
-  const mM=Object.entries(meses).sort((a,b)=>b[1].monto-a[1].monto)[0];
-  if(mM){document.getElementById('k5').textContent=MESES_N[parseInt(mM[0])];document.getElementById('k5s').textContent=clp(mM[1].monto);}
-  const allDias=Object.values(diasPorAnio).reduce((acc,obj)=>{Object.entries(obj).forEach(([k,v])=>acc[k]=(acc[k]||0)+v);return acc;},{});
-  const tD=Object.entries(allDias).sort((a,b)=>b[1]-a[1])[0];
-  if(tD){document.getElementById('k6').textContent=tD[0];document.getElementById('k6s').textContent=clp(tD[1]);}
-  const tC=Object.entries(comunas).sort((a,b)=>b[1].monto-a[1].monto)[0];
-  if(tC){document.getElementById('k7').textContent=tC[0];document.getElementById('k7s').textContent=clp(tC[1].monto);}
-  const tE=Object.entries(eqC).sort((a,b)=>b[1]-a[1])[0];
-  if(tE){document.getElementById('k8').textContent=tE[0];document.getElementById('k8s').textContent=tE[1]+' arriendos';}
+  // k5-k8 eliminados del HTML
 
   Object.values(CHARTS).forEach(c=>{try{c.destroy()}catch{}});
 
@@ -1293,11 +1332,12 @@ function renderDashboard(){
   const fmtM=v=>'$'+Math.round(v).toLocaleString('es-CL');
   const fmtK=v=>'$'+(v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'k':v);
 
-  // Opciones base con labels de monto encima de cada barra
+  // Opciones base — sin eje Y (valores van encima de las barras)
   const bO={responsive:true,maintainAspectRatio:false,
     plugins:{legend:{display:false},datalabels:{display:false}},
     scales:{x:{ticks:{font:{size:9},autoSkip:false},grid:{display:false}},
-            y:{ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,0.05)'}}}};
+            y:{display:false,grid:{display:false}}},
+    layout:{padding:{top:28}}};  // Sin eje Y
 
   // Opciones con datalabels (montos encima barras)
   const withLabels=(color)=>({...bO,
@@ -1313,8 +1353,9 @@ function renderDashboard(){
     data:{labels:topComs.map(c=>c[0]),datasets:[{data:topComs.map(c=>c[1].monto),backgroundColor:'#0071ce',borderRadius:4}]},
     options:{...bO,indexAxis:'y',plugins:{...bO.plugins,
       datalabels:{display:true,anchor:'end',align:'right',font:{size:8,weight:'600'},color:'#041e42',formatter:v=>fmtM(v)}},
-      scales:{x:{ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,0.05)'}},
-              y:{ticks:{font:{size:9}},grid:{display:false}}}}});
+      scales:{x:{display:false,grid:{display:false}},
+              y:{ticks:{font:{size:9}},grid:{display:false}}},
+      layout:{padding:{right:90,top:8}}}});
 
   // ── Monto por día (barras por año) ──
   const años2025=DIAS_ORD.map(d=>diasPorAnio['2025']?.[d]||0);
@@ -1340,7 +1381,7 @@ function renderDashboard(){
       datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
         formatter:v=>v>0?fmtM(v):''}}}});
 
-  // ── Pendiente por Mes y Año ──
+  // ── Monto por Mes y Año ──
   const mesOrd=Array.from({length:12},(_,i)=>(i+1).toString().padStart(2,'0'));
   CHARTS.mensual=new Chart(document.getElementById('cMensual'),{type:'bar',
     data:{labels:mesOrd.map(m=>MESES_N[parseInt(m)]),datasets:[
@@ -1365,7 +1406,8 @@ function renderDashboard(){
     data:{labels:topEqs.map(e=>e[0]),datasets:[{data:topEqs.map(e=>e[1]),backgroundColor:PALETA,borderRadius:4}]},
     options:{...bO,indexAxis:'y',plugins:{legend:{display:false},
       datalabels:{display:true,anchor:'end',align:'right',font:{size:9,weight:'600'},color:'#041e42',formatter:v=>v}},
-      scales:{x:{ticks:{font:{size:9}},grid:{color:'rgba(0,0,0,0.05)'}},y:{ticks:{font:{size:9}},grid:{display:false}}}}});
+      scales:{x:{display:false,grid:{display:false}},y:{ticks:{font:{size:9}},grid:{display:false}}},
+      layout:{padding:{right:40,top:8}}}});
 }
 
 // ===== EXPORT =====
@@ -1378,6 +1420,145 @@ window.exportarCSV=function(){
   a.href=url;a.download='Base_Arriendos_Akimel.csv';a.click();
   toast('✅ CSV exportado','ok');
 };
+
+// ===== FILTRO FECHA MULTI-SELECCIÓN =====
+const MESES_NOMBRES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let seleccionFecha=new Set(); // Set de "YYYY/MM" seleccionados
+let seleccionDashFecha=new Set();
+
+function buildFechaTree(arriendos){
+  const tree={};
+  arriendos.forEach(a=>{
+    if(!a.fecha) return;
+    const parts=a.fecha.split('/');
+    if(parts.length<3) return;
+    const anio=parts[2], mes=parts[1];
+    if(!anio||!mes||anio.length!==4) return;
+    if(!tree[anio]) tree[anio]=new Set();
+    tree[anio].add(mes);
+  });
+  return tree;
+}
+
+function renderFechaTree(tree, sel, prefix){
+  let html='';
+  Object.keys(tree).sort().forEach(anio=>{
+    const meses=[...tree[anio]].sort();
+    const todosSelAnio=meses.every(m=>sel.has(anio+'/'+m));
+    html+=`<div style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;user-select:none"
+           onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+        <input type="checkbox" id="${prefix}chk-${anio}" ${todosSelAnio?'checked':''} 
+               onchange="toggleAnioCheck('${anio}','${prefix}')"
+               style="width:15px;height:15px;cursor:pointer;accent-color:var(--blue)">
+        <span onclick="document.getElementById('${prefix}chk-${anio}').click()"
+              style="font-size:13px;font-weight:700;color:var(--blue3)">${anio}</span>
+        <span onclick="toggleAnioExpand('${prefix}sub-${anio}','${prefix}arr-${anio}')" 
+              id="${prefix}arr-${anio}"
+              style="margin-left:auto;font-size:10px;color:var(--text3);cursor:pointer;transition:transform .2s">▶</span>
+      </div>
+      <div id="${prefix}sub-${anio}" style="display:none;padding-left:20px">
+        ${meses.map(m=>{
+          const key=anio+'/'+m;
+          return `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer"
+                      onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+            <input type="checkbox" id="${prefix}chk-${anio}-${m}" ${sel.has(key)?'checked':''}
+                   onchange="toggleMesCheck('${anio}','${m}','${prefix}')"
+                   style="width:14px;height:14px;cursor:pointer;accent-color:var(--blue)">
+            <span onclick="document.getElementById('${prefix}chk-${anio}-${m}').click()"
+                  style="font-size:12px;color:var(--text2)">${MESES_NOMBRES[parseInt(m)-1]}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+  return html;
+}
+
+window.toggleAnioExpand=function(subId, arrId){
+  const sub=document.getElementById(subId);
+  const arr=document.getElementById(arrId);
+  const isOpen=sub.style.display==='block';
+  sub.style.display=isOpen?'none':'block';
+  arr.style.transform=isOpen?'':'rotate(90deg)';
+};
+
+window.toggleAnioCheck=function(anio,prefix){
+  const tree=buildFechaTree(ARRIENDOS);
+  const sel=prefix==='dash'?seleccionDashFecha:seleccionFecha;
+  const meses=[...(tree[anio]||new Set())];
+  const chk=document.getElementById(prefix+'chk-'+anio).checked;
+  meses.forEach(m=>{ const k=anio+'/'+m; chk?sel.add(k):sel.delete(k); });
+  // Re-render checkboxes de meses
+  meses.forEach(m=>{
+    const el=document.getElementById(prefix+'chk-'+anio+'-'+m);
+    if(el) el.checked=chk;
+  });
+};
+
+window.toggleMesCheck=function(anio,mes,prefix){
+  const sel=prefix==='dash'?seleccionDashFecha:seleccionFecha;
+  const key=anio+'/'+mes;
+  const chk=document.getElementById(prefix+'chk-'+anio+'-'+mes).checked;
+  chk?sel.add(key):sel.delete(key);
+  // Actualizar checkbox del año
+  const tree=buildFechaTree(ARRIENDOS);
+  const meses=[...(tree[anio]||new Set())];
+  const todosAnio=meses.every(m=>sel.has(anio+'/'+m));
+  const el=document.getElementById(prefix+'chk-'+anio);
+  if(el) el.checked=todosAnio;
+};
+
+function getFechaLabel(sel){
+  if(sel.size===0) return 'Todas las fechas';
+  if(sel.size===1) {
+    const[anio,mes]=[...sel][0].split('/');
+    return `${MESES_NOMBRES[parseInt(mes)-1]} ${anio}`;
+  }
+  // Agrupar por año
+  const byAnio={};
+  sel.forEach(k=>{ const[a,m]=k.split('/'); if(!byAnio[a])byAnio[a]=[];byAnio[a].push(m); });
+  const parts=Object.keys(byAnio).sort().map(a=>{
+    const tree=buildFechaTree(ARRIENDOS);
+    const todosMeses=[...(tree[a]||new Set())];
+    if(todosMeses.every(m=>byAnio[a].includes(m))) return a;
+    return byAnio[a].map(m=>MESES_NOMBRES[parseInt(m)-1].slice(0,3)).join(',')+' '+a;
+  });
+  return parts.join(' · ');
+}
+
+// ── Tabla filtro ──
+window.toggleFiltroFecha=function(){
+  const panel=document.getElementById('filtroFechaPanel');
+  const isOpen=panel.style.display==='block';
+  if(!isOpen){
+    const tree=buildFechaTree(ARRIENDOS);
+    document.getElementById('filtroFechaTree').innerHTML=renderFechaTree(tree,seleccionFecha,'');
+  }
+  panel.style.display=isOpen?'none':'block';
+};
+
+window.aplicarFiltroFecha=function(){
+  document.getElementById('filtroFechaPanel').style.display='none';
+  document.getElementById('filtroFechaLabel').textContent='📅 '+getFechaLabel(seleccionFecha);
+  filtrar();
+};
+
+window.limpiarFiltroFecha=function(){
+  seleccionFecha.clear();
+  document.getElementById('filtroFechaLabel').textContent='📅 Todas las fechas';
+  document.getElementById('filtroAnio').value='';
+  document.getElementById('filtroMes').value='';
+  document.getElementById('filtroFechaPanel').style.display='none';
+  filtrar();
+};
+
+document.addEventListener('click',e=>{
+  const wrap=document.getElementById('filtroFechaWrap');
+  if(wrap&&!wrap.contains(e.target)) document.getElementById('filtroFechaPanel').style.display='none';
+  const dwrap=document.getElementById('dashFiltroFechaWrap');
+  if(dwrap&&!dwrap.contains(e.target)){ const p=document.getElementById('dashFiltroFechaPanel'); if(p) p.style.display='none'; }
+});
 
 window.actualizarDatos=function(){
   toast('🔄 Actualizando...','ok');
@@ -1392,16 +1573,33 @@ window.pegarPortapapeles=async function(){
   }catch(e){toast('⚠ Usa Ctrl+V para pegar','err');}
 };
 
+let MODO_DISP='cal'; // 'cal' o 'dia'
+
+window.setModoDisp=function(modo){
+  MODO_DISP=modo;
+  document.getElementById('vista-cal').style.display=modo==='cal'?'block':'none';
+  document.getElementById('vista-dia').style.display=modo==='dia'?'block':'none';
+  document.getElementById('disp-cal-controls').style.display=modo==='cal'?'flex':'none';
+  document.getElementById('disp-dia-controls').style.display=modo==='dia'?'flex':'none';
+  document.getElementById('btn-modo-cal').style.background=modo==='cal'?'var(--blue)':'transparent';
+  document.getElementById('btn-modo-cal').style.color=modo==='cal'?'#fff':'var(--text3)';
+  document.getElementById('btn-modo-dia').style.background=modo==='dia'?'var(--blue)':'transparent';
+  document.getElementById('btn-modo-dia').style.color=modo==='dia'?'#fff':'var(--text3)';
+  if(modo==='dia'){
+    const inp=document.getElementById('fechaDisp');
+    if(!inp.value) inp.value=fechaHoy();
+    renderDisponibilidad();
+  } else {
+    renderCalendario();
+  }
+};
+
 window.goTab=function(tab){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('sec-'+tab).classList.add('active');
-  document.getElementById('tab-'+tab).classList.add('active');
-  if(tab==='disponibilidad'){
-    const inp=document.getElementById('fechaDisp');
-    if(!inp.value){inp.value=fechaHoy();}
-    renderDisponibilidad();
-  }
+  const tabEl=document.getElementById('tab-'+tab);
+  if(tabEl) tabEl.classList.add('active');
   if(tab==='calendario'){
     renderCalendario();
     const hoy=new Date();
@@ -1465,7 +1663,6 @@ window.renderDisponibilidad=function(){
     document.getElementById('dispArriendos').innerHTML='';
     return;
   }
-  const fechaStr=inputAFecha(input.value);
   const{usados,arriendosDia}=calcularUsados(fechaStr);
 
   const dt=new Date(input.value+'T12:00:00');
