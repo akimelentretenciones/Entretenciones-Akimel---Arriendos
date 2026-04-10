@@ -1306,9 +1306,8 @@ function renderDashboard(){
   document.getElementById('k4').textContent=tasa+'%';document.getElementById('k4s').textContent=can.length+' de '+(act.length+can.length);
   const meses={},diasPorAnio={},comunas={},eqC={};
   const mesesPorAnio={},semanasPorAnio={},montosPorAnio={};
-  // Usar todos los arriendos (no solo act) para el filtro de año correcto
-  const arrBase=AÑO_DASH==='ambos'?ARRIENDOS:ARRIENDOS.filter(a=>a.anio===AÑO_DASH);
-  for(const a of arrBase.filter(a=>a.estado!=='Cancelado'&&a.pendiente>0)){
+  // Usar arr (ya filtrado) para todos los gráficos
+  for(const a of arr.filter(a=>a.estado!=='Cancelado'&&a.pendiente>0)){
     const anio=a.anio||'';
     const pend=a.pendiente||0;
     // Acumuladores globales
@@ -1357,38 +1356,45 @@ function renderDashboard(){
               y:{ticks:{font:{size:9}},grid:{display:false}}},
       layout:{padding:{right:90,top:8}}}});
 
-  // ── Monto por día (barras por año) ──
-  const años2025=DIAS_ORD.map(d=>diasPorAnio['2025']?.[d]||0);
-  const años2026=DIAS_ORD.map(d=>diasPorAnio['2026']?.[d]||0);
+  // Colores por año — dinámico
+  const COLORES_ANIO=['#0071ce','#5fb446','#ffc220','#fa6400'];
+  const aniosEnDatos=Object.keys(diasPorAnio).sort();
+
+  // ── Monto por día (barras por año, solo años en datos filtrados) ──
   CHARTS.dias=new Chart(document.getElementById('cDias'),{type:'bar',
-    data:{labels:DIAS_ORD,datasets:[
-      {label:'2025',data:años2025,backgroundColor:'#0071ce',borderRadius:3},
-      {label:'2026',data:años2026,backgroundColor:'#5fb446',borderRadius:3}
-    ]},
-    options:{...bO,plugins:{legend:{display:true,position:'top',labels:{font:{size:10},boxWidth:12}},
+    data:{labels:DIAS_ORD,datasets:aniosEnDatos.map((anio,i)=>({
+      label:anio,
+      data:DIAS_ORD.map(d=>diasPorAnio[anio]?.[d]||0),
+      backgroundColor:COLORES_ANIO[i]||'#7a93aa',borderRadius:3
+    }))},
+    options:{...bO,plugins:{legend:{display:aniosEnDatos.length>1,position:'top',labels:{font:{size:10},boxWidth:12}},
       datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
         formatter:v=>v>0?fmtM(v):''}}}});
 
   // ── Monto por Semana y Año ──
-  const semsAll=new Set([...Object.keys(semanasPorAnio['2025']||{}), ...Object.keys(semanasPorAnio['2026']||{})]);
+  const aniosEnSem=Object.keys(semanasPorAnio).sort();
+  const semsAll=new Set(aniosEnSem.flatMap(a=>Object.keys(semanasPorAnio[a]||{})));
   const semsOrd=[...semsAll].map(Number).sort((a,b)=>a-b);
   CHARTS.semanas=new Chart(document.getElementById('cSemanas'),{type:'bar',
-    data:{labels:semsOrd,datasets:[
-      {label:'2025',data:semsOrd.map(s=>semanasPorAnio['2025']?.[s]||0),backgroundColor:'#ffc220',borderRadius:3},
-      {label:'2026',data:semsOrd.map(s=>semanasPorAnio['2026']?.[s]||0),backgroundColor:'#fa6400',borderRadius:3}
-    ]},
-    options:{...bO,plugins:{legend:{display:true,position:'top',labels:{font:{size:10},boxWidth:12}},
+    data:{labels:semsOrd,datasets:aniosEnSem.map((anio,i)=>({
+      label:anio,
+      data:semsOrd.map(s=>semanasPorAnio[anio]?.[s]||0),
+      backgroundColor:COLORES_ANIO[i+2]||COLORES_ANIO[i]||'#7a93aa',borderRadius:3
+    }))},
+    options:{...bO,plugins:{legend:{display:aniosEnSem.length>1,position:'top',labels:{font:{size:10},boxWidth:12}},
       datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
         formatter:v=>v>0?fmtM(v):''}}}});
 
   // ── Monto por Mes y Año ──
+  const aniosEnMes=Object.keys(mesesPorAnio).sort();
   const mesOrd=Array.from({length:12},(_,i)=>(i+1).toString().padStart(2,'0'));
   CHARTS.mensual=new Chart(document.getElementById('cMensual'),{type:'bar',
-    data:{labels:mesOrd.map(m=>MESES_N[parseInt(m)]),datasets:[
-      {label:'2025',data:mesOrd.map(m=>mesesPorAnio['2025']?.[m]||0),backgroundColor:'#0071ce',borderRadius:3},
-      {label:'2026',data:mesOrd.map(m=>mesesPorAnio['2026']?.[m]||0),backgroundColor:'#5fb446',borderRadius:3}
-    ]},
-    options:{...bO,plugins:{legend:{display:true,position:'top',labels:{font:{size:10},boxWidth:12}},
+    data:{labels:mesOrd.map(m=>MESES_N[parseInt(m)]),datasets:aniosEnMes.map((anio,i)=>({
+      label:anio,
+      data:mesOrd.map(m=>mesesPorAnio[anio]?.[m]||0),
+      backgroundColor:COLORES_ANIO[i]||'#7a93aa',borderRadius:3
+    }))},
+    options:{...bO,plugins:{legend:{display:aniosEnMes.length>1,position:'top',labels:{font:{size:10},boxWidth:12}},
       datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
         formatter:v=>v>0?fmtM(v):''}}}});
 
