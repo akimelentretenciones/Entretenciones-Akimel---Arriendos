@@ -395,7 +395,7 @@ select:focus{border-color:var(--blue)}
         <option value="Sábado">Sábado</option>
         <option value="Domingo">Domingo</option>
       </select>
-      <select id="filtroEstado" onchange="filtrar()"><option value="">Todos</option><option value="Pendiente">Pendiente</option><option value="Cancelado">Cancelado</option></select>
+      <input type="hidden" id="filtroEstado" value="">
     </div>
   </div>
   <div class="table-wrap">
@@ -594,6 +594,22 @@ MAPEO['hockey']='Mesa de Hockey';
 MAPEO['jockey']='Mesa de Hockey';
 MAPEO['mesa hockey']='Mesa de Hockey';
 MAPEO['mesa jockey']='Mesa de Hockey';
+MAPEO['hockey de mesa']='Mesa de Hockey';
+MAPEO['dinosaurio']='Tobogán Dinopoder';
+MAPEO['dino']='Tobogán Dinopoder';
+MAPEO['dinopoder']='Tobogán Dinopoder';
+MAPEO['tobogan grande de dinosaurio']='Tobogán Dinopoder';
+MAPEO['tobogán grande de dinosaurio']='Tobogán Dinopoder';
+MAPEO['tobogan dinosaurio']='Tobogán Dinopoder';
+MAPEO['tobogán dinosaurio']='Tobogán Dinopoder';
+MAPEO['grande de dinosaurio']='Tobogán Dinopoder';
+MAPEO['carrusel grande']='Carrusel Pony';
+MAPEO['carrusel pony grande']='Carrusel Pony';
+MAPEO['avion']='Avioncitos Voladores';
+MAPEO['aviones']='Avioncitos Voladores';
+MAPEO['avioncitos']='Avioncitos Voladores';
+MAPEO['moto verde']='Moto';
+MAPEO['motos']='Moto';
 
 const MESES_N=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MESES_FULL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -955,9 +971,11 @@ function parsearChat(texto){
       ||bloque.match(/(?:^|\n)\s*(9[\d\s\-]{8})(?:\n|$)/m)
       ||bloque.match(/(?:^|\n)\s*(\d{8,9})(?:\n|$)/m);
     if(tm){
-      let rawTel=tm[1].replace(/[\s\-]/g,'');
+      let rawTel=tm[1].replace(/[\s]/g,'');
       // Quitar prefijo +56 o 56
       rawTel=rawTel.replace(/^\+?56/,'');
+      // Quitar todos los guiones excepto para limpiar el número
+      rawTel=rawTel.replace(/\-/g,'');
       // Si quedaron 8 dígitos sin el 9 adelante, agregarlo
       if(rawTel.length===8&&!rawTel.startsWith('9')) rawTel='9'+rawTel;
       // Tomar últimos 9 dígitos
