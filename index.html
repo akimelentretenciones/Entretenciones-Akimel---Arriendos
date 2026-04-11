@@ -829,29 +829,26 @@ function calcularSemana(f){
 }
 function estandarizar(equipos){
   if(!equipos) return equipos;
-  // Separar por "y", "+", ",", "/"
   equipos=equipos.replace(/\s+y\s+/gi,',').replace(/\s*\+\s*/g,',');
   const partes=equipos.split(/[,\/]/);
-  // Keys ordenados de más largo a más corto para evitar falsos matches
+  // Keys de más largo a más corto — garantiza que "juego pro" gana sobre "pro"
   const keysOrdenados=Object.keys(MAPEO).sort((a,b)=>b.length-a.length);
   const res=[];
   for(let p of partes){
     p=p.trim();if(!p) continue;
     const pl=p.toLowerCase().trim();
-    // 1. Match exacto
-    let found=MAPEO[pl];
-    // 2. Match parcial — el keyword debe ser una palabra completa dentro de la parte
-    if(!found){
-      for(const k of keysOrdenados){
-        // Evitar que "pro" matchee dentro de "problema", "proceso", etc.
-        const re=new RegExp('(?:^|\\s|,)'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|,|$)','i');
-        if(re.test(' '+pl+' ')){found=MAPEO[k];break;}
-      }
+    let found=null;
+    // Buscar en orden de más largo a más corto
+    for(const k of keysOrdenados){
+      if(pl===k){found=MAPEO[k];break;}
     }
-    // 3. Si no encontró nada con word-boundary, intenta match simple para keywords largos (>5 chars)
     if(!found){
       for(const k of keysOrdenados){
-        if(k.length>5&&pl.includes(k)){found=MAPEO[k];break;}
+        // Solo match si el keyword es palabra completa (no parte de otra)
+        try{
+          const re=new RegExp('(?<![a-záéíóúñ])'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![a-záéíóúñ])','i');
+          if(re.test(pl)){found=MAPEO[k];break;}
+        }catch(e){}
       }
     }
     const r=found||p;if(!res.includes(r)) res.push(r);
