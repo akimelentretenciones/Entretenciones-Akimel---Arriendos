@@ -907,8 +907,20 @@ function parsearChat(texto){
     const anioM=bloque.match(/(202[0-9])/),anio=anioM?anioM[1]:anioGrupo;
     const ft=bloque.match(/(\d{1,2})\s*(?:de\s*)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i);
     const fn=bloque.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\.](\d{2,4})/);
-    // Fecha sin año: '12/04' o '11-04'
-    const fsin=bloque.match(/(?:fecha[^\n]{0,20})?\b(\d{1,2})[\/\-](\d{1,2})(?![\/\-\d])/);
+    // Fecha sin año: buscar en línea que tenga 'fecha' o sea solo dd/mm o dd-mm
+    let fsin=null;
+    const lineasFecha=bloque.split('\n').filter(l=>/fecha/i.test(l));
+    if(lineasFecha.length){
+      const mf=lineasFecha[0].match(/(\d{1,2})[\/\-](\d{1,2})(?![\d\/\-])/);
+      if(mf) fsin=mf;
+    }
+    if(!fsin){
+      // Buscar línea que sea solo dd/mm o dd-mm sin hora (no HH:MM)
+      for(const lf of bloque.split('\n')){
+        const mf2=lf.trim().match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+        if(mf2){fsin=mf2;break;}
+      }
+    }
     if(fn){let[,d,m,y]=fn;if(y.length===2)y='20'+y;fecha=d.padStart(2,'0')+'/'+m.padStart(2,'0')+'/'+y;}
     else if(ft){fecha=ft[1].padStart(2,'0')+'/'+(MESES[ft[2].toLowerCase()]||'01')+'/'+anioGrupo;}
     else if(fsin){const d=parseInt(fsin[1]),m=parseInt(fsin[2]);if(d>=1&&d<=31&&m>=1&&m<=12)fecha=String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+anioGrupo;}
