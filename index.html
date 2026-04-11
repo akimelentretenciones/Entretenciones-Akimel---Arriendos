@@ -1079,6 +1079,15 @@ async function guardarArriendos(arr){
   const log=document.getElementById('logBox'),fill=document.getElementById('progressFill');
   const addLog=(msg,t='')=>{log.innerHTML+=`<div class="log-${t}">${msg}</div>`;log.scrollTop=log.scrollHeight;};
   addLog(`⚙️ ${arr.length} arriendos encontrados`,'ok');
+  fill.style.width='20%';
+
+  // Recargar arriendos frescos desde Firebase para validación precisa de inventario
+  addLog('🔄 Verificando inventario en tiempo real...','');
+  try{
+    const snap=await getDocs(collection(db,'arriendos'));
+    ARRIENDOS=[];
+    snap.forEach(d=>ARRIENDOS.push({id:d.id,...d.data()}));
+  }catch(e){ addLog('⚠️ No se pudo verificar inventario en tiempo real','warn'); }
   fill.style.width='40%';
 
   // Validar campos obligatorios
@@ -1087,19 +1096,21 @@ async function guardarArriendos(arr){
     addLog(`⚠️ ${problemas.length} arriendos con campos incompletos — revisando...`,'warn');
   }
 
-  // Validar inventario
+  // Validar inventario contra datos frescos de Firebase
   const conflictosInv=validarInventario(arr);
   if(conflictosInv.length>0){
     conflictosInv.forEach(c=>{
       c.juegos.forEach(j=>{
-        addLog(`⚠️ STOCK INSUFICIENTE: ${c.cliente} (${c.fecha}) — ${j.juego} ya tiene ${j.reservados}/${j.total} reservado(s)`,'warn');
+        addLog(`🚫 Sin stock: ${c.cliente} (${c.fecha}) — ${j.juego} (${j.reservados}/${j.total} usados)`,'err');
       });
     });
   }
 
   // Mostrar modal de validación (campos + inventario)
   mostrarValidacion(arr, problemas, conflictosInv, (soloCompletos)=>{
-    const arrFinal=soloCompletos?arr.filter((_,i)=>!problemas.find(p=>p.idx===i+1)):arr;
+    const arrFinal=soloCompletos
+      ? arr.filter((_,i)=>!problemas.find(p=>p.idx===i+1)&&!conflictosInv.find(c=>c.idx===i+1))
+      : arr;
     _guardarEnFirebase(arrFinal, addLog, fill);
   });
 }
