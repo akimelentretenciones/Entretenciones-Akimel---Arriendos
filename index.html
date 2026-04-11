@@ -717,7 +717,11 @@ function mostrarValidacion(arriendos, problemas, conflictosInv, onConfirmar){
     </div>`;
   }
 
-  if(problemas.length>0||sinStock>0){
+  if(sinStock>0&&validos===0){
+    // Todo bloqueado — solo botón cancelar
+    html+=`<button onclick="cerrarModalVal()" style="width:100%;padding:12px;background:var(--bg3);color:var(--text2);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">Cerrar</button>`;
+  } else if(problemas.length>0||sinStock>0){
+    // Hay algunos válidos — guardar solo esos
     html+=`<div style="display:flex;gap:10px">
       <button onclick="cerrarModalVal();onConfirmarValidacion(true)" style="flex:1;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">Guardar solo los ${validos} válidos</button>
       <button onclick="cerrarModalVal()" style="padding:12px 16px;background:var(--bg3);color:var(--text2);border:none;border-radius:10px;font-size:13px;cursor:pointer;font-family:'Sora',sans-serif">Cancelar</button>
