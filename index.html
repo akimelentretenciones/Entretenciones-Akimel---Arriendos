@@ -958,11 +958,16 @@ function parsearChat(texto){
       tel=rawTel;
     }
 
-    // EQUIPOS: capturar todas las líneas/partes de equipos
+    // EQUIPOS: buscar línea con 'juego(s)' y capturar todo hasta fin de línea
     let equipos='';
-    // Buscar línea con "juego(s):" primero
-    const em=bloque.match(/juegos?[:\s.*]+(.+?)(?=\n(?!.*(?:tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|moto|obst|mario|gold|robot|pirata|ferrari|dino|marvel|basket|arcade|rana|ranita|disparador|avion|jockey|pro\b))|pendiente|$)/i);
-    if(em) equipos=em[1].trim().replace(/[*.]+$/,'');
+    // 1. Buscar línea que empiece con 'juego(s)'
+    for(const l of lineas){
+      if(/^juegos?[:\s]/i.test(l.trim())){
+        equipos=l.trim().replace(/^juegos?[:\s.*]+/i,'').replace(/[*.]+$/,'').trim();
+        break;
+      }
+    }
+    // 2. Si no, buscar líneas que contengan keywords de equipos
     if(!equipos){
       const eqLineas=[];
       for(const l of lineas){
@@ -971,11 +976,12 @@ function parsearChat(texto){
       }
       if(eqLineas.length) equipos=eqLineas.join(', ');
     }
-    // Si aún no hay equipos, buscar en todo el bloque
+    // 3. Fallback: buscar keywords en todo el bloque
     if(!equipos){
       const allEq=[];
-      for(const kw of Object.keys(MAPEO)){
-        if(bloque.toLowerCase().includes(kw)&&!allEq.includes(MAPEO[kw]))
+      const keysLong=Object.keys(MAPEO).sort((a,b)=>b.length-a.length);
+      for(const kw of keysLong){
+        if(kw.length>3&&bloque.toLowerCase().includes(kw)&&!allEq.includes(MAPEO[kw]))
           allEq.push(MAPEO[kw]);
       }
       if(allEq.length) equipos=allEq.join(', ');
