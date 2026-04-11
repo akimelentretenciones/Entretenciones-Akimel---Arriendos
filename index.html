@@ -385,6 +385,16 @@ select:focus{border-color:var(--blue)}
       <input type="hidden" id="filtroAnio" value="">
       <input type="hidden" id="filtroMes" value="">
 
+      <select id="filtroDia" onchange="filtrar()" style="min-width:110px">
+        <option value="">Todos los días</option>
+        <option value="Lunes">Lunes</option>
+        <option value="Martes">Martes</option>
+        <option value="Miércoles">Miércoles</option>
+        <option value="Jueves">Jueves</option>
+        <option value="Viernes">Viernes</option>
+        <option value="Sábado">Sábado</option>
+        <option value="Domingo">Domingo</option>
+      </select>
       <select id="filtroEstado" onchange="filtrar()"><option value="">Todos</option><option value="Pendiente">Pendiente</option><option value="Cancelado">Cancelado</option></select>
     </div>
   </div>
@@ -1239,6 +1249,7 @@ window.filtrarSemanaActual=function(){
   document.getElementById('filtroMes').value='';
   document.getElementById('filtroFechaLabel').textContent=`📅 ${anioActual}`;
   document.getElementById('filtroEstado').value='';
+  document.getElementById('filtroDia').value='';
   document.getElementById('searchInput').value='';
   filtrar();
   toast('📅 Semana '+semanaActual+' · '+anioActual,'ok');
@@ -1250,8 +1261,10 @@ window.filtrar=function(){
   const mes=document.getElementById('filtroMes').value||'';
   const estado=document.getElementById('filtroEstado').value;
   const semana=document.getElementById('filtroSemana').value;
+  const dia=document.getElementById('filtroDia').value||'';
   FILTRADOS=ARRIENDOS.filter(a=>{
     if(q&&!`${a.cliente} ${a.comuna} ${a.equipos} ${a.direccion}`.toLowerCase().includes(q)) return false;
+    if(dia&&a.dia!==dia) return false;
     // Multi-selección de fecha
     if(seleccionFecha.size>0){
       if(!a.fecha) return false;
