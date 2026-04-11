@@ -375,7 +375,7 @@ select:focus{border-color:var(--blue)}
       </div>
 
       <!-- Filtro semana -->
-      <button class="btn btn-primary btn-sm" onclick="filtrarSemanaActual()" id="btnSemanaActual">📅 Semana actual</button>
+      <button class="btn btn-ghost btn-sm" onclick="filtrarSemanaActual()" id="btnSemanaActual">📅 Semana actual</button>
       <select id="filtroSemana" onchange="filtrar()">
         <option value="">Todas las semanas</option>
         <option value="1">Sem 1</option><option value="2">Sem 2</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option><option value="7">Sem 7</option><option value="8">Sem 8</option><option value="9">Sem 9</option><option value="10">Sem 10</option><option value="11">Sem 11</option><option value="12">Sem 12</option><option value="13">Sem 13</option><option value="14">Sem 14</option><option value="15">Sem 15</option><option value="16">Sem 16</option><option value="17">Sem 17</option><option value="18">Sem 18</option><option value="19">Sem 19</option><option value="20">Sem 20</option><option value="21">Sem 21</option><option value="22">Sem 22</option><option value="23">Sem 23</option><option value="24">Sem 24</option><option value="25">Sem 25</option><option value="26">Sem 26</option><option value="27">Sem 27</option><option value="28">Sem 28</option><option value="29">Sem 29</option><option value="30">Sem 30</option><option value="31">Sem 31</option><option value="32">Sem 32</option><option value="33">Sem 33</option><option value="34">Sem 34</option><option value="35">Sem 35</option><option value="36">Sem 36</option><option value="37">Sem 37</option><option value="38">Sem 38</option><option value="39">Sem 39</option><option value="40">Sem 40</option><option value="41">Sem 41</option><option value="42">Sem 42</option><option value="43">Sem 43</option><option value="44">Sem 44</option><option value="45">Sem 45</option><option value="46">Sem 46</option><option value="47">Sem 47</option><option value="48">Sem 48</option><option value="49">Sem 49</option><option value="50">Sem 50</option><option value="51">Sem 51</option><option value="52">Sem 52</option>
@@ -1338,7 +1338,7 @@ window.filtrarSemanaActual=function(){
   const hoy=new Date();
   const semanaActual=isoWeek(hoy);
   const anioActual=String(hoy.getFullYear());
-  seleccionFecha.clear(); // limpiar multi-selección
+  seleccionFecha.clear();
   document.getElementById('filtroSemana').value=String(semanaActual);
   document.getElementById('filtroAnio').value=anioActual;
   document.getElementById('filtroMes').value='';
@@ -1346,6 +1346,9 @@ window.filtrarSemanaActual=function(){
   document.getElementById('filtroEstado').value='';
   document.getElementById('filtroDia').value='';
   document.getElementById('searchInput').value='';
+  // Activar botón visualmente
+  const btn=document.getElementById('btnSemanaActual');
+  btn.className='btn btn-primary btn-sm';
   filtrar();
   toast('📅 Semana '+semanaActual+' · '+anioActual,'ok');
 };
@@ -1357,6 +1360,13 @@ window.filtrar=function(){
   const estado=document.getElementById('filtroEstado').value;
   const semana=document.getElementById('filtroSemana').value;
   const dia=document.getElementById('filtroDia').value||'';
+  // Desactivar botón semana actual si la semana cambió manualmente
+  const hoyS=String(isoWeek(new Date()));
+  const btn=document.getElementById('btnSemanaActual');
+  if(btn){
+    const esSemanaActual=semana===hoyS&&anio===String(new Date().getFullYear());
+    btn.className=esSemanaActual?'btn btn-primary btn-sm':'btn btn-ghost btn-sm';
+  }
   FILTRADOS=ARRIENDOS.filter(a=>{
     if(q&&!`${a.cliente} ${a.comuna} ${a.equipos} ${a.direccion}`.toLowerCase().includes(q)) return false;
     if(dia&&a.dia!==dia) return false;
