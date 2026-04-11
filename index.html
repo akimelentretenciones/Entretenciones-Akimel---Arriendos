@@ -567,6 +567,23 @@ MAPEO['disparadores']='Disparadores';
 MAPEO['carrusel pony']='Carrusel Pony';
 MAPEO['carrusel']='Carrusel Pony';
 MAPEO['pony']='Carrusel Pony';
+MAPEO['ranita']='Atrapa Ranita';
+MAPEO['rana']='Atrapa Ranita';
+MAPEO['atrapa ranita']='Atrapa Ranita';
+MAPEO['juego pro']='Tobogán Pro';
+MAPEO['tobogan pro']='Tobogán Pro';
+MAPEO['tobogán pro']='Tobogán Pro';
+MAPEO['pro']='Tobogán Pro';
+MAPEO['juego obstaculo']='Tobogán Obstáculo Danger';
+MAPEO['juego obstáculo']='Tobogán Obstáculo Danger';
+MAPEO['obstaculo']='Tobogán Obstáculo Danger';
+MAPEO['obstáculo']='Tobogán Obstáculo Danger';
+MAPEO['taca taca']='Taca Taca';
+MAPEO['tacataca']='Taca Taca';
+MAPEO['hockey']='Mesa de Hockey';
+MAPEO['jockey']='Mesa de Hockey';
+MAPEO['mesa hockey']='Mesa de Hockey';
+MAPEO['mesa jockey']='Mesa de Hockey';
 
 const MESES_N=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MESES_FULL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -787,7 +804,7 @@ async function cargarArriendos(){
 const MESES={enero:'01',febrero:'02',marzo:'03',abril:'04',mayo:'05',junio:'06',julio:'07',agosto:'08',septiembre:'09',octubre:'10',noviembre:'11',diciembre:'12'};
 const MESES_C={ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',agos:'08',sep:'09',oct:'10',nov:'11',dic:'12'};
 const COMUNAS=['san bernardo','maipu','maipú','pudahuel','cerrillos','el bosque','estacion central','la cisterna','la florida','la granja','la pintana','la reina','las condes','lo barnechea','lo espejo','lo prado','macul','padre hurtado','penaflor','peñaflor','peñalolen','peñalolén','providencia','quilicura','quinta normal','renca','san joaquin','san joaquín','san miguel','san ramon','san ramón','talagante','vitacura','calera de tango','buin','paine','pirque','lampa','colina','pedro aguirre cerda','cerro navia','recoleta','conchali','conchalí','puente alto','nos','huechuraba','ñuñoa','independencia'];
-const EQ_RE=/tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|moto|obst|mario|gold|robot|pirata|ferrari|dino|marvel|basket|arcade|rana|disparador|avion|doble|talbot|aire|basquet|jockey/i;
+const EQ_RE=/tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|moto|obst|mario|gold|robot|pirata|ferrari|dino|marvel|basket|arcade|rana|ranita|disparador|avion|doble|talbot|aire|basquet|jockey|\bjuego pro\b|\bpro\b|juego obst/i;
 
 function detectarComuna(t){
   t=t.toLowerCase().trim();
@@ -812,16 +829,31 @@ function calcularSemana(f){
 }
 function estandarizar(equipos){
   if(!equipos) return equipos;
-  // Separar también por " y " para casos como "Disparador y Carrusel pony"
-  equipos=equipos.replace(/\s+y\s+/gi,',');
-  const partes=equipos.split(/[,\/+]/);
-
+  // Separar por "y", "+", ",", "/"
+  equipos=equipos.replace(/\s+y\s+/gi,',').replace(/\s*\+\s*/g,',');
+  const partes=equipos.split(/[,\/]/);
+  // Keys ordenados de más largo a más corto para evitar falsos matches
+  const keysOrdenados=Object.keys(MAPEO).sort((a,b)=>b.length-a.length);
   const res=[];
   for(let p of partes){
     p=p.trim();if(!p) continue;
-    const pl=p.toLowerCase();
+    const pl=p.toLowerCase().trim();
+    // 1. Match exacto
     let found=MAPEO[pl];
-    if(!found){const keys=Object.keys(MAPEO).sort((a,b)=>b.length-a.length);for(const k of keys){if(pl.includes(k)){found=MAPEO[k];break;}}}
+    // 2. Match parcial — el keyword debe ser una palabra completa dentro de la parte
+    if(!found){
+      for(const k of keysOrdenados){
+        // Evitar que "pro" matchee dentro de "problema", "proceso", etc.
+        const re=new RegExp('(?:^|\\s|,)'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|,|$)','i');
+        if(re.test(' '+pl+' ')){found=MAPEO[k];break;}
+      }
+    }
+    // 3. Si no encontró nada con word-boundary, intenta match simple para keywords largos (>5 chars)
+    if(!found){
+      for(const k of keysOrdenados){
+        if(k.length>5&&pl.includes(k)){found=MAPEO[k];break;}
+      }
+    }
     const r=found||p;if(!res.includes(r)) res.push(r);
   }
   return res.join(', ');
@@ -874,9 +906,12 @@ function parsearChat(texto){
     let fecha='';
     const anioM=bloque.match(/(202[0-9])/),anio=anioM?anioM[1]:anioGrupo;
     const ft=bloque.match(/(\d{1,2})\s*(?:de\s*)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i);
-    const fn=bloque.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+    const fn=bloque.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\.](\d{2,4})/);
+    // Fecha sin año: '12/04' o '11-04'
+    const fsin=bloque.match(/(?:fecha[^\n]{0,20})?\b(\d{1,2})[\/\-](\d{1,2})(?![\/\-\d])/);
     if(fn){let[,d,m,y]=fn;if(y.length===2)y='20'+y;fecha=d.padStart(2,'0')+'/'+m.padStart(2,'0')+'/'+y;}
     else if(ft){fecha=ft[1].padStart(2,'0')+'/'+(MESES[ft[2].toLowerCase()]||'01')+'/'+anioGrupo;}
+    else if(fsin){const d=parseInt(fsin[1]),m=parseInt(fsin[2]);if(d>=1&&d<=31&&m>=1&&m<=12)fecha=String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+anioGrupo;}
     if(fecha){const pts=fecha.split('/');if(pts[2]&&pts[2]!==anioGrupo)pts[2]=anioGrupo;fecha=pts.join('/');}
     if(!fecha&&fin) fecha=fin+'/'+anioGrupo;
     let hora='';
@@ -888,24 +923,42 @@ function parsearChat(texto){
       ||bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*$/m);
     if(hm) hora=hm[2]?hm[1]+':'+hm[2]:hm[1]+':00';
     let tel='';
-    const tm=bloque.match(/(?:celular|telefono|numero)[:\s]*(\+?[\d\s\-]{8,})/i)
-      ||bloque.match(/(?<!\d)(\+?56[\s\-]?9[\d\s\-]{8,})/i)
-      ||bloque.match(/(?:^|\n)\s*(9[\-\s]?\d{4}[\-\s]?\d{4})(?:\n|$)/m);
-    if(tm) tel=tm[1].replace(/[\s\-]/g,'').replace(/^\+?56/,'').replace(/^9/,'9').trim();
-    // Normalizar: asegurar que empiece con 9 y tenga 9 dígitos
-    if(tel&&!/^\+?56/.test(tel)&&tel.startsWith('9')&&tel.replace(/\D/g,'').length===9) tel=tel;
-    else if(tel&&tel.replace(/\D/g,'').length>9) tel=tel.replace(/\D/g,'').slice(-9);
+    const tm=bloque.match(/(?:celular|telefono|n[uú]mero(?:\s+de\s+celular)?)[:\s]*(\+?[\d\s\-]{7,})/i)
+      ||bloque.match(/(?<!\d)(\+?56[\s\-]?9[\d\s\-]{8})/i)
+      ||bloque.match(/(?:^|\n)\s*(9[\d\s\-]{8})(?:\n|$)/m)
+      ||bloque.match(/(?:^|\n)\s*(\d{8,9})(?:\n|$)/m);
+    if(tm){
+      let rawTel=tm[1].replace(/[\s\-]/g,'');
+      // Quitar prefijo +56 o 56
+      rawTel=rawTel.replace(/^\+?56/,'');
+      // Si quedaron 8 dígitos sin el 9 adelante, agregarlo
+      if(rawTel.length===8&&!rawTel.startsWith('9')) rawTel='9'+rawTel;
+      // Tomar últimos 9 dígitos
+      if(rawTel.replace(/\D/g,'').length>9) rawTel=rawTel.replace(/\D/g,'').slice(-9);
+      tel=rawTel;
+    }
 
-    // EQUIPOS: capturar todas las líneas consecutivas de equipos
+    // EQUIPOS: capturar todas las líneas/partes de equipos
     let equipos='';
-    const em=bloque.match(/juegos?[:\s.*]+(.+?)(?:\n(?!.*(?:tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|moto|obst|mario|gold|robot|pirata|ferrari|dino|marvel|basket|arcade|rana|disparador|avion|jockey))|pendiente|$)/i);
+    // Buscar línea con "juego(s):" primero
+    const em=bloque.match(/juegos?[:\s.*]+(.+?)(?=\n(?!.*(?:tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|moto|obst|mario|gold|robot|pirata|ferrari|dino|marvel|basket|arcade|rana|ranita|disparador|avion|jockey|pro\b))|pendiente|$)/i);
     if(em) equipos=em[1].trim().replace(/[*.]+$/,'');
     if(!equipos){
       const eqLineas=[];
       for(const l of lineas){
-        if(EQ_RE.test(l)&&!/pendiente/i.test(l)) eqLineas.push(l.replace(/[*.]+$/,'').trim());
+        if(EQ_RE.test(l)&&!/pendiente|fecha|hora|direcci|comuna|celular|numero/i.test(l))
+          eqLineas.push(l.replace(/[*.]+$/,'').trim());
       }
       if(eqLineas.length) equipos=eqLineas.join(', ');
+    }
+    // Si aún no hay equipos, buscar en todo el bloque
+    if(!equipos){
+      const allEq=[];
+      for(const kw of Object.keys(MAPEO)){
+        if(bloque.toLowerCase().includes(kw)&&!allEq.includes(MAPEO[kw]))
+          allEq.push(MAPEO[kw]);
+      }
+      if(allEq.length) equipos=allEq.join(', ');
     }
     equipos=estandarizar(equipos);
 
