@@ -667,24 +667,34 @@ function validarArriendos(arriendos){
   return problemas;
 }
 
-function mostrarValidacion(arriendos, problemas, onConfirmar){
+function mostrarValidacion(arriendos, problemas, conflictosInv, onConfirmar){
   const ok=arriendos.length-problemas.length;
+  const sinStock=conflictosInv?conflictosInv.length:0;
+  const validos=ok-sinStock;
   let html=`<div style="margin-bottom:16px">
     <div style="font-size:15px;font-weight:800;color:var(--blue3);margin-bottom:4px">Revisión antes de guardar</div>
-    <div style="font-size:13px;color:var(--text3)">${arriendos.length} arriendos detectados — ${ok} completos, ${problemas.length} con campos faltantes</div>
+    <div style="font-size:13px;color:var(--text3)">${arriendos.length} arriendos detectados — ${validos} válidos, ${problemas.length} con campos faltantes${sinStock>0?' · '+sinStock+' sin stock':''}</div>
   </div>
   <div class="val-box" style="max-height:300px;overflow-y:auto;margin-bottom:16px">`;
   
-  // Mostrar todos los arriendos
   for(let i=0;i<arriendos.length;i++){
     const a=arriendos[i];
     const prob=problemas.find(p=>p.idx===i+1);
+    const confInv=conflictosInv?conflictosInv.find(c=>c.idx===i+1):null;
     if(prob){
       html+=`<div class="val-item">
         <span class="val-warn">⚠️</span>
         <div style="flex:1">
           <strong>${a.cliente||'Sin nombre'}</strong> · ${a.fecha||'sin fecha'}
           <div style="color:var(--red);font-size:11px">Falta: ${prob.campos.join(', ')}</div>
+        </div>
+      </div>`;
+    } else if(confInv){
+      html+=`<div class="val-item">
+        <span style="color:var(--red);font-size:16px">🚫</span>
+        <div style="flex:1">
+          <strong>${a.cliente}</strong> · ${a.fecha}
+          <div style="color:var(--red);font-size:11px">Sin stock: ${confInv.juegos.map(j=>`${j.juego} (${j.reservados}/${j.total} reservados)`).join(', ')}</div>
         </div>
       </div>`;
     } else {
@@ -696,19 +706,26 @@ function mostrarValidacion(arriendos, problemas, onConfirmar){
   }
   html+='</div>';
 
+  if(sinStock>0){
+    html+=`<div style="background:rgba(222,28,36,.08);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;color:var(--red);font-weight:600;border-left:3px solid var(--red)">
+      🚫 ${sinStock} arriendo(s) bloqueados por falta de stock. No se guardarán.
+    </div>`;
+  }
   if(problemas.length>0){
     html+=`<div style="background:rgba(250,100,0,.08);border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--orange);font-weight:600;border-left:3px solid var(--orange)">
-      ⚠️ Hay ${problemas.length} arriendos con campos incompletos. Puedes guardar solo los completos o cancelar y corregir el chat.
+      ⚠️ Hay ${problemas.length} arriendos con campos incompletos.
     </div>`;
+  }
+
+  if(problemas.length>0||sinStock>0){
     html+=`<div style="display:flex;gap:10px">
-      <button onclick="cerrarModalVal();onConfirmarValidacion(true)" style="flex:1;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">Guardar solo los ${ok} completos</button>
+      <button onclick="cerrarModalVal();onConfirmarValidacion(true)" style="flex:1;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">Guardar solo los ${validos} válidos</button>
       <button onclick="cerrarModalVal()" style="padding:12px 16px;background:var(--bg3);color:var(--text2);border:none;border-radius:10px;font-size:13px;cursor:pointer;font-family:'Sora',sans-serif">Cancelar</button>
     </div>`;
   } else {
     html+=`<button onclick="cerrarModalVal();onConfirmarValidacion(false)" style="width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">✅ Guardar los ${ok} arriendos</button>`;
   }
 
-  // Mostrar en modal
   let modal=document.getElementById('modalValidacion');
   if(!modal){
     modal=document.createElement('div');
@@ -721,6 +738,7 @@ function mostrarValidacion(arriendos, problemas, onConfirmar){
   modal.style.display='flex';
   window.onConfirmarValidacion=onConfirmar;
 }
+
 
 window.cerrarModalVal=function(){
   const m=document.getElementById('modalValidacion');
@@ -1023,20 +1041,64 @@ function parsearChat(texto){
   return Object.values(vistos);
 }
 
+function validarInventario(arr){
+  // Para cada arriendo nuevo, verificar si hay stock disponible en esa fecha
+  const conflictos=[];
+  for(let i=0;i<arr.length;i++){
+    const a=arr[i];
+    if(!a.fecha||!a.equipos) continue;
+    const juegos=a.equipos.split(',').map(j=>j.trim()).filter(Boolean);
+    const juegosConflicto=[];
+    for(const juego of juegos){
+      // Contar cuántos de este juego ya están reservados en esa fecha (en ARRIENDOS existentes)
+      const inv=INVENTARIO.find(item=>item.nombre===juego);
+      if(!inv) continue;
+      const reservados=ARRIENDOS.filter(ex=>
+        ex.fecha===a.fecha &&
+        ex.estado!=='Cancelado' &&
+        ex.equipos&&ex.equipos.split(',').map(j=>j.trim()).includes(juego)
+      ).length;
+      // También contar los arriendos nuevos del mismo lote que ya usan este juego en la misma fecha
+      const enLote=arr.slice(0,i).filter(prev=>
+        prev.fecha===a.fecha &&
+        prev.equipos&&prev.equipos.split(',').map(j=>j.trim()).includes(juego)
+      ).length;
+      const totalUsado=reservados+enLote;
+      if(totalUsado>=inv.total){
+        juegosConflicto.push({juego,reservados:totalUsado,total:inv.total});
+      }
+    }
+    if(juegosConflicto.length>0){
+      conflictos.push({idx:i+1,cliente:a.cliente,fecha:a.fecha,juegos:juegosConflicto});
+    }
+  }
+  return conflictos;
+}
+
 async function guardarArriendos(arr){
   const log=document.getElementById('logBox'),fill=document.getElementById('progressFill');
   const addLog=(msg,t='')=>{log.innerHTML+=`<div class="log-${t}">${msg}</div>`;log.scrollTop=log.scrollHeight;};
   addLog(`⚙️ ${arr.length} arriendos encontrados`,'ok');
   fill.style.width='40%';
 
-  // Validar campos
+  // Validar campos obligatorios
   const problemas=validarArriendos(arr);
   if(problemas.length>0){
     addLog(`⚠️ ${problemas.length} arriendos con campos incompletos — revisando...`,'warn');
   }
 
-  // Mostrar modal de validación
-  mostrarValidacion(arr, problemas, (soloCompletos)=>{
+  // Validar inventario
+  const conflictosInv=validarInventario(arr);
+  if(conflictosInv.length>0){
+    conflictosInv.forEach(c=>{
+      c.juegos.forEach(j=>{
+        addLog(`⚠️ STOCK INSUFICIENTE: ${c.cliente} (${c.fecha}) — ${j.juego} ya tiene ${j.reservados}/${j.total} reservado(s)`,'warn');
+      });
+    });
+  }
+
+  // Mostrar modal de validación (campos + inventario)
+  mostrarValidacion(arr, problemas, conflictosInv, (soloCompletos)=>{
     const arrFinal=soloCompletos?arr.filter((_,i)=>!problemas.find(p=>p.idx===i+1)):arr;
     _guardarEnFirebase(arrFinal, addLog, fill);
   });
