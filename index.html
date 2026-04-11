@@ -875,13 +875,21 @@ function parsearChat(texto){
   const ats=texto.match(/\[(\d{2})-(\d{2})-(\d{2}),/);
   if(aeg){anioGrupo=aeg[1];}
   else if(ats){const yr=parseInt('20'+ats[3]),mes=parseInt(ats[2]);if(fin){const mf=parseInt(fin.split('/')[1]);anioGrupo=(mes===12&&mf<=3)?String(yr+1):String(yr);}else anioGrupo=String(yr);}
-  const bloques=texto.split(/\[\d{1,2}-\d{1,2}-\d{2,4},\s*\d{1,2}:\d{2}:\d{2}\s*[ap]\.m\.\]\s*[^:]+:/);
+  // Si no tiene formato WhatsApp, tratar como un solo bloque directo
+  const esFormatoWA=/\[\d{1,2}-\d{1,2}-\d{2,4},/.test(texto);
+  const bloques=esFormatoWA
+    ? texto.split(/\[\d{1,2}-\d{1,2}-\d{2,4},\s*\d{1,2}:\d{2}:\d{2}\s*[ap]\.m\.\]\s*[^:]+:/)
+    : [texto]; // texto plano = un solo bloque
   const arriendos=[];
   for(let bloque of bloques){
     bloque=bloque.trim();
     if(bloque.length<15) continue;
     if(/cifrados|audio omitido|imagen omitida|video omitido|Creaste el grupo|sticker omitido|documento omitido/i.test(bloque)) continue;
-    let pm=bloque.match(/pendiente[^\d\n]{0,20}?(\d{2,3}[.,]\d{3})/i)||bloque.match(/(\d{2,3}[.,]\d{3})\s*(?:pendiente|pesos)/i)||bloque.match(/(?:^|\n)\s*(\d{2,3}[.,]\d{3})\s*(?:\n|$)/);
+    // Detectar pendiente: "Pendiente 158.000" o "Pendiente: 158.000" o "158.000"
+    let pm=bloque.match(/pendiente[:\s][^\d\n]{0,10}?(\d{2,3}[.,]\d{3})/i)
+      ||bloque.match(/pendiente[:\s][^\d\n]{0,10}?(\d{4,6})/i)
+      ||bloque.match(/(\d{2,3}[.,]\d{3})\s*(?:pendiente|pesos)/i)
+      ||bloque.match(/(?:^|\n)\s*(\d{2,3}[.,]\d{3})\s*(?:\n|$)/);
     if(!pm) continue;
     const estado=/cancel/i.test(bloque)?'Cancelado':'Pendiente';
     const campos=['Dirección','Direccion','Comuna','Fecha de evento','Fecha evento','Hora de evento','Hora evento','Número de celular','Número celular','Numero de celular','Numero celular','Número','Celular','Juegos','Juego','Pendiente'];
