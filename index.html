@@ -574,6 +574,13 @@ for(const item of INVENTARIO){
 // Alias adicionales para el parser
 MAPEO['disparador']='Disparadores';
 MAPEO['disparadores']='Disparadores';
+MAPEO['arcade']='Disparadores';
+MAPEO['maquina arcade']='Disparadores';
+MAPEO['máquina arcade']='Disparadores';
+MAPEO['maquinas arcade']='Disparadores';
+MAPEO['máquinas arcade']='Disparadores';
+MAPEO['pistola arcade']='Disparadores';
+MAPEO['pistolas']='Disparadores';
 MAPEO['carrusel pony']='Carrusel Pony';
 MAPEO['carrusel']='Carrusel Pony';
 MAPEO['pony']='Carrusel Pony';
@@ -859,7 +866,7 @@ async function cargarArriendos(){
 const MESES={enero:'01',febrero:'02',marzo:'03',abril:'04',mayo:'05',junio:'06',julio:'07',agosto:'08',septiembre:'09',octubre:'10',noviembre:'11',diciembre:'12'};
 const MESES_C={ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',agos:'08',sep:'09',oct:'10',nov:'11',dic:'12'};
 const COMUNAS=['san bernardo','maipu','maipú','pudahuel','cerrillos','el bosque','estacion central','la cisterna','la florida','la granja','la pintana','la reina','las condes','lo barnechea','lo espejo','lo prado','macul','padre hurtado','penaflor','peñaflor','peñalolen','peñalolén','providencia','quilicura','quinta normal','renca','san joaquin','san joaquín','san miguel','san ramon','san ramón','talagante','vitacura','calera de tango','buin','paine','pirque','lampa','colina','pedro aguirre cerda','cerro navia','recoleta','conchali','conchalí','puente alto','nos','huechuraba','ñuñoa','independencia'];
-const EQ_RE=/tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|moto|obst|mario|gold|robot|pirata|ferrari|dino|marvel|basket|arcade|rana|ranita|disparador|avion|doble|talbot|aire|basquet|jockey|\bjuego pro\b|\bpro\b|juego obst/i;
+const EQ_RE=/tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|moto|obst|mario|gold|robot|pirata|ferrari|dino|marvel|basket|arcade|m[aá]quina arcade|rana|ranita|disparador|avion|doble|talbot|aire|basquet|jockey|\bjuego pro\b|\bpro\b|juego obst/i;
 
 function detectarComuna(t){
   t=t.toLowerCase().trim();
@@ -998,7 +1005,8 @@ function parsearChat(texto){
     const tm=bloque.match(/(?:celular|telefono|n[uú]mero(?:\s+de\s+celular)?)[:\s]*(\+?[\d\s\-]{7,})/i)
       ||bloque.match(/(?<!\d)(\+?56[\s\-]?9[\d\s\-]{8})/i)
       ||bloque.match(/(?:^|\n)\s*(9[\d\s\-]{8})(?:\n|$)/m)
-      ||bloque.match(/(?:^|\n)\s*(\d{8,9})(?:\n|$)/m);
+      ||bloque.match(/(?:^|\n)\s*(\d{8,9})(?:\n|$)/m)
+      ||bloque.match(/(?<!\d)(9\d{8})(?!\d)/m);
     if(tm){
       let rawTel=tm[1].replace(/[\s]/g,'');
       // Quitar prefijo +56 o 56
@@ -1381,12 +1389,16 @@ window.filtrar=function(){
       if(!seleccionFecha.has(key)) return false;
     } else {
       // Filtros simples de año/mes (usados por semana actual)
-      if(anio&&a.anio!==anio) return false;
+      if(anio){
+        const p=a.fecha?a.fecha.split('/'):[]; 
+        const anioReal=p.length>=3?p[2]:(a.anio?String(a.anio):'');
+        if(anioReal!==anio) return false;
+      }
       if(mes&&a.fecha&&a.fecha.split('/')[1]!==mes) return false;
     }
     if(semana){
-      const s=isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'));
-      if(String(s)!==semana) return false;
+      const dt=parseFechaArr(a.fecha||'');
+      if(!dt||String(isoWeek(dt))!==semana) return false;
     }
     if(estado&&a.estado!==estado) return false;
     return true;
@@ -1479,6 +1491,15 @@ window.aplicarDashFiltroFecha=function(){
   renderDashboard();
 };
 
+function parseFechaArr(f){
+  // f = "DD/MM/YYYY" → Date o null
+  if(!f) return null;
+  const p=f.split('/');
+  if(p.length<3||p[2].length!==4) return null;
+  const dt=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]),12,0,0);
+  return isNaN(dt)?null:dt;
+}
+
 function renderDashboard(){
   const semDash=document.getElementById('dashFiltroSemana')?.value||'';
   const anioFiltro=document.getElementById('dashFiltroAnio')?.value||'';
@@ -1488,18 +1509,22 @@ function renderDashboard(){
       if(!a.fecha) return false;
       const parts=a.fecha.split('/');
       if(parts.length<3) return false;
-      return seleccionDashFecha.has(parts[2]+'/'+parts[1]);
+      const key=parts[2]+'/'+parts[1]; // "YYYY/MM"
+      return seleccionDashFecha.has(key);
     });
   } else if(anioFiltro){
-    arr=arr.filter(a=>a.anio===anioFiltro);
+    // Comparar contra año extraído directamente de la fecha (más confiable que campo anio)
+    arr=arr.filter(a=>{
+      if(!a.fecha) return false;
+      const p=a.fecha.split('/');
+      const anioReal=p.length>=3?p[2]:(a.anio?String(a.anio):'');
+      return anioReal===anioFiltro;
+    });
   }
   if(semDash) arr=arr.filter(a=>{
-    if(!a.fecha) return false;
-    const parts=a.fecha.split('/');
-    if(parts.length<3) return false;
-    const fechaISO=parts[2]+'-'+parts[1]+'-'+parts[0]+'T12:00';
-    const s=isoWeek(new Date(fechaISO));
-    return String(s)===semDash;
+    const dt=parseFechaArr(a.fecha);
+    if(!dt) return false;
+    return String(isoWeek(dt))===semDash;
   });
   const act=arr.filter(a=>a.estado!=='Cancelado'&&a.pendiente>0);
   const can=arr.filter(a=>a.estado==='Cancelado');
@@ -1525,7 +1550,8 @@ function renderDashboard(){
     // Por mes y año
     if(a.fecha){const m=a.fecha.split('/')[1];if(!mesesPorAnio[anio])mesesPorAnio[anio]={};mesesPorAnio[anio][m]=(mesesPorAnio[anio][m]||0)+pend;}
     // Por semana y año
-    const sem=isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'));
+    const dtSem=parseFechaArr(a.fecha||'');
+    const sem=dtSem?isoWeek(dtSem):null;
     if(sem){if(!semanasPorAnio[anio])semanasPorAnio[anio]={};semanasPorAnio[anio][sem]=(semanasPorAnio[anio][sem]||0)+pend;}
   }
   // k5-k8 eliminados del HTML
