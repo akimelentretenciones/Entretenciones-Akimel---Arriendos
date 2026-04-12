@@ -1494,7 +1494,11 @@ function renderDashboard(){
     arr=arr.filter(a=>a.anio===anioFiltro);
   }
   if(semDash) arr=arr.filter(a=>{
-    const s=isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'));
+    if(!a.fecha) return false;
+    const parts=a.fecha.split('/');
+    if(parts.length<3) return false;
+    const fechaISO=parts[2]+'-'+parts[1]+'-'+parts[0]+'T12:00';
+    const s=isoWeek(new Date(fechaISO));
     return String(s)===semDash;
   });
   const act=arr.filter(a=>a.estado!=='Cancelado'&&a.pendiente>0);
