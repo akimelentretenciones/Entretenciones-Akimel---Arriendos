@@ -867,7 +867,7 @@ async function cargarArriendos(){
 const MESES={enero:'01',febrero:'02',marzo:'03',abril:'04',mayo:'05',junio:'06',julio:'07',agosto:'08',septiembre:'09',octubre:'10',noviembre:'11',diciembre:'12'};
 const MESES_C={ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',agos:'08',sep:'09',oct:'10',nov:'11',dic:'12'};
 const COMUNAS=['san bernardo','maipu','maipú','pudahuel','cerrillos','el bosque','estacion central','la cisterna','la florida','la granja','la pintana','la reina','las condes','lo barnechea','lo espejo','lo prado','macul','padre hurtado','penaflor','peñaflor','peñalolen','peñalolén','providencia','quilicura','quinta normal','renca','san joaquin','san joaquín','san miguel','san ramon','san ramón','talagante','vitacura','calera de tango','buin','paine','pirque','lampa','colina','pedro aguirre cerda','cerro navia','recoleta','conchali','conchalí','puente alto','nos','huechuraba','ñuñoa','independencia'];
-const EQ_RE=/tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|moto|obst|mario|gold|robot|pirata|ferrari|dino|marvel|basket|arcade|m[aá]quina arcade|rana|ranita|disparador|avion|doble|talbot|aire|basquet|jockey|\bjuego pro\b|\bpro\b|juego obst/i;
+const EQ_RE=/tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|\bmoto\b|obst|mario|gold|\brobot\b|pirata|ferrari|\bdino\b|marvel|basket|arcade|m[aá]quina arcade|\brana\b|ranita|disparador|avion|\bdoble\b|talbot|\baire\b|basquet|jockey|\bjuego pro\b|\bpro\b|juego obst/i;
 
 function detectarComuna(t){
   t=t.toLowerCase().trim();
@@ -974,7 +974,7 @@ function parsearChat(texto){
     let fecha='';
     const anioM=bloque.match(/(202[0-9])/),anio=anioM?anioM[1]:anioGrupo;
     const ft=bloque.match(/(\d{1,2})\s*(?:de\s*)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i);
-    const fn=bloque.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\.](\d{2,4})/);
+    const fn=bloque.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
     // Fecha sin año: buscar en línea que tenga 'fecha' o sea solo dd/mm o dd-mm
     let fsin=null;
     const lineasFecha=bloque.split('\n').filter(l=>/fecha/i.test(l));
