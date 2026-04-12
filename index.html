@@ -563,6 +563,7 @@ const INVENTARIO = [
   {num:18,nombre:'Disparadores',            cat:'Electrónico', total:3, kw:'disparador,disparador 2,disparador 3'},
   {num:21,nombre:'Taca Taca',               cat:'Interior',    total:3, kw:'tacataca,taca taca,taka taka,tacataca 2,tacataca 3'},
   {num:24,nombre:'Mesa de Hockey',          cat:'Interior',    total:2, kw:'hockey,mesa hockey,mesa de hockey,jockey,hokey,mesa jockey,air hockey,hockey 2'},
+  {num:17,nombre:'Arcade',                    cat:'Electrónico', total:1, kw:'arcade,maquina arcade,máquina arcade,maquinas arcade'},
 ];
 
 const MAPEO={};
@@ -574,12 +575,12 @@ for(const item of INVENTARIO){
 // Alias adicionales para el parser
 MAPEO['disparador']='Disparadores';
 MAPEO['disparadores']='Disparadores';
-MAPEO['arcade']='Disparadores';
-MAPEO['maquina arcade']='Disparadores';
-MAPEO['máquina arcade']='Disparadores';
-MAPEO['maquinas arcade']='Disparadores';
-MAPEO['máquinas arcade']='Disparadores';
-MAPEO['pistola arcade']='Disparadores';
+MAPEO['arcade']='Arcade';
+MAPEO['maquina arcade']='Arcade';
+MAPEO['máquina arcade']='Arcade';
+MAPEO['maquinas arcade']='Arcade';
+MAPEO['máquinas arcade']='Arcade';
+MAPEO['pistola arcade']='Arcade';
 MAPEO['pistolas']='Disparadores';
 MAPEO['carrusel pony']='Carrusel Pony';
 MAPEO['carrusel']='Carrusel Pony';
@@ -1452,10 +1453,11 @@ window.setDashSemanaActual=function(){
   const hoy=new Date();
   const s=isoWeek(hoy);
   const anioActual=String(hoy.getFullYear());
+  seleccionDashFecha.clear();
   document.getElementById('dashFiltroSemana').value=String(s);
   document.getElementById('dashFiltroAnio').value=anioActual;
-  document.getElementById('dashFiltroMes').value='';
-  document.getElementById('dashFiltroFechaLabel').textContent='📅 '+anioActual;
+  const mesEl=document.getElementById('dashFiltroMes');if(mesEl) mesEl.value='';
+  document.getElementById('dashFiltroFechaLabel').textContent='📅 Semana '+s+' · '+anioActual;
   const btn=document.getElementById('btnDashSemana');
   if(btn) btn.className='btn btn-primary btn-sm';
   renderDashboard();
@@ -1466,7 +1468,10 @@ window.limpiarDashFiltros=function(){
   seleccionDashFecha.clear();
   document.getElementById('dashFiltroSemana').value='';
   document.getElementById('dashFiltroAnio').value='';
+  const mesEl=document.getElementById('dashFiltroMes');if(mesEl) mesEl.value='';
   document.getElementById('dashFiltroFechaLabel').textContent='📅 Todas las fechas';
+  const treeEl=document.getElementById('dashFiltroFechaTree');if(treeEl) treeEl.innerHTML='';
+  const panel=document.getElementById('dashFiltroFechaPanel');if(panel) panel.style.display='none';
   const btn=document.getElementById('btnDashSemana');
   if(btn) btn.className='btn btn-ghost btn-sm';
   renderDashboard();
