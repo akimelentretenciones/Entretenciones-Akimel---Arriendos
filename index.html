@@ -2223,13 +2223,25 @@ window.costosHoy = function(){
 function renderCostosPersonalDias(key, fechas, data){
   const personal = data.personal || {};
   let html = '';
+  // DEBUG temporal
+  console.log('[COSTOS] ARRIENDOS total:', ARRIENDOS.length, '| fechas muestra:', ARRIENDOS.slice(0,3).map(a=>a.fecha+'|'+a.estado));
+  let hayDiasConArr = false;
   fechas.forEach((dt, i) => {
     const fStr = fechaToStr(dt);
     const dKey = 'd'+i;
     const selIds = (personal[dKey] && personal[dKey].trabajadores) || [];
     const esHoy = fechaToStr(dt)===fechaToStr(new Date());
-    // Contar arriendos ese día
-    const nArr = ARRIENDOS.filter(a=>a.fecha===fStr&&a.estado!=='Cancelado').length;
+    // Solo mostrar días con arriendos — comparación robusta
+    const arriendosDia = ARRIENDOS.filter(a=>{
+      if(!a.fecha||a.estado==='Cancelado') return false;
+      // Normalizar: "2026-04-14" → "14/04/2026"
+      let f = a.fecha;
+      if(f.includes('-')&&f.length===10){ const p=f.split('-'); f=p[2]+'/'+p[1]+'/'+p[0]; }
+      return f===fStr;
+    });
+    const nArr = arriendosDia.length;
+    if(nArr===0) return;
+    hayDiasConArr = true;
     html += `<div class="worker-card">
       <div class="worker-day" style="display:flex;justify-content:space-between;align-items:center">
         <span>${DIAS_SEM[i]} ${dt.getDate()}/${String(dt.getMonth()+1).padStart(2,'0')}${esHoy?' 📍':''}</span>
@@ -2258,6 +2270,7 @@ function renderCostosPersonalDias(key, fechas, data){
     </div>`;
     html += '</div></div>';
   });
+  if(!hayDiasConArr) html = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">📭 Sin arriendos esta semana</div>';
   document.getElementById('costosPersonalDias').innerHTML = html;
 }
 
@@ -2323,7 +2336,14 @@ function calcularTotalesCostos(data, fechas){
     });
     if(d.otro){ montodia+=d.otro; nombresdia.push('Otro ($'+d.otro.toLocaleString('es-CL')+')'); }
     totalPersonal += montodia;
-    detalleDias.push({dia:DIAS_SEM[i],fecha:fechaToStr(dt),monto:montodia,nombres:nombresdia});
+    const fStrD = fechaToStr(dt);
+    const nArrD = ARRIENDOS.filter(a=>{
+      if(!a.fecha||a.estado==='Cancelado') return false;
+      let f=a.fecha;
+      if(f.includes('-')&&f.length===10){const p=f.split('-');f=p[2]+'/'+p[1]+'/'+p[0];}
+      return f===fStrD;
+    }).length;
+    detalleDias.push({dia:DIAS_SEM[i],fecha:fechaToStr(dt),monto:montodia,nombres:nombresdia,nArr:nArrD});
   });
   const ben = data.bencina || {};
   const totalBencina = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
@@ -2349,9 +2369,12 @@ function renderCostosResumen(detalleDias, ben){
     html+=`<th style="padding:9px 12px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border)">${h}</th>`
   );
   html += '</tr></thead><tbody>';
-  detalleDias.forEach(d=>{
-    const hayDatos = d.monto>0 || d.nombres.length>0;
-    html += `<tr style="${hayDatos?'':'opacity:.4'}">
+  const diasConArr = detalleDias.filter(d=>d.nArr>0);
+  if(!diasConArr.length){
+    html += '<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text3)">Sin arriendos esta semana</td></tr>';
+  }
+  diasConArr.forEach(d=>{
+    html += `<tr>
       <td style="padding:9px 12px;border-top:1px solid var(--border);font-weight:600">${d.dia}</td>
       <td style="padding:9px 12px;border-top:1px solid var(--border);color:var(--text3)">${d.fecha}</td>
       <td style="padding:9px 12px;border-top:1px solid var(--border);color:var(--text2)">${d.nombres.join(', ')||'—'}</td>
