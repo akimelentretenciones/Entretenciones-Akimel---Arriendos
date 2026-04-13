@@ -850,16 +850,21 @@ async function cargarArriendos(){
       return fb.localeCompare(fa);
     });
     FILTRADOS=[...ARRIENDOS];
-    poblarSelectoresDash(); renderTabla(); renderDashboard();
+    document.getElementById('totalCount').textContent=`(${ARRIENDOS.length} registros)`;
+  }catch(e){toast('Error cargando datos: '+e.message,'err');return;}
+  // Render fuera del try para ver errores reales
+  try{poblarSelectoresDash();}catch(e){console.error('poblar:',e);}
+  try{renderTabla();}catch(e){console.error('tabla:',e);}
+  try{renderDashboard();}catch(e){console.error('dashboard:',e);}
+  try{
     renderCalendario();
     if(CAL_DIA_SEL) mostrarInventarioDia(CAL_DIA_SEL);
-    else {
+    else{
       const hoy=new Date();
       if(CAL_YEAR===hoy.getFullYear()&&CAL_MONTH===hoy.getMonth())
         mostrarInventarioDia(hoy.getDate());
     }
-    document.getElementById('totalCount').textContent=`(${ARRIENDOS.length} registros)`;
-  }catch(e){toast('Error cargando: '+e.message,'err');}
+  }catch(e){console.error('calendario:',e.message,e.stack);}
 }
 
 // ===== PARSER =====
