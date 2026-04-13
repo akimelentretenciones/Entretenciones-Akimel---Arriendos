@@ -1354,6 +1354,7 @@ function renderCalendario(){
     }
     dotsHtml+='</div>';
 
+    const montoStr='$'+montoTotal.toLocaleString('es-CL');
     html+=`<div onclick="mostrarInventarioDia(${d})"
       style="background:#fff;border:2px solid ${isSel?'var(--blue)':isHoy?'var(--blue)':'var(--border)'};
       border-radius:10px;padding:10px;cursor:pointer;transition:all .15s;min-height:90px"
@@ -1369,7 +1370,7 @@ function renderCalendario(){
       ${dotsHtml}
       <div style="margin-top:6px;padding-top:5px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase">Total</span>
-        <span style="font-size:11px;font-weight:800;color:var(--blue)">$${montoTotal.toLocaleString('es-CL')}</span>
+        <span style="font-size:11px;font-weight:800;color:var(--blue)">${montoStr}</span>
       </div>
     </div>`;
   }
