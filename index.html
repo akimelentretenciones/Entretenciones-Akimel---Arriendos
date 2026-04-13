@@ -986,7 +986,7 @@ function parsearChat(texto){
     if(fn){let[,d,m,y]=fn;if(y.length===2)y='20'+y;fecha=d.padStart(2,'0')+'/'+m.padStart(2,'0')+'/'+y;}
     else if(ft){fecha=ft[1].padStart(2,'0')+'/'+(MESES[ft[2].toLowerCase()]||'01')+'/'+anioGrupo;}
     else if(fsin){const d=parseInt(fsin[1]),m=parseInt(fsin[2]);if(d>=1&&d<=31&&m>=1&&m<=12)fecha=String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+anioGrupo;}
-    if(fecha){const pts=fecha.split('/');if(pts[2]&&pts[2]!==anioGrupo)pts[2]=anioGrupo;fecha=pts.join('/');}
+    // año ya viene correcto desde fn — no sobreescribir
     if(!fecha&&fin) fecha=fin+'/'+anioGrupo;
     let hora='';
     const hm=bloque.match(/hora[^:]*:\s*(?:a las\s*)?(\d{1,2})[:\.](\d{2})/i)
