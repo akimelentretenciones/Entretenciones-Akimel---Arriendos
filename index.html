@@ -968,7 +968,7 @@ function parsearChat(texto){
     let fecha='';
     const anioM=bloque.match(/(202[0-9])/),anio=anioM?anioM[1]:anioGrupo;
     const ft=bloque.match(/(\d{1,2})\s*(?:de\s*)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i);
-    const fn=bloque.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+    const fn=bloque.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
     // Fecha sin año: buscar en línea que tenga 'fecha' o sea solo dd/mm o dd-mm
     let fsin=null;
     const lineasFecha=bloque.split('\n').filter(l=>/fecha/i.test(l));
