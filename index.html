@@ -863,11 +863,58 @@ const MESES_C={ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ag
 const COMUNAS=['san bernardo','maipu','maipú','pudahuel','cerrillos','el bosque','estacion central','la cisterna','la florida','la granja','la pintana','la reina','las condes','lo barnechea','lo espejo','lo prado','macul','padre hurtado','penaflor','peñaflor','peñalolen','peñalolén','providencia','quilicura','quinta normal','renca','san joaquin','san joaquín','san miguel','san ramon','san ramón','talagante','vitacura','calera de tango','buin','paine','pirque','lampa','colina','pedro aguirre cerda','cerro navia','recoleta','conchali','conchalí','puente alto','nos','huechuraba','ñuñoa','independencia'];
 const EQ_RE=/tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|\bmoto\b|obst|mario|gold|\brobot\b|pirata|ferrari|\bdino\b|marvel|basket|arcade|m[aá]quina arcade|\brana\b|ranita|disparador|avion|\bdoble\b|talbot|\baire\b|basquet|jockey|\bjuego pro\b|\bpro\b|juego obst/i;
 
+// Diccionario canónico de comunas (nombre oficial con tildes y mayúsculas correctas)
+const COMUNA_CANON={
+  'san bernardo':'San Bernardo','san bdo':'San Bernardo','sn bdo':'San Bernardo',
+  'maipu':'Maipú','maipú':'Maipú',
+  'peñaflor':'Peñaflor','penaflor':'Peñaflor',
+  'peñalolen':'Peñalolén','peñalolén':'Peñalolén',
+  'san joaquin':'San Joaquín','san joaquín':'San Joaquín',
+  'san ramon':'San Ramón','san ramón':'San Ramón',
+  'san miguel':'San Miguel',
+  'la florida':'La Florida','la granja':'La Granja','la pintana':'La Pintana',
+  'la reina':'La Reina','la cisterna':'La Cisterna',
+  'las condes':'Las Condes','lo barnechea':'Lo Barnechea',
+  'lo espejo':'Lo Espejo','lo prado':'Lo Prado',
+  'el bosque':'El Bosque',
+  'estacion central':'Estación Central','estación central':'Estación Central',
+  'cerro navia':'Cerro Navia',
+  'pedro aguirre cerda':'Pedro Aguirre Cerda',
+  'padre hurtado':'Padre Hurtado',
+  'puente alto':'Puente Alto',
+  'quinta normal':'Quinta Normal',
+  'calera de tango':'Calera de Tango',
+  'pudahuel':'Pudahuel','cerrillos':'Cerrillos','macul':'Macul',
+  'providencia':'Providencia','quilicura':'Quilicura','renca':'Renca',
+  'recoleta':'Recoleta','talagante':'Talagante','vitacura':'Vitacura',
+  'buin':'Buin','paine':'Paine','pirque':'Pirque','lampa':'Lampa','colina':'Colina',
+  'conchali':'Conchalí','conchalí':'Conchalí',
+  'huechuraba':'Huechuraba','independencia':'Independencia',
+  'nos':'San Bernardo','ñuñoa':'Ñuñoa','nuñoa':'Ñuñoa',
+  'santiago':'Santiago','vitacura':'Vitacura',
+};
+
+function normalizarComuna(c){
+  if(!c) return '';
+  const k=c.toLowerCase().trim().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
+    .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+  // Buscar en canónico sin tildes
+  for(const[raw,canon] of Object.entries(COMUNA_CANON)){
+    const rawN=raw.replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
+      .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    if(rawN===k) return canon;
+  }
+  // Capitalizar correctamente como fallback
+  return c.trim().toLowerCase().split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+}
+
 function detectarComuna(t){
   t=t.toLowerCase().trim();
-  if(t.includes('san bdo')||t.includes('sn bdo')) return 'San Bernardo';
+  // Buscar en canónico (orden: más largo primero para evitar falsos positivos)
+  for(const raw of Object.keys(COMUNA_CANON).sort((a,b)=>b.length-a.length))
+    if(t.includes(raw)) return COMUNA_CANON[raw];
   for(const c of [...COMUNAS].sort((a,b)=>b.length-a.length))
-    if(t.includes(c)) return c.charAt(0).toUpperCase()+c.slice(1);
+    if(t.includes(c)) return normalizarComuna(c);
   return '';
 }
 function calcularDia(f){
@@ -962,8 +1009,8 @@ function parsearChat(texto){
     for(const c of [...COMUNAS].sort((a,b)=>b.length-a.length)){const p=new RegExp('[,.]\\s*'+c+'\\s*.?\\s*$','i');if(p.test(dir)){comDir=c.charAt(0).toUpperCase()+c.slice(1);dir=dir.replace(p,'').trim();break;}}
     let comuna='';
     const cm=bloque.match(/comuna[:\s=.*]+(.+)/i);
-    if(cm) comuna=cm[1].split('\n')[0].trim().replace(/[*.]+$/,'').trim();
-    else if(comDir) comuna=comDir;
+    if(cm) comuna=normalizarComuna(cm[1].split('\n')[0].trim().replace(/[*.]+$/,'').trim());
+    else if(comDir) comuna=normalizarComuna(comDir);
     else{for(const l of lineas){if(l===cliente||l===dir) continue;const c=detectarComuna(l);if(c&&l.trim().length<40&&!/\d{3,}/.test(l)){comuna=c;break;}}if(!comuna) comuna=detectarComuna(bloque);}
     let fecha='';
     const anioM=bloque.match(/(202[0-9])/),anio=anioM?anioM[1]:anioGrupo;
@@ -1555,7 +1602,7 @@ function renderDashboard(){
     // Acumuladores globales
     if(a.fecha){const m=a.fecha.split('/')[1];if(!meses[m])meses[m]={count:0,monto:0};meses[m].count++;meses[m].monto+=pend;}
     if(a.dia){if(!diasPorAnio[anio])diasPorAnio[anio]={};diasPorAnio[anio][a.dia]=(diasPorAnio[anio][a.dia]||0)+pend;}
-    if(a.comuna){if(!comunas[a.comuna])comunas[a.comuna]={count:0,monto:0};comunas[a.comuna].count++;comunas[a.comuna].monto+=pend;}
+    const comNorm=normalizarComuna(a.comuna||'');if(comNorm){if(!comunas[comNorm])comunas[comNorm]={count:0,monto:0};comunas[comNorm].count++;comunas[comNorm].monto+=pend;}
     if(a.equipos) for(const eq of a.equipos.split(',')){const e=eq.trim();if(e)eqC[e]=(eqC[e]||0)+1;}
     // Por año
     montosPorAnio[anio]=(montosPorAnio[anio]||0)+pend;
