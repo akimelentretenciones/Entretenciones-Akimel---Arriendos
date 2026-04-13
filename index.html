@@ -851,8 +851,13 @@ async function cargarArriendos(){
     });
     FILTRADOS=[...ARRIENDOS];
     poblarSelectoresDash(); renderTabla(); renderDashboard();
-    if(CAL_DIA_SEL) mostrarInventarioDia(CAL_DIA_SEL);
     renderCalendario();
+    if(CAL_DIA_SEL) mostrarInventarioDia(CAL_DIA_SEL);
+    else {
+      const hoy=new Date();
+      if(CAL_YEAR===hoy.getFullYear()&&CAL_MONTH===hoy.getMonth())
+        mostrarInventarioDia(hoy.getDate());
+    }
     document.getElementById('totalCount').textContent=`(${ARRIENDOS.length} registros)`;
   }catch(e){toast('Error cargando: '+e.message,'err');}
 }
@@ -1308,10 +1313,24 @@ function renderCalendario(){
   const DIAS_ORD_SHORT=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
   // Solo mostrar días con arriendos
+  const mesStr=String(CAL_MONTH+1).padStart(2,'0');
+  const anioStr=String(CAL_YEAR);
+  // Filtrar arriendos del mes/año actual — comparación robusta
+  const arriendosMes=ARRIENDOS.filter(a=>{
+    if(!a.fecha||a.estado==='Cancelado') return false;
+    const p=a.fecha.split('/');
+    if(p.length<3) return false;
+    return p[1]===mesStr && p[2]===anioStr;
+  });
+  // Debug visible en el grid si no hay datos
+  if(ARRIENDOS.length===0){
+    grid.innerHTML='<div style="text-align:center;padding:48px;color:var(--text3)">⏳ Cargando datos...</div>';
+    return;
+  }
   const diasConArr=[];
   for(let d=1;d<=diasMes;d++){
-    const fechaStr=String(d).padStart(2,'0')+'/'+String(CAL_MONTH+1).padStart(2,'0')+'/'+CAL_YEAR;
-    const arriendosDia=ARRIENDOS.filter(a=>a.fecha===fechaStr&&a.estado!=='Cancelado');
+    const fechaStr=String(d).padStart(2,'0')+'/'+mesStr+'/'+anioStr;
+    const arriendosDia=arriendosMes.filter(a=>a.fecha===fechaStr);
     if(arriendosDia.length===0) continue;
     const{usados}=calcularUsados(fechaStr);
     const resumen={Inflable:{disp:0,total:0},Electrónico:{disp:0,total:0},Interior:{disp:0,total:0}};
