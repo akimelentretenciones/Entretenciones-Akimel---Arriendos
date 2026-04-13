@@ -254,31 +254,25 @@ select:focus{border-color:var(--blue)}
 
 <!-- DASHBOARD -->
 <div class="section active" id="sec-dashboard">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-    <!-- Filtro multi-selección Dashboard -->
-    <div style="position:relative" id="dashFiltroFechaWrap">
-      <button onclick="toggleDashFiltroFecha()" style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;font-family:'Sora',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:var(--shadow);min-width:160px;justify-content:space-between">
-        <span id="dashFiltroFechaLabel">📅 Todas las fechas</span>
-        <span>▾</span>
-      </button>
-      <div id="dashFiltroFechaPanel" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:220px;padding:8px;margin-top:4px;max-height:400px;overflow-y:auto">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)">
-          <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase">Filtrar por período</span>
-          <span onclick="limpiarDashFiltros()" style="font-size:11px;color:var(--blue);cursor:pointer;font-weight:600">✕ Limpiar</span>
-        </div>
-        <div id="dashFiltroFechaTree"></div>
-        <button onclick="aplicarDashFiltroFecha()" style="width:100%;margin-top:8px;padding:8px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">Aplicar filtro</button>
-      </div>
-    </div>
-    <button class="btn btn-ghost btn-sm" id="btnDashSemana" onclick="setDashSemanaActual()">📅 Esta semana</button>
-    <select id="dashFiltroSemana" onchange="const b=document.getElementById('btnDashSemana');if(b)b.className='btn btn-ghost btn-sm';renderDashboard()" style="font-size:12px">
-      <option value="">Todas las semanas</option>
-      <option value="1">Sem 1</option><option value="2">Sem 2</option><option value="3">Sem 3</option><option value="4">Sem 4</option><option value="5">Sem 5</option><option value="6">Sem 6</option><option value="7">Sem 7</option><option value="8">Sem 8</option><option value="9">Sem 9</option><option value="10">Sem 10</option><option value="11">Sem 11</option><option value="12">Sem 12</option><option value="13">Sem 13</option><option value="14">Sem 14</option><option value="15">Sem 15</option><option value="16">Sem 16</option><option value="17">Sem 17</option><option value="18">Sem 18</option><option value="19">Sem 19</option><option value="20">Sem 20</option><option value="21">Sem 21</option><option value="22">Sem 22</option><option value="23">Sem 23</option><option value="24">Sem 24</option><option value="25">Sem 25</option><option value="26">Sem 26</option><option value="27">Sem 27</option><option value="28">Sem 28</option><option value="29">Sem 29</option><option value="30">Sem 30</option><option value="31">Sem 31</option><option value="32">Sem 32</option><option value="33">Sem 33</option><option value="34">Sem 34</option><option value="35">Sem 35</option><option value="36">Sem 36</option><option value="37">Sem 37</option><option value="38">Sem 38</option><option value="39">Sem 39</option><option value="40">Sem 40</option><option value="41">Sem 41</option><option value="42">Sem 42</option><option value="43">Sem 43</option><option value="44">Sem 44</option><option value="45">Sem 45</option><option value="46">Sem 46</option><option value="47">Sem 47</option><option value="48">Sem 48</option><option value="49">Sem 49</option><option value="50">Sem 50</option><option value="51">Sem 51</option><option value="52">Sem 52</option>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+    <select id="dashFiltroAnio" onchange="onDashFiltroChange()" style="font-size:12px">
+      <option value="">Todos los años</option>
     </select>
+    <select id="dashFiltroMes" onchange="onDashFiltroChange()" style="font-size:12px">
+      <option value="">Todos los meses</option>
+      <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
+      <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
+      <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
+      <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+    </select>
+    <select id="dashFiltroSemana" onchange="onDashFiltroChange()" style="font-size:12px">
+      <option value="">Todas las semanas</option>
+    </select>
+    <button class="btn btn-primary btn-sm" id="btnDashSemana" onclick="setDashSemanaActual()">📅 Esta semana</button>
     <button class="btn btn-ghost btn-sm" onclick="limpiarDashFiltros()">✕ Limpiar</button>
-    <!-- Hidden inputs para compatibilidad -->
-    <input type="hidden" id="dashFiltroAnio" value="">
-    <input type="hidden" id="dashFiltroMes" value="">
+    <!-- compat hidden -->
+    <input type="hidden" id="dashFiltroFechaLabel">
+    <div id="dashFiltroFechaWrap" style="display:none"><div id="dashFiltroFechaPanel"></div><div id="dashFiltroFechaTree"></div></div>
   </div>
   <div class="kpi-grid">
     <div class="kpi"><div class="kpi-label">Total Monto</div><div class="kpi-value" id="k1">—</div><div class="kpi-sub" id="k1s">—</div></div>
@@ -856,7 +850,7 @@ async function cargarArriendos(){
       return fb.localeCompare(fa);
     });
     FILTRADOS=[...ARRIENDOS];
-    renderTabla(); renderDashboard();
+    poblarSelectoresDash(); renderTabla(); renderDashboard();
     if(CAL_DIA_SEL) mostrarInventarioDia(CAL_DIA_SEL);
     renderCalendario();
     document.getElementById('totalCount').textContent=`(${ARRIENDOS.length} registros)`;
@@ -1449,15 +1443,56 @@ window.eliminarArriendo=async function(id){
 // ===== DASHBOARD =====
 window.setYear=function(y,btn){document.querySelectorAll('.year-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');AÑO_DASH=y;renderDashboard();};
 
+// Poblar selectores de año y semana con valores reales de los datos
+function poblarSelectoresDash(){
+  const anioSel=document.getElementById('dashFiltroAnio');
+  const semSel=document.getElementById('dashFiltroSemana');
+  // Años únicos presentes en los datos
+  const anios=new Set();
+  ARRIENDOS.forEach(a=>{
+    if(!a.fecha) return;
+    const p=a.fecha.split('/');
+    if(p.length>=3&&p[2].length===4) anios.add(p[2]);
+  });
+  const anioAct=anioSel.value;
+  anioSel.innerHTML='<option value="">Todos los años</option>';
+  [...anios].sort().forEach(a=>{
+    anioSel.innerHTML+=`<option value="${a}"${a===anioAct?' selected':''}>${a}</option>`;
+  });
+  // Semanas: poblar según año seleccionado (semanas reales con arriendos)
+  const anioFiltro=anioSel.value;
+  const semAct=semSel.value;
+  const sems=new Set();
+  ARRIENDOS.forEach(a=>{
+    if(!a.fecha) return;
+    const p=a.fecha.split('/');
+    if(p.length<3||p[2].length!==4) return;
+    if(anioFiltro&&p[2]!==anioFiltro) return;
+    const dt=parseFechaArr(a.fecha);
+    if(dt) sems.add(isoWeek(dt));
+  });
+  semSel.innerHTML='<option value="">Todas las semanas</option>';
+  [...sems].map(Number).sort((a,b)=>a-b).forEach(s=>{
+    semSel.innerHTML+=`<option value="${s}"${String(s)===semAct?' selected':''}>Semana ${s}</option>`;
+  });
+}
+
+window.onDashFiltroChange=function(){
+  // Al cambiar año, repoblar semanas disponibles
+  poblarSelectoresDash();
+  const btn=document.getElementById('btnDashSemana');
+  if(btn) btn.className='btn btn-ghost btn-sm';
+  renderDashboard();
+};
+
 window.setDashSemanaActual=function(){
   const hoy=new Date();
   const s=isoWeek(hoy);
   const anioActual=String(hoy.getFullYear());
-  seleccionDashFecha.clear();
-  document.getElementById('dashFiltroSemana').value=String(s);
   document.getElementById('dashFiltroAnio').value=anioActual;
-  const mesEl=document.getElementById('dashFiltroMes');if(mesEl) mesEl.value='';
-  document.getElementById('dashFiltroFechaLabel').textContent='📅 Semana '+s+' · '+anioActual;
+  document.getElementById('dashFiltroMes').value='';
+  poblarSelectoresDash();
+  document.getElementById('dashFiltroSemana').value=String(s);
   const btn=document.getElementById('btnDashSemana');
   if(btn) btn.className='btn btn-primary btn-sm';
   renderDashboard();
@@ -1466,35 +1501,17 @@ window.setDashSemanaActual=function(){
 
 window.limpiarDashFiltros=function(){
   seleccionDashFecha.clear();
-  document.getElementById('dashFiltroSemana').value='';
   document.getElementById('dashFiltroAnio').value='';
-  const mesEl=document.getElementById('dashFiltroMes');if(mesEl) mesEl.value='';
-  document.getElementById('dashFiltroFechaLabel').textContent='📅 Todas las fechas';
-  const treeEl=document.getElementById('dashFiltroFechaTree');if(treeEl) treeEl.innerHTML='';
-  const panel=document.getElementById('dashFiltroFechaPanel');if(panel) panel.style.display='none';
-  const btn=document.getElementById('btnDashSemana');
-  if(btn) btn.className='btn btn-ghost btn-sm';
-  renderDashboard();
-};
-
-window.toggleDashFiltroFecha=function(){
-  const panel=document.getElementById('dashFiltroFechaPanel');
-  const isOpen=panel.style.display==='block';
-  if(!isOpen){
-    const tree=buildFechaTree(ARRIENDOS);
-    document.getElementById('dashFiltroFechaTree').innerHTML=renderFechaTree(tree,seleccionDashFecha,'dash');
-  }
-  panel.style.display=isOpen?'none':'block';
-};
-
-window.aplicarDashFiltroFecha=function(){
-  document.getElementById('dashFiltroFechaPanel').style.display='none';
-  document.getElementById('dashFiltroFechaLabel').textContent='📅 '+getFechaLabel(seleccionDashFecha);
+  document.getElementById('dashFiltroMes').value='';
+  poblarSelectoresDash();
   document.getElementById('dashFiltroSemana').value='';
   const btn=document.getElementById('btnDashSemana');
   if(btn) btn.className='btn btn-ghost btn-sm';
   renderDashboard();
 };
+
+window.toggleDashFiltroFecha=function(){};
+window.aplicarDashFiltroFecha=function(){};
 
 function parseFechaArr(f){
   // f = "DD/MM/YYYY" → Date o null
@@ -1506,30 +1523,20 @@ function parseFechaArr(f){
 }
 
 function renderDashboard(){
-  const semDash=document.getElementById('dashFiltroSemana')?.value||'';
-  const anioFiltro=document.getElementById('dashFiltroAnio')?.value||'';
-  let arr=ARRIENDOS;
-  if(seleccionDashFecha.size>0){
-    arr=arr.filter(a=>{
-      if(!a.fecha) return false;
-      const parts=a.fecha.split('/');
-      if(parts.length<3) return false;
-      const key=parts[2]+'/'+parts[1]; // "YYYY/MM"
-      return seleccionDashFecha.has(key);
-    });
-  } else if(anioFiltro){
-    // Comparar contra año extraído directamente de la fecha (más confiable que campo anio)
-    arr=arr.filter(a=>{
-      if(!a.fecha) return false;
-      const p=a.fecha.split('/');
-      const anioReal=p.length>=3?p[2]:(a.anio?String(a.anio):'');
-      return anioReal===anioFiltro;
-    });
-  }
-  if(semDash) arr=arr.filter(a=>{
-    const dt=parseFechaArr(a.fecha);
-    if(!dt) return false;
-    return String(isoWeek(dt))===semDash;
+  const anioFiltro=(document.getElementById('dashFiltroAnio')?.value||'').trim();
+  const mesFiltro=(document.getElementById('dashFiltroMes')?.value||'').trim();
+  const semDash=(document.getElementById('dashFiltroSemana')?.value||'').trim();
+  let arr=ARRIENDOS.filter(a=>{
+    if(!a.fecha) return false;
+    const p=a.fecha.split('/');
+    if(p.length<3||p[2].length!==4) return false;
+    if(anioFiltro&&p[2]!==anioFiltro) return false;
+    if(mesFiltro&&p[1]!==mesFiltro) return false;
+    if(semDash){
+      const dt=parseFechaArr(a.fecha);
+      if(!dt||String(isoWeek(dt))!==semDash) return false;
+    }
+    return true;
   });
   const act=arr.filter(a=>a.estado!=='Cancelado'&&a.pendiente>0);
   const can=arr.filter(a=>a.estado==='Cancelado');
@@ -1799,8 +1806,7 @@ window.limpiarFiltroFecha=function(){
 document.addEventListener('click',e=>{
   const wrap=document.getElementById('filtroFechaWrap');
   if(wrap&&!wrap.contains(e.target)) document.getElementById('filtroFechaPanel').style.display='none';
-  const dwrap=document.getElementById('dashFiltroFechaWrap');
-  if(dwrap&&!dwrap.contains(e.target)){ const p=document.getElementById('dashFiltroFechaPanel'); if(p) p.style.display='none'; }
+
 });
 
 window.actualizarDatos=function(){
