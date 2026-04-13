@@ -50,6 +50,15 @@ header{background:var(--blue3);padding:0 12px;height:56px;display:flex;align-ite
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
 .kpi{background:#fff;border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--blue)}
 .kpi.green{border-left-color:var(--green)}.kpi.yellow{border-left-color:var(--yellow)}.kpi.orange{border-left-color:var(--orange)}
+.worker-card{border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--bg3)}
+.worker-day{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.worker-checks{display:flex;flex-direction:column;gap:6px}
+.worker-check{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:8px;background:#fff;cursor:pointer;border:1.5px solid transparent;transition:all .15s}
+.worker-check:hover{border-color:var(--blue)}
+.worker-check.sel{border-color:var(--blue);background:rgba(0,113,206,.06)}
+.worker-check input{width:16px;height:16px;accent-color:var(--blue);cursor:pointer}
+.worker-name{font-size:12px;font-weight:600;color:var(--text)}
+.worker-monto{font-size:11px;font-weight:700;color:var(--green)}
 .kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:8px}
 .kpi-value{font-size:22px;font-weight:800;color:var(--text)}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
@@ -182,6 +191,7 @@ select:focus{border-color:var(--blue)}
 .disp-res-num{font-size:24px;font-weight:800}
 @media(max-width:768px){
   .kpi-grid{grid-template-columns:1fr 1fr}
+  #costosKpis{grid-template-columns:1fr 1fr !important}
   .charts-row{grid-template-columns:1fr}
   .inv-categorias{grid-template-columns:1fr}
   .main{padding:12px}
@@ -248,6 +258,7 @@ select:focus{border-color:var(--blue)}
   <div class="nav-tab" onclick="goTab('calendario')" id="tab-calendario">📅 Disponibilidad</div>
   <div class="nav-tab" onclick="goTab('arriendos')" id="tab-arriendos">📋 Arriendos</div>
   <div class="nav-tab" onclick="goTab('subir')" id="tab-subir">➕ Agregar Chat</div>
+  <div class="nav-tab" onclick="goTab('costos')" id="tab-costos">💰 Costos</div>
 </div>
 
 <div class="main">
@@ -450,6 +461,69 @@ select:focus{border-color:var(--blue)}
 </div>
 
 
+
+<!-- COSTOS -->
+<div class="section" id="sec-costos">
+  <div style="max-width:900px;margin:0 auto">
+
+    <!-- Selector de semana -->
+    <div style="background:#fff;border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="costosSemana(-1)">← Ant</button>
+      <div style="font-size:15px;font-weight:800;color:var(--blue3);min-width:200px;text-align:center" id="costosLabel">—</div>
+      <button class="btn btn-ghost btn-sm" onclick="costosSemana(1)">Sig →</button>
+      <button class="btn btn-primary btn-sm" onclick="costosHoy()">Esta semana</button>
+    </div>
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="costosKpis">
+      <div class="kpi"><div class="kpi-label">Ingresos semana</div><div class="kpi-value" id="kc-ing">—</div></div>
+      <div class="kpi orange"><div class="kpi-label">Costos personal</div><div class="kpi-value" id="kc-per">—</div></div>
+      <div class="kpi" style="border-left-color:var(--yellow)"><div class="kpi-label">Costos bencina</div><div class="kpi-value" id="kc-ben">—</div></div>
+      <div class="kpi green"><div class="kpi-label">Margen neto</div><div class="kpi-value" id="kc-mar">—</div><div class="kpi-sub" id="kc-mar-pct">—</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+      <!-- PERSONAL POR DÍA -->
+      <div style="background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)">
+        <div style="font-size:13px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px">👷 Personal por día</div>
+        <div id="costosPersonalDias"></div>
+        <button class="btn btn-primary" style="margin-top:12px;padding:10px" onclick="guardarPersonal()">💾 Guardar personal</button>
+      </div>
+
+      <!-- BENCINA -->
+      <div style="background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)">
+        <div style="font-size:13px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px">⛽ Bencina semanal</div>
+        <div style="display:flex;flex-direction:column;gap:12px" id="costosBencina">
+          <div>
+            <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:6px">🚐 Fotón 1</div>
+            <input type="number" class="search-box" id="ben-foton1" placeholder="$0" style="width:100%" min="0">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:6px">🚐 Fotón 2</div>
+            <input type="number" class="search-box" id="ben-foton2" placeholder="$0" style="width:100%" min="0">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:6px">🚐 Brillance</div>
+            <input type="number" class="search-box" id="ben-brillance" placeholder="$0" style="width:100%" min="0">
+          </div>
+          <div style="padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;font-weight:700;color:var(--text2)">Total bencina</span>
+            <span style="font-size:16px;font-weight:800;color:var(--orange)" id="ben-total">$0</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:12px;padding:10px" onclick="guardarBencina()">💾 Guardar bencina</button>
+      </div>
+    </div>
+
+    <!-- Detalle días -->
+    <div style="background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-top:16px">
+      <div style="font-size:13px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">📋 Resumen de la semana</div>
+      <div id="costosResumen"></div>
+    </div>
+
+  </div>
+</div>
 
 </div><!-- /main -->
 
@@ -1932,6 +2006,7 @@ window.goTab=function(tab){
     if(CAL_YEAR===hoy.getFullYear()&&CAL_MONTH===hoy.getMonth()&&!CAL_DIA_SEL)
       mostrarInventarioDia(hoy.getDate());
   }
+  if(tab==='costos') renderCostos();
 };
 
 // ===== DISPONIBILIDAD RÁPIDA =====
@@ -2083,6 +2158,256 @@ setTimeout(()=>{
   const inp=document.getElementById('fechaDisp');
   if(inp&&!inp.value) inp.value=fechaHoy();
 },100);
+
+
+// ═══════════════════════════════════════════════════
+// MÓDULO COSTOS
+// ═══════════════════════════════════════════════════
+const TRABAJADORES = [
+  {id:'juan',    nombre:'Juan Reyes',        monto:50000},
+  {id:'cristobal',nombre:'Cristóbal',        monto:43000},
+  {id:'martin',  nombre:'Martín Quiroz',     monto:30000},
+  {id:'cristopher',nombre:'Cristopher Quiroz',monto:45000},
+  {id:'leonardo',nombre:'Leonardo Meza',     monto:45000},
+];
+const FURGONES = ['foton1','foton2','brillance'];
+const FURGONES_LABEL = {foton1:'Fotón 1', foton2:'Fotón 2', brillance:'Brillance'};
+const DIAS_SEM = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+let costosSemanaOff = 0; // offset de semanas desde hoy
+
+function getCostosKey(off){
+  // Clave única por semana: "YYYY-WW"
+  const hoy = new Date();
+  const lun = new Date(hoy);
+  const dow = hoy.getDay()===0?6:hoy.getDay()-1;
+  lun.setDate(hoy.getDate()-dow+off*7);
+  const anio = lun.getFullYear();
+  const sem = isoWeek(lun);
+  return anio+'-W'+String(sem).padStart(2,'0');
+}
+
+function getCostosSemanaFechas(off){
+  const hoy = new Date();
+  const dow = hoy.getDay()===0?6:hoy.getDay()-1;
+  const lun = new Date(hoy);
+  lun.setDate(hoy.getDate()-dow+off*7);
+  return Array.from({length:7},(_,i)=>{
+    const d = new Date(lun);
+    d.setDate(lun.getDate()+i);
+    return d;
+  });
+}
+
+function fechaToStr(dt){
+  return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
+}
+
+function cargarCostos(key){
+  try{ return JSON.parse(localStorage.getItem('costos_'+key)||'{}'); }catch{ return {}; }
+}
+function guardarCostosLocal(key, data){
+  localStorage.setItem('costos_'+key, JSON.stringify(data));
+}
+
+window.costosSemana = function(dir){
+  costosSemanaOff += dir;
+  renderCostos();
+};
+
+window.costosHoy = function(){
+  costosSemanaOff = 0;
+  renderCostos();
+};
+
+function renderCostosPersonalDias(key, fechas, data){
+  const personal = data.personal || {};
+  let html = '';
+  fechas.forEach((dt, i) => {
+    const fStr = fechaToStr(dt);
+    const dKey = 'd'+i;
+    const selIds = (personal[dKey] && personal[dKey].trabajadores) || [];
+    const esHoy = fechaToStr(dt)===fechaToStr(new Date());
+    // Contar arriendos ese día
+    const nArr = ARRIENDOS.filter(a=>a.fecha===fStr&&a.estado!=='Cancelado').length;
+    html += `<div class="worker-card">
+      <div class="worker-day" style="display:flex;justify-content:space-between;align-items:center">
+        <span>${DIAS_SEM[i]} ${dt.getDate()}/${String(dt.getMonth()+1).padStart(2,'0')}${esHoy?' 📍':''}</span>
+        ${nArr>0?`<span style="font-size:10px;background:rgba(0,113,206,.1);color:var(--blue);padding:2px 8px;border-radius:10px">${nArr} arriendo${nArr>1?'s':''}</span>`:''}
+      </div>
+      <div class="worker-checks">`;
+    TRABAJADORES.forEach(t => {
+      const sel = selIds.includes(t.id);
+      html += `<label class="worker-check ${sel?'sel':''}" id="wc-${dKey}-${t.id}">
+        <input type="checkbox" data-dia="${dKey}" data-tid="${t.id}" ${sel?'checked':''}
+          onchange="toggleWorker(this)">
+        <span class="worker-name">${t.nombre}</span>
+        <span class="worker-monto">$${t.monto.toLocaleString('es-CL')}</span>
+      </label>`;
+    });
+    // Opción "Otro"
+    const otroMonto = (personal[dKey] && personal[dKey].otro) || '';
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border-radius:8px;border:1.5px solid var(--border)">
+      <input type="checkbox" data-dia="${dKey}" data-tid="otro" id="chk-otro-${dKey}"
+        ${otroMonto?'checked':''} onchange="toggleWorker(this)"
+        style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
+      <span class="worker-name" style="flex:1">Otro</span>
+      <input type="number" id="otro-monto-${dKey}" placeholder="$0" value="${otroMonto}"
+        style="width:90px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:'Sora',sans-serif;outline:none;color:var(--text)"
+        oninput="document.getElementById('chk-otro-${dKey}').checked=!!this.value">
+    </div>`;
+    html += '</div></div>';
+  });
+  document.getElementById('costosPersonalDias').innerHTML = html;
+}
+
+window.toggleWorker = function(el){
+  const label = el.closest('label') || el.closest('div');
+  if(label && label.classList.contains('worker-check')){
+    label.classList.toggle('sel', el.checked);
+  }
+};
+
+window.guardarPersonal = function(){
+  const key = getCostosKey(costosSemanaOff);
+  const data = cargarCostos(key);
+  if(!data.personal) data.personal = {};
+  for(let i=0;i<7;i++){
+    const dKey = 'd'+i;
+    const checks = document.querySelectorAll(`input[data-dia="${dKey}"]`);
+    const selIds = [];
+    let otro = 0;
+    checks.forEach(c=>{
+      if(c.checked){
+        if(c.dataset.tid==='otro'){
+          const v = parseInt(document.getElementById('otro-monto-'+dKey)?.value||0);
+          otro = v||0;
+        } else {
+          selIds.push(c.dataset.tid);
+        }
+      }
+    });
+    data.personal[dKey] = {trabajadores:selIds, otro};
+  }
+  guardarCostosLocal(key, data);
+  toast('✅ Personal guardado','ok');
+  renderCostos();
+};
+
+window.guardarBencina = function(){
+  const key = getCostosKey(costosSemanaOff);
+  const data = cargarCostos(key);
+  data.bencina = {
+    foton1: parseInt(document.getElementById('ben-foton1').value)||0,
+    foton2: parseInt(document.getElementById('ben-foton2').value)||0,
+    brillance: parseInt(document.getElementById('ben-brillance').value)||0,
+  };
+  guardarCostosLocal(key, data);
+  toast('✅ Bencina guardada','ok');
+  renderCostos();
+};
+
+function calcularTotalesCostos(data, fechas){
+  const personal = data.personal || {};
+  let totalPersonal = 0;
+  const detalleDias = [];
+  fechas.forEach((dt, i) => {
+    const dKey = 'd'+i;
+    const d = personal[dKey] || {};
+    const trabajadores = (d.trabajadores||[]);
+    let montodia = 0;
+    const nombresdia = [];
+    trabajadores.forEach(tid => {
+      const t = TRABAJADORES.find(x=>x.id===tid);
+      if(t){ montodia+=t.monto; nombresdia.push(t.nombre); }
+    });
+    if(d.otro){ montodia+=d.otro; nombresdia.push('Otro ($'+d.otro.toLocaleString('es-CL')+')'); }
+    totalPersonal += montodia;
+    detalleDias.push({dia:DIAS_SEM[i],fecha:fechaToStr(dt),monto:montodia,nombres:nombresdia});
+  });
+  const ben = data.bencina || {};
+  const totalBencina = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
+  return {totalPersonal, totalBencina, detalleDias, ben};
+}
+
+function renderCostosKpis(ingresos, totalPersonal, totalBencina){
+  const totalCostos = totalPersonal + totalBencina;
+  const margen = ingresos - totalCostos;
+  const pct = ingresos > 0 ? Math.round((margen/ingresos)*100) : 0;
+  document.getElementById('kc-ing').textContent = '$'+ingresos.toLocaleString('es-CL');
+  document.getElementById('kc-per').textContent = '$'+totalPersonal.toLocaleString('es-CL');
+  document.getElementById('kc-ben').textContent = '$'+totalBencina.toLocaleString('es-CL');
+  document.getElementById('kc-mar').textContent = '$'+margen.toLocaleString('es-CL');
+  document.getElementById('kc-mar').style.color = margen>=0?'var(--green)':'var(--red)';
+  document.getElementById('kc-mar-pct').textContent = pct+'% del ingreso';
+}
+
+function renderCostosResumen(detalleDias, ben){
+  let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html += '<thead><tr style="background:var(--bg3)">';
+  ['Día','Fecha','Trabajadores','Costo personal'].forEach(h=>
+    html+=`<th style="padding:9px 12px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border)">${h}</th>`
+  );
+  html += '</tr></thead><tbody>';
+  detalleDias.forEach(d=>{
+    const hayDatos = d.monto>0 || d.nombres.length>0;
+    html += `<tr style="${hayDatos?'':'opacity:.4'}">
+      <td style="padding:9px 12px;border-top:1px solid var(--border);font-weight:600">${d.dia}</td>
+      <td style="padding:9px 12px;border-top:1px solid var(--border);color:var(--text3)">${d.fecha}</td>
+      <td style="padding:9px 12px;border-top:1px solid var(--border);color:var(--text2)">${d.nombres.join(', ')||'—'}</td>
+      <td style="padding:9px 12px;border-top:1px solid var(--border);font-weight:700;color:${d.monto>0?'var(--orange)':'var(--text3)'}">${d.monto>0?'$'+d.monto.toLocaleString('es-CL'):'—'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  // Bencina detalle
+  html += `<div style="margin-top:14px;padding:12px 14px;background:var(--bg3);border-radius:10px;display:flex;gap:20px;flex-wrap:wrap">
+    <span style="font-size:11px;font-weight:700;color:var(--text3)">⛽ BENCINA:</span>
+    <span style="font-size:12px;color:var(--text2)">Fotón 1: <b>$${(ben.foton1||0).toLocaleString('es-CL')}</b></span>
+    <span style="font-size:12px;color:var(--text2)">Fotón 2: <b>$${(ben.foton2||0).toLocaleString('es-CL')}</b></span>
+    <span style="font-size:12px;color:var(--text2)">Brillance: <b>$${(ben.brillance||0).toLocaleString('es-CL')}</b></span>
+  </div>`;
+  document.getElementById('costosResumen').innerHTML = html;
+}
+
+window.renderCostos = function(){
+  const key = getCostosKey(costosSemanaOff);
+  const fechas = getCostosSemanaFechas(costosSemanaOff);
+  const data = cargarCostos(key);
+  const sem = isoWeek(fechas[0]);
+  const lun = fechas[0], dom = fechas[6];
+  document.getElementById('costosLabel').textContent =
+    `Semana ${sem} · ${lun.getDate()}/${String(lun.getMonth()+1).padStart(2,'0')} — ${dom.getDate()}/${String(dom.getMonth()+1).padStart(2,'0')}/${dom.getFullYear()}`;
+
+  // Ingresos de la semana desde ARRIENDOS
+  const ingresos = ARRIENDOS.filter(a=>{
+    if(!a.fecha||a.estado==='Cancelado') return false;
+    const dt = parseFechaArr(a.fecha);
+    if(!dt) return false;
+    return isoWeek(dt)===sem && dt.getFullYear()===fechas[0].getFullYear();
+  }).reduce((s,a)=>s+(a.pendiente||0),0);
+
+  const {totalPersonal, totalBencina, detalleDias, ben} = calcularTotalesCostos(data, fechas);
+
+  // Bencina inputs
+  document.getElementById('ben-foton1').value = (data.bencina?.foton1)||'';
+  document.getElementById('ben-foton2').value = (data.bencina?.foton2)||'';
+  document.getElementById('ben-brillance').value = (data.bencina?.brillance)||'';
+  document.getElementById('ben-total').textContent = '$'+totalBencina.toLocaleString('es-CL');
+
+  // Bencina total live
+  ['ben-foton1','ben-foton2','ben-brillance'].forEach(id=>{
+    document.getElementById(id).oninput = ()=>{
+      const t=(parseInt(document.getElementById('ben-foton1').value)||0)+
+              (parseInt(document.getElementById('ben-foton2').value)||0)+
+              (parseInt(document.getElementById('ben-brillance').value)||0);
+      document.getElementById('ben-total').textContent='$'+t.toLocaleString('es-CL');
+    };
+  });
+
+  renderCostosPersonalDias(key, fechas, data);
+  renderCostosKpis(ingresos, totalPersonal, totalBencina);
+  renderCostosResumen(detalleDias, ben);
+};
 
 window.toast=function(msg,tipo='ok'){
   const t=document.getElementById('toast');
