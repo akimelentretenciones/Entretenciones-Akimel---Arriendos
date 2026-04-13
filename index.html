@@ -1352,7 +1352,7 @@ function renderCalendario(){
 
   // Grid compacto estilo calendario — solo días con arriendos
   let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">';
-  for(const{d,fechaStr,arriendosDia,resumen,diaNom} of diasConArr){
+  for(const{d,fechaStr,arriendosDia,resumen,diaNom,montoTotal} of diasConArr){
     const isHoy=d===hoy.getDate()&&CAL_MONTH===hoy.getMonth()&&CAL_YEAR===hoy.getFullYear();
     const isSel=CAL_DIA_SEL===d;
 
