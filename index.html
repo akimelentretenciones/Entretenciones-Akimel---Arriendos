@@ -1322,7 +1322,8 @@ function renderCalendario(){
       resumen[item.cat].total+=item.total;
     }
     const dt=new Date(CAL_YEAR,CAL_MONTH,d);
-    diasConArr.push({d,fechaStr,arriendosDia,resumen,diaNom:DIAS_ORD[dt.getDay()===0?6:dt.getDay()-1]});
+    const montoTotal=arriendosDia.reduce((s,a)=>s+(a.pendiente||0),0);
+    diasConArr.push({d,fechaStr,arriendosDia,resumen,diaNom:DIAS_ORD[dt.getDay()===0?6:dt.getDay()-1],montoTotal});
   }
 
   if(diasConArr.length===0){
@@ -1366,6 +1367,10 @@ function renderCalendario(){
         <span style="background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px">${arriendosDia.length}</span>
       </div>
       ${dotsHtml}
+      <div style="margin-top:6px;padding-top:5px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase">Total</span>
+        <span style="font-size:11px;font-weight:800;color:var(--blue)">${'$'+montoTotal.toLocaleString('es-CL')}</span>
+      </div>
     </div>`;
   }
   html+='</div>';
