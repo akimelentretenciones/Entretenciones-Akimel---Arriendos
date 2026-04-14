@@ -47,7 +47,7 @@ header{background:var(--blue3);padding:0 12px;height:56px;display:flex;align-ite
 .main{padding:24px;max-width:1400px;margin:0 auto}
 .section{display:none}.section.active{display:block}
 
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
 .kpi{background:#fff;border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--blue)}
 .kpi.green{border-left-color:var(--green)}.kpi.yellow{border-left-color:var(--yellow)}.kpi.orange{border-left-color:var(--orange)}
 .worker-card{border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--bg3)}
@@ -169,28 +169,28 @@ select:focus{border-color:var(--blue)}
 .disp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .disp-item{background:#fff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);border-left:4px solid transparent;transition:all .2s}
 .disp-item.disponible{border-left-color:var(--green)}
-.disp-item.parcial{border-left-color:var(--yellow)}
-.disp-item.casi{border-left-color:var(--orange)}
+.disp-item.parcial{border-left-color:var(--orange)}
+.disp-item.casi{border-left-color:var(--red)}
 .disp-item.ocupado{border-left-color:var(--red);opacity:.8}
 .disp-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .disp-dot.green{background:var(--green)}
-.disp-dot.yellow{background:var(--yellow)}
-.disp-dot.orange{background:var(--orange)}
+.disp-dot.yellow{background:var(--red)}
+.disp-dot.orange{background:var(--red)}
 .disp-dot.red{background:var(--red)}
 .disp-info{flex:1;min-width:0}
 .disp-nombre{font-size:11px;font-weight:700;color:var(--blue3);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .disp-sub{font-size:10px;color:var(--text3);margin-top:1px}
 .disp-badge{font-size:11px;font-weight:800;white-space:nowrap;flex-shrink:0}
 .disp-badge.green{color:var(--green)}
-.disp-badge.yellow{color:var(--yellow)}
-.disp-badge.orange{color:var(--orange)}
+.disp-badge.yellow{color:var(--orange)}
+.disp-badge.orange{color:var(--red)}
 .disp-badge.red{color:var(--red)}
 .disp-cat-title{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 8px;display:flex;align-items:center;gap:6px}
 .disp-resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
 .disp-res-item{background:#fff;border-radius:10px;padding:12px;box-shadow:var(--shadow);font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 .disp-res-num{font-size:24px;font-weight:800}
 @media(max-width:768px){
-  .kpi-grid{grid-template-columns:1fr 1fr}
+  .kpi-grid{grid-template-columns:1fr 1fr 1fr}
   #costosKpis{grid-template-columns:1fr 1fr !important}
   .charts-row{grid-template-columns:1fr}
   .inv-categorias{grid-template-columns:1fr}
@@ -286,10 +286,11 @@ select:focus{border-color:var(--blue)}
     <div id="dashFiltroFechaWrap" style="display:none"><div id="dashFiltroFechaPanel"></div><div id="dashFiltroFechaTree"></div></div>
   </div>
   <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Total Monto</div><div class="kpi-value" id="k1">—</div><div class="kpi-sub" id="k1s">—</div></div>
+    <div class="kpi"><div class="kpi-label">Total Ingresos</div><div class="kpi-value" id="k1">—</div><div class="kpi-sub" id="k1s">—</div></div>
     <div class="kpi green"><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="k2">—</div><div class="kpi-sub">por arriendo</div></div>
     <div class="kpi yellow"><div class="kpi-label">Total arriendos</div><div class="kpi-value" id="k3">—</div><div class="kpi-sub" id="k3s">—</div></div>
-    <div class="kpi orange"><div class="kpi-label">Tasa cancelación</div><div class="kpi-value" id="k4">—</div><div class="kpi-sub" id="k4s">—</div></div>
+    <div class="kpi orange"><div class="kpi-label">Total costos</div><div class="kpi-value" id="k4">—</div><div class="kpi-sub" id="k4s">Personal + Bencina</div></div>
+    <div class="kpi green"><div class="kpi-label">Margen neto</div><div class="kpi-value" id="k5">—</div><div class="kpi-sub" id="k5s">—</div></div>
   </div>
 
   <div class="charts-row">
@@ -405,8 +406,8 @@ select:focus{border-color:var(--blue)}
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>Equipos</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
-      <tbody id="tablaBody"><tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
+      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>Equipos</th><th>Monto</th><th>Estado</th><th title="Pagado">✓</th><th>Pago</th><th></th></tr></thead>
+      <tbody id="tablaBody"><tr><td colspan="15" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
     </table>
   </div>
   <div class="pagination">
@@ -614,9 +615,9 @@ let CAL_YEAR=new Date().getFullYear(), CAL_MONTH=new Date().getMonth(), CAL_DIA_
 
 // Inventario completo con cantidades
 const INVENTARIO = [
-  {num:1, nombre:'Tobogán Dinopoder',       cat:'Inflable',    total:1, kw:'dino,dinosaurio,dinopoder'},
   {num:2, nombre:'Tobogán Obstáculo Danger',cat:'Inflable',    total:1, kw:'danger,obstaculo danger,peligro,obstáculo danger'},
   {num:3, nombre:'Tobogán Obstáculo Robot', cat:'Inflable',    total:1, kw:'robot,obstaculo robot,obstáculo robot,robox'},
+  {num:1, nombre:'Tobogán Dinopoder',       cat:'Inflable',    total:1, kw:'dino,dinosaurio,dinopoder'},
   {num:4, nombre:'Tobogán Pirata',          cat:'Inflable',    total:1, kw:'pirata,balco'},
   {num:5, nombre:'Tobogán Marvel',          cat:'Inflable',    total:1, kw:'marvel,advenger,avengers'},
   {num:6, nombre:'Tobogán Mario Bross',     cat:'Inflable',    total:1, kw:'mario,mario bross,mario bros'},
@@ -628,10 +629,10 @@ const INVENTARIO = [
   {num:13,nombre:'Carrusel Pony',           cat:'Electrónico', total:1, kw:'carrusel pony,carrusel grande,carrusel'},
   {num:14,nombre:'Atrapa Ranita',           cat:'Electrónico', total:2, kw:'ranita,rana,atrapa ranita,ranita 2'},
   {num:16,nombre:'Moto',                    cat:'Electrónico', total:2, kw:'moto verde,moto,moto 2'},
+  {num:17,nombre:'Arcade',                  cat:'Electrónico', total:1, kw:'arcade,maquina arcade,máquina arcade,maquinas arcade'},
   {num:18,nombre:'Disparadores',            cat:'Electrónico', total:3, kw:'disparador,disparador 2,disparador 3'},
   {num:21,nombre:'Taca Taca',               cat:'Interior',    total:3, kw:'tacataca,taca taca,taka taka,tacataca 2,tacataca 3'},
   {num:24,nombre:'Mesa de Hockey',          cat:'Interior',    total:2, kw:'hockey,mesa hockey,mesa de hockey,jockey,hokey,mesa jockey,air hockey,hockey 2'},
-  {num:17,nombre:'Arcade',                    cat:'Electrónico', total:1, kw:'arcade,maquina arcade,máquina arcade,maquinas arcade'},
 ];
 
 const MAPEO={};
@@ -1320,10 +1321,8 @@ function calcularUsados(fecha){
 }
 
 function getColor(disponibles, total){
-  const pct=disponibles/total;
-  if(pct>=1) return{dot:'dot-green',cls:'green',label:'Libre'};
-  if(pct>0.5) return{dot:'dot-yellow',cls:'yellow',label:`${disponibles}/${total}`};
-  if(pct>0) return{dot:'dot-orange',cls:'orange',label:`${disponibles}/${total}`};
+  if(disponibles>=total) return{dot:'dot-green',cls:'green',label:'Libre'};
+  if(disponibles>0) return{dot:'dot-orange',cls:'orange',label:`${disponibles}/${total} libre${disponibles>1?'s':''}`};
   return{dot:'dot-red',cls:'red',label:'Lleno'};
 }
 
@@ -1442,8 +1441,8 @@ function renderCalendario(){
       const r=resumen[cat];
       if(r.total===0) continue;
       const pct=r.disp/r.total;
-      const dot=pct>=1?'dot-green':pct>0.5?'dot-yellow':pct>0?'dot-orange':'dot-red';
-      const cls=pct>=1?'green':pct>0.5?'yellow':pct>0?'orange':'red';
+      const dot=pct>=1?'dot-green':pct>0?'dot-orange':'dot-red';
+      const cls=pct>=1?'green':pct>0?'orange':'red';
       dotsHtml+=`<div class="cal-inv-row">
         <div class="cal-inv-dot ${dot}"></div>
         <span class="cal-inv-name">${cat}</span>
@@ -1558,7 +1557,9 @@ function renderTabla(){
   document.getElementById('paginaInfo').textContent=`${inicio+1}-${fin} de ${total}`;
   const tbody=document.getElementById('tablaBody');
   const pagina=FILTRADOS.slice(inicio,fin);
-  if(!pagina.length){tbody.innerHTML=`<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text3)">Sin resultados</td></tr>`;return;}
+  if(!pagina.length){tbody.innerHTML=`<tr><td colspan="16" style="text-align:center;padding:32px;color:var(--text3)">Sin resultados</td></tr>`;return;}
+  const sumaTotal=FILTRADOS.reduce((s,a)=>s+(a.pendiente||0),0);
+  const sumaPag=pagina.reduce((s,a)=>s+(a.pendiente||0),0);
   tbody.innerHTML=pagina.map((a,i)=>`<tr>
     <td style="color:var(--text3);font-size:11px">${inicio+i+1}</td>
     <td style="font-weight:600;color:var(--blue3)">${a.cliente||'—'}</td>
@@ -1572,14 +1573,56 @@ function renderTabla(){
     <td style="min-width:140px;max-width:200px">${(a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean).map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(0,113,206,0.06);white-space:nowrap">${e}</div>`).join('')}</td>
     <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue)">${a.pendiente?clp(a.pendiente):'—'}</td>
     <td><span class="badge badge-${a.estado==='Cancelado'?'cancel':'pend'}">${a.estado||'—'}</span></td>
+    <td style="text-align:center">
+      <button onclick="togglePago('${a.id}')" title="${a.pagado?'Pagado':'Sin pagar'}"
+        style="width:28px;height:28px;border-radius:50%;border:2px solid ${a.pagado?'var(--green)':'var(--border)'};background:${a.pagado?'var(--green)':'transparent'};cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center">
+        ${a.pagado?'✓':''}
+      </button>
+    </td>
+    <td style="text-align:center">
+      <select onchange="cambiarMediopago('${a.id}',this.value)"
+        style="font-size:10px;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);font-family:'Sora',sans-serif;cursor:pointer">
+        <option value="" ${!a.medioPago?'selected':''}>—</option>
+        <option value="Transferencia" ${a.medioPago==='Transferencia'?'selected':''}>Transf.</option>
+        <option value="Efectivo" ${a.medioPago==='Efectivo'?'selected':''}>Efectivo</option>
+      </select>
+    </td>
     <td style="white-space:nowrap;display:flex;gap:6px">
       <button onclick="abrirEdicion('${a.id}')" style="background:rgba(0,113,206,.1);color:var(--blue);border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">✏️ Editar</button>
       <button class="btn-red" onclick="eliminarArriendo('${a.id}')">✕</button>
     </td>
-  </tr>`).join('');
+  </tr>`).join('')+`
+  <tr style="background:var(--bg3);font-weight:700">
+    <td colspan="10" style="padding:10px 14px;font-size:12px;color:var(--text3)">
+      TOTAL ${total} registros ${total>POR_PAGINA?'· Pág: '+clp(sumaPag):''}
+    </td>
+    <td style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:var(--blue)">${clp(sumaTotal)}</td>
+    <td colspan="4"></td>
+  </tr>`;
 }
 window.paginaAnterior=()=>{if(PAGINA>1){PAGINA--;renderTabla();}};
 window.paginaSiguiente=()=>{if(PAGINA<Math.ceil(FILTRADOS.length/POR_PAGINA)){PAGINA++;renderTabla();}};
+
+window.togglePago=async function(id){
+  const a=ARRIENDOS.find(x=>x.id===id);
+  if(!a) return;
+  a.pagado=!a.pagado;
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',id),{pagado:a.pagado});
+    renderTabla();
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+window.cambiarMediopago=async function(id,valor){
+  const a=ARRIENDOS.find(x=>x.id===id);
+  if(!a) return;
+  a.medioPago=valor;
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',id),{medioPago:valor});
+  }catch(e){toast('Error: '+e.message,'err');}
+};
 
 window.eliminarArriendo=async function(id){
   if(!id){toast('ID no válido','err');return;}
@@ -1695,8 +1738,29 @@ function renderDashboard(){
   document.getElementById('k1').textContent=clp(total);document.getElementById('k1s').textContent=act.length+' activos';
   document.getElementById('k2').textContent=clp(ticket);
   document.getElementById('k3').textContent=act.length+can.length;document.getElementById('k3s').textContent=can.length+' cancelados';
-  const tasa=act.length+can.length?((can.length/(act.length+can.length))*100).toFixed(1):0;
-  document.getElementById('k4').textContent=tasa+'%';document.getElementById('k4s').textContent=can.length+' de '+(act.length+can.length);
+  // Calcular costos desde todas las semanas del período filtrado
+  let totalCostos=0;
+  try{
+    const keys=Object.keys(localStorage).filter(k=>k.startsWith('costos_'));
+    keys.forEach(k=>{
+      const d=JSON.parse(localStorage.getItem(k)||'{}');
+      const ben=d.bencina||{};
+      totalCostos+=(ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
+      const pers=d.personal||{};
+      Object.values(pers).forEach(dia=>{
+        (dia.trabajadores||[]).forEach(tid=>{const t=TRABAJADORES.find(x=>x.id===tid);if(t)totalCostos+=t.monto;});
+        totalCostos+=(dia.otro||0);
+      });
+    });
+  }catch(e){}
+  const margen=total-totalCostos;
+  const margenPct=total>0?Math.round((margen/total)*100):0;
+  document.getElementById('k4').textContent=clp(totalCostos);
+  document.getElementById('k4s').textContent='Personal + Bencina';
+  const k5=document.getElementById('k5');
+  if(k5){k5.textContent=clp(margen);k5.style.color=margen>=0?'var(--green)':'var(--red)';}
+  const k5s=document.getElementById('k5s');
+  if(k5s) k5s.textContent=margenPct+'% del ingreso';
   const meses={},diasPorAnio={},comunas={},eqC={};
   const mesesPorAnio={},semanasPorAnio={},montosPorAnio={};
   // Usar arr (ya filtrado) para todos los gráficos
@@ -2093,7 +2157,7 @@ window.renderDisponibilidad=function(){
     <div style="font-size:15px;font-weight:800;color:var(--blue3);margin-bottom:12px">${diaNom} ${dt.getDate()} de ${mesNom} ${dt.getFullYear()} · ${arriendosDia.length} arriendo(s)</div>
     <div class="disp-resumen">
       <div class="disp-res-item"><div class="disp-res-num" style="color:var(--green)">${libres}</div><div style="color:var(--text3)">🟢 Libres</div></div>
-      <div class="disp-res-item"><div class="disp-res-num" style="color:var(--yellow)">${parciales}</div><div style="color:var(--text3)">🟡 Parciales</div></div>
+      <div class="disp-res-item"><div class="disp-res-num" style="color:var(--orange)">${parciales}</div><div style="color:var(--text3)">🟠 Parciales</div></div>
       <div class="disp-res-item"><div class="disp-res-num" style="color:var(--red)">${ocupados}</div><div style="color:var(--text3)">🔴 Agotados</div></div>
     </div>`;
 
