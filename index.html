@@ -295,15 +295,8 @@ select:focus{border-color:var(--blue)}
 
   <!-- Gráfico Ingresos vs Gastos (compartido con Costos) -->
   <div class="chart-full" style="margin-bottom:16px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div style="margin-bottom:14px">
       <div class="chart-title" style="margin-bottom:0">📊 Ingresos vs Gastos por semana</div>
-      <select id="chartSemanasRangoDash" onchange="renderCostosChartDash()" style="font-size:12px;padding:5px 10px">
-        <option value="8">Últimas 8 semanas</option>
-        <option value="12">Últimas 12 semanas</option>
-        <option value="16">Últimas 16 semanas</option>
-        <option value="26">Últimas 26 semanas</option>
-        <option value="52">Todo el año</option>
-      </select>
     </div>
     <div style="position:relative;height:240px"><canvas id="cCostosHistoricoDash"></canvas></div>
     <div style="display:flex;gap:14px;justify-content:center;margin-top:10px;flex-wrap:wrap">
@@ -2829,8 +2822,8 @@ let _chartCostosDash = null;
 let _chartSemanas = []; // referencia a las semanas renderizadas (pestaña Costos)
 
 // ── Función compartida para renderizar el gráfico ing vs gastos ──
-async function _renderCostosChartEn(canvasId, rangoSelectId, onClickFn){
-  const n = parseInt(document.getElementById(rangoSelectId)?.value || '8');
+async function _renderCostosChartEn(canvasId, rangoSelectId, onClickFn, nFijo){
+  const n = nFijo || parseInt(document.getElementById(rangoSelectId)?.value || '8');
   const canvas = document.getElementById(canvasId);
   if(!canvas) return null;
 
@@ -2973,7 +2966,7 @@ window.renderCostosChart = async function(){
 
 window.renderCostosChartDash = async function(){
   if(_chartCostosDash){ try{ _chartCostosDash.destroy(); }catch{} _chartCostosDash=null; }
-  const result = await _renderCostosChartEn('cCostosHistoricoDash','chartSemanasRangoDash', null);
+  const result = await _renderCostosChartEn('cCostosHistoricoDash', null, null, 52);
   if(result) _chartCostosDash = result.chart;
 };
 
