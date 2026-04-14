@@ -358,6 +358,11 @@ select:focus{border-color:var(--blue)}
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:15px;font-weight:700;color:var(--blue3)">Arriendos</span>
       <span id="totalCount" style="font-size:12px;color:var(--text3)"></span>
+    <button class="btn btn-ghost btn-sm" onclick="marcarPasadosPagados()" 
+      style="background:rgba(95,180,70,.1);color:var(--green);border:1px solid rgba(95,180,70,.3)"
+      title="Marcar como pagados todos los arriendos anteriores a hoy">
+      ✓ Marcar pasados como pagados
+    </button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <input class="search-box" placeholder="Buscar..." id="searchInput" oninput="filtrar()">
@@ -1601,6 +1606,26 @@ function renderTabla(){
 window.paginaAnterior=()=>{if(PAGINA>1){PAGINA--;renderTabla();}};
 window.paginaSiguiente=()=>{if(PAGINA<Math.ceil(FILTRADOS.length/POR_PAGINA)){PAGINA++;renderTabla();}};
 
+window.marcarPasadosPagados = async function(){
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  const pasados = ARRIENDOS.filter(a=>{
+    if(a.pagado) return false; // ya pagado, skip
+    const dt = parseFechaArr(a.fecha);
+    return dt && dt < hoy && a.estado!=='Cancelado';
+  });
+  if(!pasados.length){ toast('No hay arriendos pendientes de marcar','ok'); return; }
+  if(!confirm(`¿Marcar ${pasados.length} arriendos anteriores a hoy como pagados?`)) return;
+  try{
+    const{writeBatch:wb,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const batch=wb(db);
+    pasados.forEach(a=>{ batch.update(docFn(db,'arriendos',a.id),{pagado:true}); a.pagado=true; });
+    await batch.commit();
+    toast('✅ '+pasados.length+' arriendos marcados como pagados','ok');
+    renderTabla();
+  }catch(e){ toast('Error: '+e.message,'err'); }
+};
+
 window.togglePago=async function(id){
   const a=ARRIENDOS.find(x=>x.id===id);
   if(!a) return;
@@ -1736,12 +1761,10 @@ function renderDashboard(){
   document.getElementById('k1').textContent=clp(total);document.getElementById('k1s').textContent=act.length+' activos';
   document.getElementById('k2').textContent=clp(ticket);
   document.getElementById('k3').textContent=act.length+can.length;document.getElementById('k3s').textContent=can.length+' cancelados';
-  // Calcular costos desde todas las semanas del período filtrado
+  // Costos: usar cache si está disponible
   let totalCostos=0;
   try{
-    const keys=Object.keys(localStorage).filter(k=>k.startsWith('costos_'));
-    keys.forEach(k=>{
-      const d=JSON.parse(localStorage.getItem(k)||'{}');
+    Object.values(_costosCache).forEach(d=>{
       const ben=d.bencina||{};
       totalCostos+=(ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
       const pers=d.personal||{};
@@ -2264,11 +2287,26 @@ function fechaToStr(dt){
   return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
 }
 
-function cargarCostos(key){
-  try{ return JSON.parse(localStorage.getItem('costos_'+key)||'{}'); }catch{ return {}; }
+// Cache local para evitar lecturas repetidas
+const _costosCache = {};
+
+async function cargarCostos(key){
+  if(_costosCache[key]) return _costosCache[key];
+  try{
+    const{getDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const snap=await getDoc(docFn(db,'costos',key));
+    const data=snap.exists()?snap.data():{};
+    _costosCache[key]=data;
+    return data;
+  }catch(e){ console.error('cargarCostos:',e); return {}; }
 }
-function guardarCostosLocal(key, data){
-  localStorage.setItem('costos_'+key, JSON.stringify(data));
+
+async function guardarCostosFirestore(key, data){
+  try{
+    const{setDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await setDoc(docFn(db,'costos',key), data, {merge:true});
+    _costosCache[key]=data;
+  }catch(e){ console.error('guardarCostos:',e); toast('Error guardando costos: '+e.message,'err'); }
 }
 
 window.costosSemana = function(dir){
@@ -2283,55 +2321,69 @@ window.costosHoy = function(){
 
 function renderCostosPersonalDias(key, fechas, data){
   const personal = data.personal || {};
-  let html = '';
-  // DEBUG temporal
-  console.log('[COSTOS] ARRIENDOS total:', ARRIENDOS.length, '| fechas muestra:', ARRIENDOS.slice(0,3).map(a=>a.fecha+'|'+a.estado));
-  let hayDiasConArr = false;
+  // Tabla semanal completa — todos los 7 días
+  let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+  // Header con nombres de trabajadores
+  html += '<thead><tr style="background:var(--bg3)">';
+  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border);white-space:nowrap">Día</th>';
+  html += '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border)">Arr.</th>';
+  TRABAJADORES.forEach(t=>{
+    html += `<th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border);white-space:nowrap">${t.nombre.split(' ')[0]}<br><span style="font-weight:400;color:var(--green)">$${(t.monto/1000).toFixed(0)}k</span></th>`;
+  });
+  html += '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border)">Otro</th>';
+  html += '<th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border)">Total día</th>';
+  html += '</tr></thead><tbody>';
+
+  let totalSemana = 0;
   fechas.forEach((dt, i) => {
     const fStr = fechaToStr(dt);
     const dKey = 'd'+i;
-    const selIds = (personal[dKey] && personal[dKey].trabajadores) || [];
-    const esHoy = fechaToStr(dt)===fechaToStr(new Date());
-    // Solo mostrar días con arriendos — comparación robusta
-    const arriendosDia = ARRIENDOS.filter(a=>{
+    const selIds = (personal[dKey]&&personal[dKey].trabajadores)||[];
+    const otroMonto = (personal[dKey]&&personal[dKey].otro)||0;
+    const esHoy = fStr===fechaToStr(new Date());
+    const nArr = ARRIENDOS.filter(a=>{
       if(!a.fecha||a.estado==='Cancelado') return false;
-      // Normalizar: "2026-04-14" → "14/04/2026"
-      let f = a.fecha;
-      if(f.includes('-')&&f.length===10){ const p=f.split('-'); f=p[2]+'/'+p[1]+'/'+p[0]; }
+      let f=a.fecha;
+      if(f.includes('-')&&f.length===10){const p=f.split('-');f=p[2]+'/'+p[1]+'/'+p[0];}
       return f===fStr;
-    });
-    const nArr = arriendosDia.length;
-    if(nArr===0) return;
-    hayDiasConArr = true;
-    html += `<div class="worker-card">
-      <div class="worker-day" style="display:flex;justify-content:space-between;align-items:center">
-        <span>${DIAS_SEM[i]} ${dt.getDate()}/${String(dt.getMonth()+1).padStart(2,'0')}${esHoy?' 📍':''}</span>
-        ${nArr>0?`<span style="font-size:10px;background:rgba(0,113,206,.1);color:var(--blue);padding:2px 8px;border-radius:10px">${nArr} arriendo${nArr>1?'s':''}</span>`:''}
-      </div>
-      <div class="worker-checks">`;
-    TRABAJADORES.forEach(t => {
+    }).length;
+
+    // Calcular total del día
+    let montodia = otroMonto;
+    TRABAJADORES.forEach(t=>{ if(selIds.includes(t.id)) montodia+=t.monto; });
+    totalSemana += montodia;
+
+    const bgRow = esHoy?'background:rgba(0,113,206,.04);':'';
+    html += `<tr style="${bgRow}border-bottom:1px solid var(--border)">`;
+    html += `<td style="padding:8px 10px;font-weight:600;white-space:nowrap">
+      ${DIAS_SEM[i].slice(0,3)} ${dt.getDate()}/${String(dt.getMonth()+1).padStart(2,'0')}
+      ${esHoy?'<span style="font-size:9px;background:var(--blue);color:#fff;padding:1px 5px;border-radius:8px;margin-left:3px">Hoy</span>':''}
+    </td>`;
+    html += `<td style="padding:8px 6px;text-align:center;color:${nArr>0?'var(--blue)':'var(--text3)'};font-weight:${nArr>0?'700':'400'}">${nArr||'—'}</td>`;
+    TRABAJADORES.forEach(t=>{
       const sel = selIds.includes(t.id);
-      html += `<label class="worker-check ${sel?'sel':''}" id="wc-${dKey}-${t.id}">
+      html += `<td style="padding:8px 6px;text-align:center">
         <input type="checkbox" data-dia="${dKey}" data-tid="${t.id}" ${sel?'checked':''}
-          onchange="toggleWorker(this)">
-        <span class="worker-name">${t.nombre}</span>
-        <span class="worker-monto">$${t.monto.toLocaleString('es-CL')}</span>
-      </label>`;
+          onchange="toggleWorker(this)"
+          style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
+      </td>`;
     });
-    // Opción "Otro"
-    const otroMonto = (personal[dKey] && personal[dKey].otro) || '';
-    html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border-radius:8px;border:1.5px solid var(--border)">
-      <input type="checkbox" data-dia="${dKey}" data-tid="otro" id="chk-otro-${dKey}"
-        ${otroMonto?'checked':''} onchange="toggleWorker(this)"
-        style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
-      <span class="worker-name" style="flex:1">Otro</span>
-      <input type="number" id="otro-monto-${dKey}" placeholder="$0" value="${otroMonto}"
-        style="width:90px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:'Sora',sans-serif;outline:none;color:var(--text)"
-        oninput="document.getElementById('chk-otro-${dKey}').checked=!!this.value">
-    </div>`;
-    html += '</div></div>';
+    html += `<td style="padding:8px 6px;text-align:center">
+      <input type="number" id="otro-monto-${dKey}" placeholder="0" value="${otroMonto||''}"
+        style="width:70px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:11px;font-family:'Sora',sans-serif;outline:none;color:var(--text);text-align:right">
+    </td>`;
+    html += `<td style="padding:8px 10px;text-align:right;font-weight:700;color:${montodia>0?'var(--orange)':'var(--text3)'}">
+      ${montodia>0?'$'+montodia.toLocaleString('es-CL'):'—'}
+    </td>`;
+    html += '</tr>';
   });
-  if(!hayDiasConArr) html = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">📭 Sin arriendos esta semana</div>';
+
+  // Fila total
+  html += `<tr style="background:var(--bg3);font-weight:800">
+    <td colspan="${TRABAJADORES.length+3}" style="padding:10px 10px;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Total personal semana</td>
+    <td style="padding:10px 10px;text-align:right;font-size:14px;font-weight:800;color:var(--orange)">$${totalSemana.toLocaleString('es-CL')}</td>
+  </tr>`;
+  html += '</tbody></table></div>';
   document.getElementById('costosPersonalDias').innerHTML = html;
 }
 
@@ -2342,10 +2394,11 @@ window.toggleWorker = function(el){
   }
 };
 
-window.guardarPersonal = function(){
+window.guardarPersonal = async function(){
   const key = getCostosKey(costosSemanaOff);
-  const data = cargarCostos(key);
+  const data = await cargarCostos(key);
   if(!data.personal) data.personal = {};
+  // Guardar toda la semana (7 días)
   for(let i=0;i<7;i++){
     const dKey = 'd'+i;
     const checks = document.querySelectorAll(`input[data-dia="${dKey}"]`);
@@ -2363,20 +2416,20 @@ window.guardarPersonal = function(){
     });
     data.personal[dKey] = {trabajadores:selIds, otro};
   }
-  guardarCostosLocal(key, data);
+  await guardarCostosFirestore(key, data);
   toast('✅ Personal guardado','ok');
   renderCostos();
 };
 
-window.guardarBencina = function(){
+window.guardarBencina = async function(){
   const key = getCostosKey(costosSemanaOff);
-  const data = cargarCostos(key);
+  const data = await cargarCostos(key);
   data.bencina = {
     foton1: parseInt(document.getElementById('ben-foton1').value)||0,
     foton2: parseInt(document.getElementById('ben-foton2').value)||0,
     brillance: parseInt(document.getElementById('ben-brillance').value)||0,
   };
-  guardarCostosLocal(key, data);
+  await guardarCostosFirestore(key, data);
   toast('✅ Bencina guardada','ok');
   renderCostos();
 };
@@ -2453,10 +2506,11 @@ function renderCostosResumen(detalleDias, ben){
   document.getElementById('costosResumen').innerHTML = html;
 }
 
-window.renderCostos = function(){
+window.renderCostos = async function(){
   const key = getCostosKey(costosSemanaOff);
   const fechas = getCostosSemanaFechas(costosSemanaOff);
-  const data = cargarCostos(key);
+  document.getElementById('costosPersonalDias').innerHTML='<div style="text-align:center;padding:20px;color:var(--text3)">⏳ Cargando...</div>';
+  const data = await cargarCostos(key);
   const sem = isoWeek(fechas[0]);
   const lun = fechas[0], dom = fechas[6];
   document.getElementById('costosLabel').textContent =
