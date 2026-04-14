@@ -101,7 +101,7 @@ tr:hover td{background:var(--bg3)}
 .cal-mini-inv{display:flex;flex-direction:column;gap:2px}
 .cal-inv-row{display:flex;align-items:center;gap:4px;font-size:10px}
 .cal-inv-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.dot-green{background:var(--green)}.dot-yellow{background:var(--orange)}.dot-orange{background:var(--orange)}.dot-red{background:var(--red)}
+.dot-green{background:var(--green)}.dot-yellow{background:var(--red)}.dot-orange{background:var(--red)}.dot-red{background:var(--red)}
 .cal-inv-name{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .cal-inv-count{font-weight:700;font-size:10px}
 .cal-inv-count.green{color:var(--green)}.cal-inv-count.yellow{color:var(--yellow)}.cal-inv-count.orange{color:var(--orange)}.cal-inv-count.red{color:var(--red)}
@@ -332,7 +332,6 @@ select:focus{border-color:var(--blue)}
     <!-- Leyenda -->
     <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
       <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--green);display:inline-block"></span>Disponible</span>
-      <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--orange);display:inline-block"></span>Parcial</span>
       <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--red);display:inline-block"></span>Agotado</span>
       <span style="font-size:11px;color:var(--text3);margin-left:4px">· Solo se muestran días con arriendos</span>
     </div>
@@ -1321,7 +1320,7 @@ function calcularUsados(fecha){
 
 function getColor(disponibles, total){
   if(disponibles>=total) return{dot:'dot-green',cls:'green',label:'Libre'};
-  if(disponibles>0) return{dot:'dot-orange',cls:'orange',label:`${disponibles}/${total} libre${disponibles>1?'s':''}`};
+  if(disponibles>0) return{dot:'dot-red',cls:'red',label:`${disponibles}/${total} libre${disponibles>1?'s':''}`};
   return{dot:'dot-red',cls:'red',label:'Lleno'};
 }
 
@@ -1440,8 +1439,8 @@ function renderCalendario(){
       const r=resumen[cat];
       if(r.total===0) continue;
       const pct=r.disp/r.total;
-      const dot=pct>=1?'dot-green':pct>0?'dot-orange':'dot-red';
-      const cls=pct>=1?'green':pct>0?'orange':'red';
+      const dot=pct>=1?'dot-green':'dot-red';
+      const cls=pct>=1?'green':'red';
       dotsHtml+=`<div class="cal-inv-row">
         <div class="cal-inv-dot ${dot}"></div>
         <span class="cal-inv-name">${cat}</span>
@@ -2155,9 +2154,8 @@ window.renderDisponibilidad=function(){
   document.getElementById('dispResumen').innerHTML=`
     <div style="font-size:15px;font-weight:800;color:var(--blue3);margin-bottom:12px">${diaNom} ${dt.getDate()} de ${mesNom} ${dt.getFullYear()} · ${arriendosDia.length} arriendo(s)</div>
     <div class="disp-resumen">
-      <div class="disp-res-item"><div class="disp-res-num" style="color:var(--green)">${libres}</div><div style="color:var(--text3)">🟢 Libres</div></div>
-      <div class="disp-res-item"><div class="disp-res-num" style="color:var(--orange)">${parciales}</div><div style="color:var(--text3)">🟠 Parciales</div></div>
-      <div class="disp-res-item"><div class="disp-res-num" style="color:var(--red)">${ocupados}</div><div style="color:var(--text3)">🔴 Agotados</div></div>
+      <div class="disp-res-item"><div class="disp-res-num" style="color:var(--green)">${libres}</div><div style="color:var(--text3)">🟢 Disponibles</div></div>
+      <div class="disp-res-item"><div class="disp-res-num" style="color:var(--red)">${parciales+ocupados}</div><div style="color:var(--text3)">🔴 Agotados</div></div>
     </div>`;
 
   // Grid compacto 2 columnas por categoría
@@ -2176,7 +2174,7 @@ window.renderDisponibilidad=function(){
       const pct=disp/item.total;
       let cls,dcls,badge;
       if(pct>=1){cls='disponible';dcls='green';badge=item.total===1?'Libre':disp+'/'+item.total+' libres';}
-      else if(pct>0.5){cls='parcial';dcls='orange';badge=disp+'/'+item.total+' libres';}
+      else if(pct>0.5){cls='parcial';dcls='red';badge=disp+'/'+item.total+' libres';}
       else if(pct>0){cls='casi';dcls='red';badge=disp+'/'+item.total+' libre';}
       else{cls='ocupado';dcls='red';badge='Ocupado';}
       const quien=ocu>0?arriendosDia.filter(a=>a.equipos&&a.equipos.includes(item.nombre)).map(a=>a.cliente.split(' ')[0]).join(', '):'';
