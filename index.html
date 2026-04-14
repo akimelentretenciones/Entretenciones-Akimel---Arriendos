@@ -526,6 +526,27 @@ select:focus{border-color:var(--blue)}
       <div id="costosResumen"></div>
     </div>
 
+    <!-- Gráfico histórico por semana -->
+    <div style="background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div style="font-size:13px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.8px">📊 Ingresos vs Gastos por semana</div>
+        <select id="chartSemanasRango" onchange="renderCostosChart()" style="font-size:12px;padding:5px 10px">
+          <option value="8">Últimas 8 semanas</option>
+          <option value="12">Últimas 12 semanas</option>
+          <option value="16">Últimas 16 semanas</option>
+          <option value="26">Últimas 26 semanas</option>
+        </select>
+      </div>
+      <div style="position:relative;height:260px">
+        <canvas id="cCostosHistorico"></canvas>
+      </div>
+      <div style="display:flex;gap:16px;justify-content:center;margin-top:14px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--green);display:inline-block"></span>Ingresos</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--orange);display:inline-block"></span>Personal</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--yellow);display:inline-block"></span>Bencina</span>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2623,6 +2644,156 @@ window.renderCostos = async function(){
   renderCostosPersonalDias(key, fechas, data);
   renderCostosKpis(ingresos, totalPersonal, totalBencina);
   renderCostosResumen(detalleDias, ben);
+  renderCostosChart();
+};
+
+// ── Gráfico histórico Ingresos vs Gastos por semana ──
+let _chartCostosHist = null;
+
+window.renderCostosChart = async function(){
+  const n = parseInt(document.getElementById('chartSemanasRango')?.value || '8');
+  const canvas = document.getElementById('cCostosHistorico');
+  if(!canvas) return;
+
+  // Mostrar loading
+  canvas.style.opacity = '0.4';
+
+  // Calcular el rango de semanas desde hoy hacia atrás
+  // Offset actual centrado en costosSemanaOff (semana visible)
+  const baseOff = costosSemanaOff;
+  const semanas = [];
+  for(let i = n - 1; i >= 0; i--){
+    const off = baseOff - i;
+    const key = getCostosKey(off);
+    const fechas = getCostosSemanaFechas(off);
+    semanas.push({ key, fechas, off });
+  }
+
+  // Cargar en paralelo las semanas no cacheadas
+  const sinCache = semanas.filter(s => !_costosCache[s.key]);
+  if(sinCache.length){
+    await Promise.all(sinCache.map(s => cargarCostos(s.key)));
+  }
+
+  // Armar datos para el gráfico
+  const labels = [], dataIngresos = [], dataPersonal = [], dataBencina = [], dataMargen = [];
+
+  semanas.forEach(({ key, fechas }) => {
+    const sem = isoWeek(fechas[0]);
+    const anio = fechas[0].getFullYear();
+    labels.push(`S${sem}\n${String(fechas[0].getDate()).padStart(2,'0')}/${String(fechas[0].getMonth()+1).padStart(2,'0')}`);
+
+    // Ingresos de esa semana
+    const ingSem = ARRIENDOS.filter(a => {
+      if(!a.fecha || a.estado === 'Cancelado') return false;
+      const dt = parseFechaArr(a.fecha);
+      if(!dt) return false;
+      return isoWeek(dt) === sem && dt.getFullYear() === anio;
+    }).reduce((s, a) => s + (a.pendiente || 0), 0);
+
+    // Costos desde cache
+    const d = _costosCache[key] || {};
+    const ben = d.bencina || {};
+    const totalBen = (ben.foton1||0) + (ben.foton2||0) + (ben.brillance||0);
+    const pers = d.personal || {};
+    let totalPers = 0;
+    Object.values(pers).forEach(dia => {
+      (dia.trabajadores||[]).forEach(tid => {
+        const t = TRABAJADORES.find(x => x.id === tid);
+        if(t) totalPers += t.monto;
+      });
+      totalPers += (dia.otro || 0);
+    });
+
+    dataIngresos.push(ingSem);
+    dataPersonal.push(totalPers);
+    dataBencina.push(totalBen);
+    dataMargen.push(ingSem - totalPers - totalBen);
+  });
+
+  canvas.style.opacity = '1';
+
+  // Destruir chart anterior si existe
+  if(_chartCostosHist){ try{ _chartCostosHist.destroy(); }catch{} }
+
+  _chartCostosHist = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Ingresos',
+          data: dataIngresos,
+          backgroundColor: 'rgba(95,180,70,0.85)',
+          borderRadius: 4,
+          order: 2,
+        },
+        {
+          label: 'Personal',
+          data: dataPersonal,
+          backgroundColor: 'rgba(250,100,0,0.85)',
+          borderRadius: 4,
+          stack: 'costos',
+          order: 3,
+        },
+        {
+          label: 'Bencina',
+          data: dataBencina,
+          backgroundColor: 'rgba(255,194,32,0.85)',
+          borderRadius: 4,
+          stack: 'costos',
+          order: 3,
+        },
+        {
+          label: 'Margen',
+          data: dataMargen,
+          type: 'line',
+          borderColor: '#0071ce',
+          backgroundColor: 'rgba(0,113,206,0.12)',
+          pointBackgroundColor: '#0071ce',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.35,
+          fill: false,
+          order: 1,
+          yAxisID: 'y',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.y;
+              const prefix = ctx.dataset.label + ': ';
+              return prefix + '$' + Math.round(v).toLocaleString('es-CL');
+            }
+          }
+        },
+        datalabels: { display: false },
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 9 }, color: '#7a93aa' },
+          grid: { display: false },
+        },
+        y: {
+          ticks: {
+            font: { size: 9 },
+            color: '#7a93aa',
+            callback: v => v >= 1000000 ? '$'+(v/1000000).toFixed(1)+'M' : v >= 1000 ? '$'+(v/1000).toFixed(0)+'k' : '$'+v
+          },
+          grid: { color: 'rgba(0,113,206,0.06)' },
+        }
+      },
+      layout: { padding: { top: 10 } }
+    }
+  });
 };
 
 window.toast=function(msg,tipo='ok'){
