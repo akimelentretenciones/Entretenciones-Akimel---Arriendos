@@ -2270,7 +2270,26 @@ window.goTab=function(tab){
       mostrarInventarioDia(hoy.getDate());
   }
   if(tab==='costos') renderCostos();
-  if(tab==='rutas') setHoyRutas();
+  if(tab==='rutas'){
+    setHoyRutas();
+    // Inicializar mapa base al abrir la pestaña (requiere contenedor visible)
+    setTimeout(()=>{
+      if(!_rutaMapa){
+        _rutaMapa = L.map('rutaMapa').setView([ORIGEN.lat, ORIGEN.lng], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+          attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>',maxZoom:19
+        }).addTo(_rutaMapa);
+        const iconOrigen = L.divIcon({
+          html:`<div style="background:#041e42;color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)">🏠</div>`,
+          className:'',iconAnchor:[17,17]
+        });
+        L.marker([ORIGEN.lat,ORIGEN.lng],{icon:iconOrigen})
+          .bindPopup(`<b>Base</b><br>${ORIGEN.label}`).addTo(_rutaMapa);
+      } else {
+        _rutaMapa.invalidateSize();
+      }
+    }, 100);
+  }
 };
 
 // ===== DISPONIBILIDAD RÁPIDA =====
@@ -3467,7 +3486,15 @@ window.calcularRutas = async function(){
         <div style="font-size:14px">Sin arriendos para este día</div>
       </div>`;
     document.getElementById('rutaDetalle').innerHTML = '';
-    if(_rutaMapa) _rutaMapa.remove(); _rutaMapa = null;
+    if(_rutaMapa){
+      _rutaMapa.eachLayer(l=>{ if(!(l instanceof L.TileLayer)) _rutaMapa.removeLayer(l); });
+      const iconOrigen = L.divIcon({
+        html:`<div style="background:#041e42;color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)">🏠</div>`,
+        className:'',iconAnchor:[17,17]
+      });
+      L.marker([ORIGEN.lat,ORIGEN.lng],{icon:iconOrigen}).bindPopup(`<b>Base</b><br>${ORIGEN.label}`).addTo(_rutaMapa);
+      _rutaMapa.setView([ORIGEN.lat,ORIGEN.lng],12);
+    }
     return;
   }
 
@@ -3492,22 +3519,26 @@ window.calcularRutas = async function(){
   // Distribuir en furgones
   const grupos = distribuirFurgones(conGeo);
 
-  // Inicializar mapa
-  if(_rutaMapa){ _rutaMapa.remove(); _rutaMapa = null; }
-  _rutaMapa = L.map('rutaMapa').setView([ORIGEN.lat, ORIGEN.lng], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    maxZoom: 19
-  }).addTo(_rutaMapa);
+  // Inicializar o limpiar mapa
+  if(!_rutaMapa){
+    _rutaMapa = L.map('rutaMapa').setView([ORIGEN.lat, ORIGEN.lng], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>',maxZoom:19
+    }).addTo(_rutaMapa);
+  } else {
+    // Limpiar capas previas excepto el tile layer
+    _rutaMapa.eachLayer(layer => {
+      if(!(layer instanceof L.TileLayer)) _rutaMapa.removeLayer(layer);
+    });
+  }
 
   // Marker de origen
   const iconOrigen = L.divIcon({
-    html: `<div style="background:#041e42;color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)">🏠</div>`,
-    className: '', iconAnchor: [17, 17]
+    html:`<div style="background:#041e42;color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)">🏠</div>`,
+    className:'',iconAnchor:[17,17]
   });
-  L.marker([ORIGEN.lat, ORIGEN.lng], { icon: iconOrigen })
-    .bindPopup(`<b>Base</b><br>${ORIGEN.label}`)
-    .addTo(_rutaMapa);
+  L.marker([ORIGEN.lat,ORIGEN.lng],{icon:iconOrigen})
+    .bindPopup(`<b>Base</b><br>${ORIGEN.label}`).addTo(_rutaMapa);
 
   // Procesar cada furgón
   const furgonesData = [];
