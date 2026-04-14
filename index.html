@@ -2966,8 +2966,116 @@ window.renderCostosChart = async function(){
 
 window.renderCostosChartDash = async function(){
   if(_chartCostosDash){ try{ _chartCostosDash.destroy(); }catch{} _chartCostosDash=null; }
-  const result = await _renderCostosChartEn('cCostosHistoricoDash', null, null, 52);
-  if(result) _chartCostosDash = result.chart;
+
+  // Leer filtros activos del Dashboard
+  const anioFiltro = (document.getElementById('dashFiltroAnio')?.value||'').trim();
+  const mesFiltro  = (document.getElementById('dashFiltroMes')?.value||'').trim();
+  const semFiltro  = (document.getElementById('dashFiltroSemana')?.value||'').trim();
+
+  const canvas = document.getElementById('cCostosHistoricoDash');
+  if(!canvas) return;
+  canvas.style.opacity = '0.4';
+
+  // Construir lista de semanas desde ARRIENDOS filtrados (mismo criterio que renderDashboard)
+  const semSet = new Map(); // "YYYY-Www" → {key, fechas}
+  ARRIENDOS.forEach(a => {
+    if(!a.fecha || a.estado === 'Cancelado') return;
+    const p = a.fecha.split('/');
+    if(p.length < 3 || p[2].length !== 4) return;
+    if(anioFiltro && p[2] !== anioFiltro) return;
+    if(mesFiltro  && p[1] !== mesFiltro)  return;
+    const dt = parseFechaArr(a.fecha);
+    if(!dt) return;
+    const sem  = isoWeek(dt);
+    if(semFiltro && String(sem) !== semFiltro) return;
+    const anio = dt.getFullYear();
+    const key  = anio + '-W' + String(sem).padStart(2,'0');
+    if(!semSet.has(key)){
+      // Calcular lunes de esa semana
+      const lun = new Date(dt);
+      const dow = lun.getDay()===0?6:lun.getDay()-1;
+      lun.setDate(lun.getDate()-dow);
+      const fechas = Array.from({length:7},(_,i)=>{ const d=new Date(lun); d.setDate(lun.getDate()+i); return d; });
+      semSet.set(key, { key, fechas });
+    }
+  });
+
+  // Ordenar cronológicamente
+  const semanas = [...semSet.values()].sort((a,b)=>a.fechas[0]-b.fechas[0]);
+
+  // Cargar costos no cacheados
+  const sinCache = semanas.filter(s => !Object.prototype.hasOwnProperty.call(_costosCache, s.key));
+  if(sinCache.length) await Promise.all(sinCache.map(s => cargarCostos(s.key)));
+
+  const labels=[], dataIngresos=[], dataPersonal=[], dataBencina=[], dataMargen=[], esEstimado=[];
+
+  semanas.forEach(({ key, fechas }) => {
+    const sem = isoWeek(fechas[0]), anio = fechas[0].getFullYear();
+    labels.push(`S${sem}\n${String(fechas[0].getDate()).padStart(2,'0')}/${String(fechas[0].getMonth()+1).padStart(2,'0')}`);
+
+    const ingSem = ARRIENDOS.filter(a => {
+      if(!a.fecha || a.estado === 'Cancelado') return false;
+      const dt = parseFechaArr(a.fecha);
+      if(!dt || isoWeek(dt) !== sem || dt.getFullYear() !== anio) return false;
+      // Aplicar mismos filtros
+      const p = a.fecha.split('/');
+      if(anioFiltro && p[2] !== anioFiltro) return false;
+      if(mesFiltro  && p[1] !== mesFiltro)  return false;
+      if(semFiltro  && String(isoWeek(dt)) !== semFiltro) return false;
+      return true;
+    }).reduce((s,a) => s+(a.pendiente||0), 0);
+
+    const d = _costosCache[key] || {};
+    const ben = d.bencina || {};
+    const totalBen = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
+    const pers = d.personal || {};
+    let totalPers = 0;
+    Object.values(pers).forEach(dia => {
+      (dia.trabajadores||[]).forEach(tid => { const t=TRABAJADORES.find(x=>x.id===tid); if(t) totalPers+=t.monto; });
+      totalPers += (dia.otro||0);
+    });
+
+    dataIngresos.push(ingSem);
+    dataPersonal.push(totalPers);
+    dataBencina.push(totalBen);
+    dataMargen.push(ingSem - totalPers - totalBen);
+    esEstimado.push(!!d._estimado);
+  });
+
+  canvas.style.opacity = '1';
+
+  const colPers = esEstimado.map(e => e ? 'rgba(250,100,0,0.35)' : 'rgba(250,100,0,0.85)');
+  const colBen  = esEstimado.map(e => e ? 'rgba(255,194,32,0.35)' : 'rgba(255,194,32,0.85)');
+
+  _chartCostosDash = new Chart(canvas, {
+    type:'bar',
+    data:{ labels, datasets:[
+      { label:'Ingresos', data:dataIngresos, backgroundColor:'rgba(95,180,70,0.85)', borderRadius:4, order:2 },
+      { label:'Personal', data:dataPersonal, backgroundColor:colPers, borderRadius:4, stack:'costos', order:3 },
+      { label:'Bencina',  data:dataBencina,  backgroundColor:colBen,  borderRadius:4, stack:'costos', order:3 },
+      { label:'Margen', data:dataMargen, type:'line',
+        borderColor:'#0071ce', backgroundColor:'rgba(0,113,206,0.10)',
+        pointBackgroundColor:esEstimado.map(e=>e?'#aac4e0':'#0071ce'),
+        pointRadius:4, pointHoverRadius:7, tension:0.35, fill:false, order:1, yAxisID:'y' }
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ callbacks:{
+          title: items => items[0]?.label+(esEstimado[items[0]?.dataIndex]?' ⚡ estimado':''),
+          label: ctx => ctx.dataset.label+': $'+Math.round(ctx.parsed.y).toLocaleString('es-CL')
+        }},
+        datalabels:{ display:false },
+      },
+      scales:{
+        x:{ ticks:{ font:{size:9}, color:'#7a93aa', maxRotation:60 }, grid:{ display:false } },
+        y:{ ticks:{ font:{size:9}, color:'#7a93aa', callback: v => v>=1000000?'$'+(v/1000000).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'k':'$'+v }, grid:{ color:'rgba(0,113,206,0.06)' } }
+      },
+      layout:{ padding:{ top:10 } }
+    }
+  });
 };
 
 // ── Modal edición semana histórica ──
