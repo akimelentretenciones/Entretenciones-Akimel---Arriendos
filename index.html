@@ -2371,7 +2371,7 @@ function renderCostosPersonalDias(key, fechas, data){
       </td>`;
     });
     html += `<td style="padding:8px 6px;text-align:center">
-      <input type="number" id="otro-monto-${dKey}" placeholder="0" value="${otroMonto||''}"
+      <input type="number" id="otro-monto-${dKey}" placeholder="" value="${otroMonto||''}"
         style="width:70px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:11px;font-family:'Sora',sans-serif;outline:none;color:var(--text);text-align:right"
         oninput="recalcularTotalDia('${dKey}')">
     </td>`;
@@ -2388,9 +2388,19 @@ function renderCostosPersonalDias(key, fechas, data){
   </tr>`;
   html += '</tbody></table></div>';
   document.getElementById('costosPersonalDias').innerHTML = html;
+  // Recalcular todos los totales después de renderizar (lee valores actuales de inputs)
+  setTimeout(()=>{
+    for(let i=0;i<7;i++) recalcularTotalDia('d'+i);
+  }, 0);
 }
 
+// Valores temporales de "otro" antes de guardar
+const _otroTemp = {};
+
 window.recalcularTotalDia = function(dKey){
+  // Guardar valor temporal
+  const otroEl2 = document.getElementById('otro-monto-'+dKey);
+  if(otroEl2) _otroTemp[dKey] = parseInt(otroEl2.value)||0;
   // Leer checkboxes marcados
   let monto = 0;
   document.querySelectorAll(`input[data-dia="${dKey}"][data-tid]`).forEach(c=>{
