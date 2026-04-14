@@ -496,8 +496,8 @@ select:focus{border-color:var(--blue)}
       <button class="btn btn-primary btn-sm" onclick="costosHoy()">Esta semana</button>
       <button class="btn btn-sm" onclick="generarCostosHistoricos()"
         style="background:rgba(250,100,0,.1);color:var(--orange);border:1.5px solid rgba(250,100,0,.3);margin-left:auto"
-        title="Estima gastos al 10% para semanas históricas sin datos">
-        ⚡ Generar 10% histórico
+        title="Estima gastos al 20% (14% personal + 6% bencina) para semanas históricas sin datos">
+        ⚡ Generar 20% histórico
       </button>
     </div>
 
@@ -2804,7 +2804,7 @@ window.generarCostosHistoricos = async function(){
   }
 
   await Promise.all(promesas);
-  toast(`✅ ${guardadas} semanas estimadas al 10% guardadas`,'ok');
+  toast(`✅ ${guardadas} semanas estimadas al 20% guardadas`,'ok');
   renderCostosChart();
 };
 
@@ -2977,6 +2977,17 @@ window.renderCostosChartDash = async function(){
 
   // Construir lista de semanas desde ARRIENDOS filtrados (mismo criterio que renderDashboard)
   const semSet = new Map(); // "YYYY-Www" → {key, fechas}
+
+  // Función auxiliar para agregar semana al set
+  const addSemana = (key, dt) => {
+    if(semSet.has(key)) return;
+    const lun = new Date(dt);
+    const dow = lun.getDay()===0?6:lun.getDay()-1;
+    lun.setDate(lun.getDate()-dow);
+    const fechas = Array.from({length:7},(_,i)=>{ const d=new Date(lun); d.setDate(lun.getDate()+i); return d; });
+    semSet.set(key, { key, fechas });
+  };
+
   ARRIENDOS.forEach(a => {
     if(!a.fecha || a.estado === 'Cancelado') return;
     const p = a.fecha.split('/');
@@ -2989,18 +3000,41 @@ window.renderCostosChartDash = async function(){
     if(semFiltro && String(sem) !== semFiltro) return;
     const anio = dt.getFullYear();
     const key  = anio + '-W' + String(sem).padStart(2,'0');
-    if(!semSet.has(key)){
-      // Calcular lunes de esa semana
-      const lun = new Date(dt);
-      const dow = lun.getDay()===0?6:lun.getDay()-1;
-      lun.setDate(lun.getDate()-dow);
-      const fechas = Array.from({length:7},(_,i)=>{ const d=new Date(lun); d.setDate(lun.getDate()+i); return d; });
-      semSet.set(key, { key, fechas });
-    }
+    addSemana(key, dt);
+  });
+
+  // También incluir semanas del cache de costos que coincidan con el filtro
+  Object.keys(_costosCache).forEach(key => {
+    if(semSet.has(key)) return;
+    // key formato: "YYYY-Www"
+    const m = key.match(/^(\d{4})-W(\d{2})$/);
+    if(!m) return;
+    const anio = m[1], semNum = parseInt(m[2]);
+    if(anioFiltro && anio !== anioFiltro) return;
+    if(semFiltro  && String(semNum) !== semFiltro) return;
+    // Calcular fecha del lunes de esa semana ISO
+    const jan4 = new Date(parseInt(anio), 0, 4);
+    const lun = new Date(jan4);
+    lun.setDate(jan4.getDate() - (jan4.getDay()===0?6:jan4.getDay()-1) + (semNum-1)*7);
+    if(mesFiltro && String(lun.getMonth()+1).padStart(2,'0') !== mesFiltro) return;
+    addSemana(key, lun);
   });
 
   // Ordenar cronológicamente
   const semanas = [...semSet.values()].sort((a,b)=>a.fechas[0]-b.fechas[0]);
+
+  canvas.style.opacity = '1';
+
+  if(!semanas.length){
+    // Sin datos para el período filtrado
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#7a93aa';
+    ctx.font = '13px Sora, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Sin datos para el período seleccionado', canvas.width/2, canvas.height/2);
+    return;
+  }
 
   // Cargar costos no cacheados
   const sinCache = semanas.filter(s => !Object.prototype.hasOwnProperty.call(_costosCache, s.key));
@@ -3010,8 +3044,6 @@ window.renderCostosChartDash = async function(){
 
   semanas.forEach(({ key, fechas }) => {
     const sem = isoWeek(fechas[0]), anio = fechas[0].getFullYear();
-    const dCheck = _costosCache[key] || {};
-    if(dCheck._estimado) return; // excluir estimados
     labels.push(`S${sem}\n${anio}`);
 
     const ingSem = ARRIENDOS.filter(a => {
@@ -3043,17 +3075,21 @@ window.renderCostosChartDash = async function(){
     esEstimado.push(!!d._estimado);
   });
 
-  canvas.style.opacity = '1';
+  // Colores: estimados más tenues
+  const colBenD  = esEstimado.map(e => e ? 'rgba(255,194,32,0.30)' : 'rgba(255,194,32,0.85)');
+  const colPersD = esEstimado.map(e => e ? 'rgba(250,100,0,0.30)'  : 'rgba(250,100,0,0.85)');
+  const colMarD  = esEstimado.map(e => e ? 'rgba(95,180,70,0.30)'  : 'rgba(95,180,70,0.85)');
+  const colLineD = esEstimado.map(e => e ? '#aac4e0' : '#0071ce');
 
   _chartCostosDash = new Chart(canvas, {
     type:'bar',
     data:{ labels, datasets:[
-      { label:'Bencina',  data:dataBencina,  backgroundColor:'rgba(255,194,32,0.85)', borderRadius:0, stack:'barra', order:2 },
-      { label:'Personal', data:dataPersonal, backgroundColor:'rgba(250,100,0,0.85)',  borderRadius:0, stack:'barra', order:2 },
-      { label:'Margen',   data:dataMargen,   backgroundColor:'rgba(95,180,70,0.85)',  borderRadius:4, stack:'barra', order:2 },
+      { label:'Bencina',  data:dataBencina,  backgroundColor:colBenD,  borderRadius:0, stack:'barra', order:2 },
+      { label:'Personal', data:dataPersonal, backgroundColor:colPersD, borderRadius:0, stack:'barra', order:2 },
+      { label:'Margen',   data:dataMargen,   backgroundColor:colMarD,  borderRadius:4, stack:'barra', order:2 },
       { label:'Ingreso total', data:dataIngresos, type:'line',
         borderColor:'#0071ce', backgroundColor:'rgba(0,113,206,0.10)',
-        pointBackgroundColor:'#0071ce',
+        pointBackgroundColor:colLineD,
         pointRadius:4, pointHoverRadius:7, tension:0.35, fill:false, order:1, yAxisID:'y' }
     ]},
     options:{
@@ -3066,7 +3102,7 @@ window.renderCostosChartDash = async function(){
           label: ctx => ctx.dataset.label+': $'+Math.round(ctx.parsed.y).toLocaleString('es-CL')
         }},
         datalabels:{
-          display: ctx => ctx.datasetIndex === 0, // solo en dataset Margen (primer stack = base)
+          display: ctx => ctx.datasetIndex === 2 && !esEstimado[ctx.dataIndex],
           anchor:'end', align:'top',
           font:{ size:8, weight:'700' },
           color:'#041e42',
