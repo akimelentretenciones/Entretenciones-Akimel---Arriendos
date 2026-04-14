@@ -3075,21 +3075,15 @@ window.renderCostosChartDash = async function(){
     esEstimado.push(!!d._estimado);
   });
 
-  // Colores: estimados más tenues
-  const colBenD  = esEstimado.map(e => e ? 'rgba(255,194,32,0.30)' : 'rgba(255,194,32,0.85)');
-  const colPersD = esEstimado.map(e => e ? 'rgba(250,100,0,0.30)'  : 'rgba(250,100,0,0.85)');
-  const colMarD  = esEstimado.map(e => e ? 'rgba(95,180,70,0.30)'  : 'rgba(95,180,70,0.85)');
-  const colLineD = esEstimado.map(e => e ? '#aac4e0' : '#0071ce');
-
   _chartCostosDash = new Chart(canvas, {
     type:'bar',
     data:{ labels, datasets:[
-      { label:'Bencina',  data:dataBencina,  backgroundColor:colBenD,  borderRadius:0, stack:'barra', order:2 },
-      { label:'Personal', data:dataPersonal, backgroundColor:colPersD, borderRadius:0, stack:'barra', order:2 },
-      { label:'Margen',   data:dataMargen,   backgroundColor:colMarD,  borderRadius:4, stack:'barra', order:2 },
+      { label:'Bencina',  data:dataBencina,  backgroundColor:'rgba(255,194,32,0.85)', borderRadius:0, stack:'barra', order:2 },
+      { label:'Personal', data:dataPersonal, backgroundColor:'rgba(250,100,0,0.85)',  borderRadius:0, stack:'barra', order:2 },
+      { label:'Margen',   data:dataMargen,   backgroundColor:'rgba(95,180,70,0.85)',  borderRadius:4, stack:'barra', order:2 },
       { label:'Ingreso total', data:dataIngresos, type:'line',
         borderColor:'#0071ce', backgroundColor:'rgba(0,113,206,0.10)',
-        pointBackgroundColor:colLineD,
+        pointBackgroundColor:'#0071ce',
         pointRadius:4, pointHoverRadius:7, tension:0.35, fill:false, order:1, yAxisID:'y' }
     ]},
     options:{
