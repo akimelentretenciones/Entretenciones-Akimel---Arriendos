@@ -293,6 +293,27 @@ select:focus{border-color:var(--blue)}
     <div class="kpi green"><div class="kpi-label">Margen neto</div><div class="kpi-value" id="k5">—</div><div class="kpi-sub" id="k5s">—</div></div>
   </div>
 
+  <!-- Gráfico Ingresos vs Gastos (compartido con Costos) -->
+  <div class="chart-full" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div class="chart-title" style="margin-bottom:0">📊 Ingresos vs Gastos por semana</div>
+      <select id="chartSemanasRangoDash" onchange="renderCostosChartDash()" style="font-size:12px;padding:5px 10px">
+        <option value="8">Últimas 8 semanas</option>
+        <option value="12">Últimas 12 semanas</option>
+        <option value="16">Últimas 16 semanas</option>
+        <option value="26">Últimas 26 semanas</option>
+        <option value="52">Todo el año</option>
+      </select>
+    </div>
+    <div style="position:relative;height:240px"><canvas id="cCostosHistoricoDash"></canvas></div>
+    <div style="display:flex;gap:14px;justify-content:center;margin-top:10px;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:var(--green);display:inline-block"></span>Ingresos</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:var(--orange);display:inline-block"></span>Personal</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:var(--yellow);display:inline-block"></span>Bencina</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><span style="width:12px;height:12px;border-radius:3px;background:rgba(250,100,0,0.3);border:1px dashed var(--orange);display:inline-block"></span>Estimado</span>
+    </div>
+  </div>
+
   <div class="charts-row">
     <div class="chart-card"><div class="chart-title">Monto por Comuna</div><div style="position:relative;height:220px"><canvas id="cComunas"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">Monto por día</div><div style="position:relative;height:220px"><canvas id="cDias"></canvas></div></div>
@@ -2017,6 +2038,9 @@ async function renderDashboard(){
       datalabels:{display:true,anchor:'end',align:'right',font:{size:9,weight:'600'},color:'#041e42',formatter:v=>v}},
       scales:{x:{display:false,grid:{display:false}},y:{ticks:{font:{size:9}},grid:{display:false}}},
       layout:{padding:{right:40,top:8}}}});
+
+  // ── Gráfico Ingresos vs Gastos en Dashboard ──
+  renderCostosChartDash().catch(e=>console.warn('dash costos chart:',e));
 }
 
 // ===== EXPORT =====
@@ -2415,7 +2439,7 @@ function fechaToStr(dt){
 const _costosCache = {};
 
 async function cargarCostos(key){
-  if(_costosCache[key]) return _costosCache[key];
+  if(Object.prototype.hasOwnProperty.call(_costosCache, key)) return _costosCache[key];
   try{
     const{getDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     const snap=await getDoc(docFn(db,'costos',key));
@@ -2752,9 +2776,10 @@ window.generarCostosHistoricos = async function(){
     toast('Sin arriendos históricos encontrados','err'); return;
   }
 
-  // 2. Cargar lo que ya existe en Firestore
+  // 2. Limpiar cache de esas semanas para forzar lectura fresca desde Firestore
   const keysARevisar = Object.keys(ingPorSem);
-  await Promise.all(keysARevisar.filter(k => !_costosCache[k]).map(k => cargarCostos(k)));
+  keysARevisar.forEach(k => delete _costosCache[k]);
+  await Promise.all(keysARevisar.map(k => cargarCostos(k)));
 
   // 3. Para las semanas SIN datos guardados → guardar estimado al 10%
   let guardadas = 0;
@@ -2800,61 +2825,51 @@ window.generarCostosHistoricos = async function(){
 
 // ── Gráfico histórico Ingresos vs Gastos por semana ──
 let _chartCostosHist = null;
-let _chartSemanas = []; // referencia a las semanas renderizadas
+let _chartCostosDash = null;
+let _chartSemanas = []; // referencia a las semanas renderizadas (pestaña Costos)
 
-window.renderCostosChart = async function(){
-  const n = parseInt(document.getElementById('chartSemanasRango')?.value || '8');
-  const canvas = document.getElementById('cCostosHistorico');
-  if(!canvas) return;
+// ── Función compartida para renderizar el gráfico ing vs gastos ──
+async function _renderCostosChartEn(canvasId, rangoSelectId, onClickFn){
+  const n = parseInt(document.getElementById(rangoSelectId)?.value || '8');
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return null;
 
   canvas.style.opacity = '0.4';
 
-  // Construir candidatas: n semanas atrás desde semana actual
-  const baseOff = costosSemanaOff;
   const candidatas = [];
   for(let i = n - 1; i >= 0; i--){
-    const off = baseOff - i;
-    const key = getCostosKey(off);
-    const fechas = getCostosSemanaFechas(off);
-    candidatas.push({ key, fechas, off });
+    const key = getCostosKey(-i);
+    const fechas = getCostosSemanaFechas(-i);
+    candidatas.push({ key, fechas, off: -i });
   }
 
-  // Cargar cache para todas
-  const sinCache = candidatas.filter(s => !_costosCache[s.key]);
+  const sinCache = candidatas.filter(s => !Object.prototype.hasOwnProperty.call(_costosCache, s.key));
   if(sinCache.length) await Promise.all(sinCache.map(s => cargarCostos(s.key)));
 
-  // Filtrar: solo semanas con ingresos O costos cargados
   const semanas = candidatas.filter(({ key, fechas }) => {
-    const sem  = isoWeek(fechas[0]);
-    const anio = fechas[0].getFullYear();
+    const sem = isoWeek(fechas[0]), anio = fechas[0].getFullYear();
     const tieneIngresos = ARRIENDOS.some(a => {
       if(!a.fecha || a.estado === 'Cancelado') return false;
       const dt = parseFechaArr(a.fecha);
       return dt && isoWeek(dt) === sem && dt.getFullYear() === anio;
     });
     const d = _costosCache[key] || {};
-    const ben = d.bencina || {};
-    const pers = d.personal || {};
+    const ben = d.bencina || {}, pers = d.personal || {};
     const tieneCostos = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0) > 0
       || Object.values(pers).some(dia => (dia.trabajadores||[]).length || dia.otro);
     return tieneIngresos || tieneCostos;
   });
 
-  _chartSemanas = semanas;
-
   const labels=[], dataIngresos=[], dataPersonal=[], dataBencina=[], dataMargen=[], esEstimado=[];
 
   semanas.forEach(({ key, fechas }) => {
-    const sem  = isoWeek(fechas[0]);
-    const anio = fechas[0].getFullYear();
+    const sem = isoWeek(fechas[0]), anio = fechas[0].getFullYear();
     labels.push(`S${sem}\n${String(fechas[0].getDate()).padStart(2,'0')}/${String(fechas[0].getMonth()+1).padStart(2,'0')}`);
-
     const ingSem = ARRIENDOS.filter(a => {
       if(!a.fecha || a.estado === 'Cancelado') return false;
       const dt = parseFechaArr(a.fecha);
       return dt && isoWeek(dt) === sem && dt.getFullYear() === anio;
-    }).reduce((s, a) => s + (a.pendiente||0), 0);
-
+    }).reduce((s,a) => s+(a.pendiente||0), 0);
     const d = _costosCache[key] || {};
     const ben = d.bencina || {};
     const totalBen = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
@@ -2864,52 +2879,42 @@ window.renderCostosChart = async function(){
       (dia.trabajadores||[]).forEach(tid => { const t=TRABAJADORES.find(x=>x.id===tid); if(t) totalPers+=t.monto; });
       totalPers += (dia.otro||0);
     });
-
-    dataIngresos.push(ingSem);
-    dataPersonal.push(totalPers);
-    dataBencina.push(totalBen);
-    dataMargen.push(ingSem - totalPers - totalBen);
+    dataIngresos.push(ingSem); dataPersonal.push(totalPers);
+    dataBencina.push(totalBen); dataMargen.push(ingSem - totalPers - totalBen);
     esEstimado.push(!!d._estimado);
   });
 
   canvas.style.opacity = '1';
-  if(_chartCostosHist){ try{ _chartCostosHist.destroy(); }catch{} }
 
-  const colPersonal = esEstimado.map(e => e ? 'rgba(250,100,0,0.35)' : 'rgba(250,100,0,0.85)');
-  const colBencina  = esEstimado.map(e => e ? 'rgba(255,194,32,0.35)' : 'rgba(255,194,32,0.85)');
+  const colPers = esEstimado.map(e => e ? 'rgba(250,100,0,0.35)' : 'rgba(250,100,0,0.85)');
+  const colBen  = esEstimado.map(e => e ? 'rgba(255,194,32,0.35)' : 'rgba(255,194,32,0.85)');
 
-  _chartCostosHist = new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label:'Ingresos', data:dataIngresos, backgroundColor:'rgba(95,180,70,0.85)', borderRadius:4, order:2 },
-        { label:'Personal', data:dataPersonal, backgroundColor:colPersonal, borderRadius:4, stack:'costos', order:3 },
-        { label:'Bencina',  data:dataBencina,  backgroundColor:colBencina,  borderRadius:4, stack:'costos', order:3 },
-        {
-          label:'Margen', data:dataMargen, type:'line',
-          borderColor:'#0071ce', backgroundColor:'rgba(0,113,206,0.10)',
-          pointBackgroundColor: esEstimado.map(e => e ? '#aac4e0' : '#0071ce'),
-          pointRadius:4, pointHoverRadius:7, tension:0.35, fill:false, order:1, yAxisID:'y'
-        }
-      ]
-    },
-    options: {
+  const chart = new Chart(canvas, {
+    type:'bar',
+    data:{ labels, datasets:[
+      { label:'Ingresos', data:dataIngresos, backgroundColor:'rgba(95,180,70,0.85)', borderRadius:4, order:2 },
+      { label:'Personal', data:dataPersonal, backgroundColor:colPers, borderRadius:4, stack:'costos', order:3 },
+      { label:'Bencina',  data:dataBencina,  backgroundColor:colBen,  borderRadius:4, stack:'costos', order:3 },
+      { label:'Margen', data:dataMargen, type:'line',
+        borderColor:'#0071ce', backgroundColor:'rgba(0,113,206,0.10)',
+        pointBackgroundColor:esEstimado.map(e=>e?'#aac4e0':'#0071ce'),
+        pointRadius:4, pointHoverRadius:7, tension:0.35, fill:false, order:1, yAxisID:'y' }
+    ]},
+    options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{ mode:'index', intersect:false },
       onClick(evt, elements){
+        if(!onClickFn) return;
         const idx = elements.length ? elements[0].index
-          : (_chartCostosHist.getElementsAtEventForMode(evt.native||evt,'nearest',{intersect:false},true)[0]?.index ?? -1);
-        if(idx >= 0) abrirModalEditSemana(idx);
+          : (chart.getElementsAtEventForMode(evt.native||evt,'nearest',{intersect:false},true)[0]?.index ?? -1);
+        if(idx >= 0) onClickFn(semanas, idx);
       },
       plugins:{
         legend:{ display:false },
-        tooltip:{
-          callbacks:{
-            title: items => items[0]?.label + (esEstimado[items[0]?.dataIndex] ? '  ⚡ estimado 10%' : ''),
-            label: ctx => ctx.dataset.label+': $'+Math.round(ctx.parsed.y).toLocaleString('es-CL')
-          }
-        },
+        tooltip:{ callbacks:{
+          title: items => items[0]?.label+(esEstimado[items[0]?.dataIndex]?' ⚡ estimado':''),
+          label: ctx => ctx.dataset.label+': $'+Math.round(ctx.parsed.y).toLocaleString('es-CL')
+        }},
         datalabels:{ display:false },
       },
       scales:{
@@ -2921,40 +2926,55 @@ window.renderCostosChart = async function(){
   });
 
   canvas.style.cursor = 'pointer';
-
-  // Touch support móvil
   canvas.ontouchend = function(e){
     e.preventDefault();
-    const touch = e.changedTouches[0];
-    const rect = canvas.getBoundingClientRect();
-    const pts = _chartCostosHist.getElementsAtEventForMode(
-      {native:e, offsetX:touch.clientX-rect.left, offsetY:touch.clientY-rect.top, x:touch.clientX-rect.left, y:touch.clientY-rect.top},
-      'nearest', {intersect:false}, true
+    const touch=e.changedTouches[0], rect=canvas.getBoundingClientRect();
+    const pts=chart.getElementsAtEventForMode(
+      {native:e,offsetX:touch.clientX-rect.left,offsetY:touch.clientY-rect.top,x:touch.clientX-rect.left,y:touch.clientY-rect.top},
+      'nearest',{intersect:false},true
     );
-    if(pts.length) abrirModalEditSemana(pts[0].index);
+    if(pts.length && onClickFn) onClickFn(semanas, pts[0].index);
   };
 
-  // Botones de semana (fallback móvil + indicador visual)
+  return { chart, semanas };
+}
+
+window.renderCostosChart = async function(){
+  if(_chartCostosHist){ try{ _chartCostosHist.destroy(); }catch{} _chartCostosHist=null; }
+  const result = await _renderCostosChartEn('cCostosHistorico','chartSemanasRango',(semanas,idx)=>{
+    _chartSemanas = semanas;
+    abrirModalEditSemana(idx);
+  });
+  if(!result) return;
+  _chartCostosHist = result.chart;
+  _chartSemanas = result.semanas;
+
+  // Botones fallback móvil
   const btnsEl = document.getElementById('chartSemanasBtns');
   if(btnsEl){
-    btnsEl.innerHTML = semanas.map((s, idx) => {
+    btnsEl.innerHTML = result.semanas.map((s, idx) => {
       const sem = isoWeek(s.fechas[0]);
-      const d   = _costosCache[s.key] || {};
-      const ben = d.bencina || {};
-      const pers = d.personal || {};
-      const tieneCostos = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0) > 0
-        || Object.values(pers).some(dia => (dia.trabajadores||[]).length || dia.otro);
+      const d = _costosCache[s.key] || {};
+      const ben = d.bencina||{}, pers = d.personal||{};
+      const tieneCostos = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0)>0
+        || Object.values(pers).some(dia=>(dia.trabajadores||[]).length||dia.otro);
       const est = !!d._estimado;
-      const color  = tieneCostos ? (est ? 'var(--orange)' : 'var(--green)') : 'var(--text3)';
-      const bg     = tieneCostos ? (est ? 'rgba(250,100,0,.1)' : 'rgba(95,180,70,.1)') : 'var(--bg3)';
-      const border = tieneCostos ? (est ? 'var(--orange)' : 'var(--green)') : 'var(--border)';
-      const icon   = tieneCostos ? (est ? '~' : '✓') : '+';
+      const color  = tieneCostos?(est?'var(--orange)':'var(--green)'):'var(--text3)';
+      const bg     = tieneCostos?(est?'rgba(250,100,0,.1)':'rgba(95,180,70,.1)'):'var(--bg3)';
+      const border = tieneCostos?(est?'var(--orange)':'var(--green)'):'var(--border)';
+      const icon   = tieneCostos?(est?'~':'✓'):'+';
       return `<button onclick="abrirModalEditSemana(${idx})"
         style="padding:5px 10px;border-radius:20px;border:1.5px solid ${border};background:${bg};color:${color};font-size:11px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">
         ${icon} S${sem}
       </button>`;
     }).join('');
   }
+};
+
+window.renderCostosChartDash = async function(){
+  if(_chartCostosDash){ try{ _chartCostosDash.destroy(); }catch{} _chartCostosDash=null; }
+  const result = await _renderCostosChartEn('cCostosHistoricoDash','chartSemanasRangoDash', null);
+  if(result) _chartCostosDash = result.chart;
 };
 
 // ── Modal edición semana histórica ──
