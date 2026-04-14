@@ -933,7 +933,7 @@ async function cargarArriendos(){
   // Render fuera del try para ver errores reales
   try{poblarSelectoresDash();}catch(e){console.error('poblar:',e);}
   try{renderTabla();}catch(e){console.error('tabla:',e);}
-  try{renderDashboard();}catch(e){console.error('dashboard:',e);}
+  renderDashboard().catch(e=>console.error('dashboard:',e));
   try{
     renderCalendario();
     if(CAL_DIA_SEL) mostrarInventarioDia(CAL_DIA_SEL);
@@ -1739,7 +1739,7 @@ function parseFechaArr(f){
   return isNaN(dt)?null:dt;
 }
 
-function renderDashboard(){
+async function renderDashboard(){
   const anioFiltro=(document.getElementById('dashFiltroAnio')?.value||'').trim();
   const mesFiltro=(document.getElementById('dashFiltroMes')?.value||'').trim();
   const semDash=(document.getElementById('dashFiltroSemana')?.value||'').trim();
@@ -1761,10 +1761,44 @@ function renderDashboard(){
   document.getElementById('k1').textContent=clp(total);document.getElementById('k1s').textContent=act.length+' activos';
   document.getElementById('k2').textContent=clp(ticket);
   document.getElementById('k3').textContent=act.length+can.length;document.getElementById('k3s').textContent=can.length+' cancelados';
-  // Costos: usar cache si está disponible
+
+  // ── Precargar costos desde Firestore según el período filtrado ──
+  try{
+    // Obtener semanas únicas de los arriendos filtrados
+    const semanasKeys=new Set();
+    arr.filter(a=>a.estado!=='Cancelado').forEach(a=>{
+      const dt=parseFechaArr(a.fecha);
+      if(!dt) return;
+      const anio=dt.getFullYear();
+      const sem=isoWeek(dt);
+      semanasKeys.add(anio+'-W'+String(sem).padStart(2,'0'));
+    });
+    // Si no hay filtro específico, cargar también semana actual como referencia
+    if(!semanasKeys.size){
+      const hoy=new Date();
+      semanasKeys.add(hoy.getFullYear()+'-W'+String(isoWeek(hoy)).padStart(2,'0'));
+    }
+    // Cargar en paralelo solo las que no estén en cache
+    const keysToLoad=[...semanasKeys].filter(k=>!_costosCache[k]);
+    if(keysToLoad.length){
+      await Promise.all(keysToLoad.map(k=>cargarCostos(k)));
+    }
+  }catch(e){ console.warn('precargar costos dashboard:',e); }
+
+  // Costos: ahora el cache está poblado con las semanas relevantes
   let totalCostos=0;
   try{
-    Object.values(_costosCache).forEach(d=>{
+    // Filtrar el cache solo a las semanas que corresponden al período seleccionado
+    const semanasDelPeriodo=new Set();
+    arr.filter(a=>a.estado!=='Cancelado').forEach(a=>{
+      const dt=parseFechaArr(a.fecha);
+      if(!dt) return;
+      semanasDelPeriodo.add(dt.getFullYear()+'-W'+String(isoWeek(dt)).padStart(2,'0'));
+    });
+    const cacheFiltrado=semanasDelPeriodo.size>0
+      ? Object.fromEntries(Object.entries(_costosCache).filter(([k])=>semanasDelPeriodo.has(k)))
+      : _costosCache;
+    Object.values(cacheFiltrado).forEach(d=>{
       const ben=d.bencina||{};
       totalCostos+=(ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
       const pers=d.personal||{};
