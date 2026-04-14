@@ -2348,6 +2348,8 @@ function renderCostosPersonalDias(key, fechas, data){
       return f===fStr;
     }).length;
 
+    if(nArr===0) return; // saltar días sin arriendos
+
     // Calcular total del día
     let montodia = otroMonto;
     TRABAJADORES.forEach(t=>{ if(selIds.includes(t.id)) montodia+=t.monto; });
