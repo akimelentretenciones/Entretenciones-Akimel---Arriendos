@@ -476,6 +476,11 @@ select:focus{border-color:var(--blue)}
       <div style="font-size:15px;font-weight:800;color:var(--blue3);min-width:200px;text-align:center" id="costosLabel">—</div>
       <button class="btn btn-ghost btn-sm" onclick="costosSemana(1)">Sig →</button>
       <button class="btn btn-primary btn-sm" onclick="costosHoy()">Esta semana</button>
+      <button class="btn btn-sm" onclick="generarCostosHistoricos()"
+        style="background:rgba(250,100,0,.1);color:var(--orange);border:1.5px solid rgba(250,100,0,.3);margin-left:auto"
+        title="Estima gastos al 10% para semanas históricas sin datos">
+        ⚡ Generar 10% histórico
+      </button>
     </div>
 
     <!-- KPIs -->
@@ -544,8 +549,10 @@ select:focus{border-color:var(--blue)}
         <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--green);display:inline-block"></span>Ingresos</span>
         <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--orange);display:inline-block"></span>Personal</span>
         <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--yellow);display:inline-block"></span>Bencina</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)"><span style="width:14px;height:14px;border-radius:3px;background:rgba(250,100,0,0.35);border:1px dashed var(--orange);display:inline-block"></span>Estimado 10%</span>
       </div>
       <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--text3)">👆 Haz clic en cualquier semana para editar sus costos</div>
+      <div id="chartSemanasBtns" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px"></div>
     </div>
 
   </div>
@@ -2709,6 +2716,88 @@ window.renderCostos = async function(){
   renderCostosChart();
 };
 
+// ── Generar costos históricos al 10% ──
+window.generarCostosHistoricos = async function(){
+  if(!confirm('Se estimarán los costos al 10% de los ingresos para todas las semanas de 2025 y enero–marzo 2026 que no tengan gastos cargados.\n\n¿Continuar?')) return;
+
+  toast('⏳ Calculando semanas…','ok');
+
+  // Corte: hasta la semana 13 del 2026 (fin de marzo 2026)
+  const CORTE_ANIO = 2026;
+  const CORTE_SEM  = 13; // semana ISO 13 = últimos días de marzo
+
+  // 1. Agrupar ingresos por clave semana "YYYY-WWW"
+  const ingPorSem = {}; // key → { ingresos, fechaLun }
+  ARRIENDOS.forEach(a => {
+    if(!a.fecha || a.estado === 'Cancelado') return;
+    const dt = parseFechaArr(a.fecha);
+    if(!dt) return;
+    const anio = dt.getFullYear();
+    const sem  = isoWeek(dt);
+
+    // Solo 2025 y hasta sem 13 de 2026
+    if(anio < 2025) return;
+    if(anio === CORTE_ANIO && sem > CORTE_SEM) return;
+    if(anio > CORTE_ANIO) return;
+
+    const key = anio + '-W' + String(sem).padStart(2,'0');
+    if(!ingPorSem[key]) {
+      // Calcular lunes de esa semana para guardar referencia
+      ingPorSem[key] = { ingresos: 0, anio, sem };
+    }
+    ingPorSem[key].ingresos += (a.pendiente || 0);
+  });
+
+  if(!Object.keys(ingPorSem).length){
+    toast('Sin arriendos históricos encontrados','err'); return;
+  }
+
+  // 2. Cargar lo que ya existe en Firestore
+  const keysARevisar = Object.keys(ingPorSem);
+  await Promise.all(keysARevisar.filter(k => !_costosCache[k]).map(k => cargarCostos(k)));
+
+  // 3. Para las semanas SIN datos guardados → guardar estimado al 10%
+  let guardadas = 0;
+  const promesas = [];
+
+  keysARevisar.forEach(key => {
+    const existente = _costosCache[key] || {};
+    const ben  = existente.bencina  || {};
+    const pers = existente.personal || {};
+    const yaTieneDatos = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0) > 0
+      || Object.values(pers).some(d => (d.trabajadores||[]).length || d.otro);
+
+    if(yaTieneDatos) return; // ya tiene datos reales, no tocar
+
+    const ingSem = ingPorSem[key].ingresos;
+    if(!ingSem) return;
+
+    // 14% personal + 6% bencina del total de ingresos
+    const persEstimado = Math.round(ingSem * 0.14);
+    const benEstimado  = Math.round(ingSem * 0.06);
+
+    const data = {
+      ...existente,
+      bencina: { foton1: benEstimado, foton2: 0, brillance: 0 },
+      personal: { d0: { trabajadores: [], otro: persEstimado } }, // lunes como día resumen
+      _estimado: true, // flag para distinguir de datos reales
+    };
+
+    promesas.push(guardarCostosFirestore(key, data));
+    guardadas++;
+  });
+
+  if(!guardadas){
+    toast('Todas las semanas históricas ya tienen datos cargados ✓','ok');
+    renderCostosChart();
+    return;
+  }
+
+  await Promise.all(promesas);
+  toast(`✅ ${guardadas} semanas estimadas al 10% guardadas`,'ok');
+  renderCostosChart();
+};
+
 // ── Gráfico histórico Ingresos vs Gastos por semana ──
 let _chartCostosHist = null;
 let _chartSemanas = []; // referencia a las semanas renderizadas
@@ -2720,57 +2809,74 @@ window.renderCostosChart = async function(){
 
   canvas.style.opacity = '0.4';
 
+  // Construir candidatas: n semanas atrás desde semana actual
   const baseOff = costosSemanaOff;
-  const semanas = [];
+  const candidatas = [];
   for(let i = n - 1; i >= 0; i--){
     const off = baseOff - i;
     const key = getCostosKey(off);
     const fechas = getCostosSemanaFechas(off);
-    semanas.push({ key, fechas, off });
+    candidatas.push({ key, fechas, off });
   }
+
+  // Cargar cache para todas
+  const sinCache = candidatas.filter(s => !_costosCache[s.key]);
+  if(sinCache.length) await Promise.all(sinCache.map(s => cargarCostos(s.key)));
+
+  // Filtrar: solo semanas con ingresos O costos cargados
+  const semanas = candidatas.filter(({ key, fechas }) => {
+    const sem  = isoWeek(fechas[0]);
+    const anio = fechas[0].getFullYear();
+    const tieneIngresos = ARRIENDOS.some(a => {
+      if(!a.fecha || a.estado === 'Cancelado') return false;
+      const dt = parseFechaArr(a.fecha);
+      return dt && isoWeek(dt) === sem && dt.getFullYear() === anio;
+    });
+    const d = _costosCache[key] || {};
+    const ben = d.bencina || {};
+    const pers = d.personal || {};
+    const tieneCostos = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0) > 0
+      || Object.values(pers).some(dia => (dia.trabajadores||[]).length || dia.otro);
+    return tieneIngresos || tieneCostos;
+  });
+
   _chartSemanas = semanas;
 
-  const sinCache = semanas.filter(s => !_costosCache[s.key]);
-  if(sinCache.length){
-    await Promise.all(sinCache.map(s => cargarCostos(s.key)));
-  }
-
-  const labels = [], dataIngresos = [], dataPersonal = [], dataBencina = [], dataMargen = [];
+  const labels=[], dataIngresos=[], dataPersonal=[], dataBencina=[], dataMargen=[], esEstimado=[];
 
   semanas.forEach(({ key, fechas }) => {
-    const sem = isoWeek(fechas[0]);
+    const sem  = isoWeek(fechas[0]);
     const anio = fechas[0].getFullYear();
     labels.push(`S${sem}\n${String(fechas[0].getDate()).padStart(2,'0')}/${String(fechas[0].getMonth()+1).padStart(2,'0')}`);
 
     const ingSem = ARRIENDOS.filter(a => {
       if(!a.fecha || a.estado === 'Cancelado') return false;
       const dt = parseFechaArr(a.fecha);
-      if(!dt) return false;
-      return isoWeek(dt) === sem && dt.getFullYear() === anio;
-    }).reduce((s, a) => s + (a.pendiente || 0), 0);
+      return dt && isoWeek(dt) === sem && dt.getFullYear() === anio;
+    }).reduce((s, a) => s + (a.pendiente||0), 0);
 
     const d = _costosCache[key] || {};
     const ben = d.bencina || {};
-    const totalBen = (ben.foton1||0) + (ben.foton2||0) + (ben.brillance||0);
+    const totalBen = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
     const pers = d.personal || {};
     let totalPers = 0;
     Object.values(pers).forEach(dia => {
-      (dia.trabajadores||[]).forEach(tid => {
-        const t = TRABAJADORES.find(x => x.id === tid);
-        if(t) totalPers += t.monto;
-      });
-      totalPers += (dia.otro || 0);
+      (dia.trabajadores||[]).forEach(tid => { const t=TRABAJADORES.find(x=>x.id===tid); if(t) totalPers+=t.monto; });
+      totalPers += (dia.otro||0);
     });
 
     dataIngresos.push(ingSem);
     dataPersonal.push(totalPers);
     dataBencina.push(totalBen);
     dataMargen.push(ingSem - totalPers - totalBen);
+    esEstimado.push(!!d._estimado);
   });
 
   canvas.style.opacity = '1';
-
   if(_chartCostosHist){ try{ _chartCostosHist.destroy(); }catch{} }
+
+  const colPersonal = esEstimado.map(e => e ? 'rgba(250,100,0,0.35)' : 'rgba(250,100,0,0.85)');
+  const colBencina  = esEstimado.map(e => e ? 'rgba(255,194,32,0.35)' : 'rgba(255,194,32,0.85)');
 
   _chartCostosHist = new Chart(canvas, {
     type: 'bar',
@@ -2778,29 +2884,29 @@ window.renderCostosChart = async function(){
       labels,
       datasets: [
         { label:'Ingresos', data:dataIngresos, backgroundColor:'rgba(95,180,70,0.85)', borderRadius:4, order:2 },
-        { label:'Personal', data:dataPersonal, backgroundColor:'rgba(250,100,0,0.85)', borderRadius:4, stack:'costos', order:3 },
-        { label:'Bencina',  data:dataBencina,  backgroundColor:'rgba(255,194,32,0.85)', borderRadius:4, stack:'costos', order:3 },
+        { label:'Personal', data:dataPersonal, backgroundColor:colPersonal, borderRadius:4, stack:'costos', order:3 },
+        { label:'Bencina',  data:dataBencina,  backgroundColor:colBencina,  borderRadius:4, stack:'costos', order:3 },
         {
           label:'Margen', data:dataMargen, type:'line',
-          borderColor:'#0071ce', backgroundColor:'rgba(0,113,206,0.12)',
-          pointBackgroundColor:'#0071ce', pointRadius:4, pointHoverRadius:7,
-          tension:0.35, fill:false, order:1, yAxisID:'y'
+          borderColor:'#0071ce', backgroundColor:'rgba(0,113,206,0.10)',
+          pointBackgroundColor: esEstimado.map(e => e ? '#aac4e0' : '#0071ce'),
+          pointRadius:4, pointHoverRadius:7, tension:0.35, fill:false, order:1, yAxisID:'y'
         }
       ]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
       interaction:{ mode:'index', intersect:false },
-      cursor: 'pointer',
-      onClick(_, elements){
-        if(!elements.length) return;
-        const idx = elements[0].index;
-        abrirModalEditSemana(idx);
+      onClick(evt, elements){
+        const idx = elements.length ? elements[0].index
+          : (_chartCostosHist.getElementsAtEventForMode(evt.native||evt,'nearest',{intersect:false},true)[0]?.index ?? -1);
+        if(idx >= 0) abrirModalEditSemana(idx);
       },
       plugins:{
         legend:{ display:false },
         tooltip:{
           callbacks:{
+            title: items => items[0]?.label + (esEstimado[items[0]?.dataIndex] ? '  ⚡ estimado 10%' : ''),
             label: ctx => ctx.dataset.label+': $'+Math.round(ctx.parsed.y).toLocaleString('es-CL')
           }
         },
@@ -2814,8 +2920,41 @@ window.renderCostosChart = async function(){
     }
   });
 
-  // Cursor pointer al hover sobre el canvas
   canvas.style.cursor = 'pointer';
+
+  // Touch support móvil
+  canvas.ontouchend = function(e){
+    e.preventDefault();
+    const touch = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    const pts = _chartCostosHist.getElementsAtEventForMode(
+      {native:e, offsetX:touch.clientX-rect.left, offsetY:touch.clientY-rect.top, x:touch.clientX-rect.left, y:touch.clientY-rect.top},
+      'nearest', {intersect:false}, true
+    );
+    if(pts.length) abrirModalEditSemana(pts[0].index);
+  };
+
+  // Botones de semana (fallback móvil + indicador visual)
+  const btnsEl = document.getElementById('chartSemanasBtns');
+  if(btnsEl){
+    btnsEl.innerHTML = semanas.map((s, idx) => {
+      const sem = isoWeek(s.fechas[0]);
+      const d   = _costosCache[s.key] || {};
+      const ben = d.bencina || {};
+      const pers = d.personal || {};
+      const tieneCostos = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0) > 0
+        || Object.values(pers).some(dia => (dia.trabajadores||[]).length || dia.otro);
+      const est = !!d._estimado;
+      const color  = tieneCostos ? (est ? 'var(--orange)' : 'var(--green)') : 'var(--text3)';
+      const bg     = tieneCostos ? (est ? 'rgba(250,100,0,.1)' : 'rgba(95,180,70,.1)') : 'var(--bg3)';
+      const border = tieneCostos ? (est ? 'var(--orange)' : 'var(--green)') : 'var(--border)';
+      const icon   = tieneCostos ? (est ? '~' : '✓') : '+';
+      return `<button onclick="abrirModalEditSemana(${idx})"
+        style="padding:5px 10px;border-radius:20px;border:1.5px solid ${border};background:${bg};color:${color};font-size:11px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">
+        ${icon} S${sem}
+      </button>`;
+    }).join('');
+  }
 };
 
 // ── Modal edición semana histórica ──
