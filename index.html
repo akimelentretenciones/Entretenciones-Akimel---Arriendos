@@ -3425,6 +3425,8 @@ window.toast=function(msg,tipo='ok'){
   setTimeout(()=>t.classList.remove('show'),3500);
 };
 </script>
+<script>
+if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then(r => console.log('SW registrado'))
