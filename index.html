@@ -101,7 +101,7 @@ tr:hover td{background:var(--bg3)}
 .cal-mini-inv{display:flex;flex-direction:column;gap:2px}
 .cal-inv-row{display:flex;align-items:center;gap:4px;font-size:10px}
 .cal-inv-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.dot-green{background:var(--green)}.dot-yellow{background:var(--yellow)}.dot-orange{background:var(--orange)}.dot-red{background:var(--red)}
+.dot-green{background:var(--green)}.dot-yellow{background:var(--orange)}.dot-orange{background:var(--orange)}.dot-red{background:var(--red)}
 .cal-inv-name{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .cal-inv-count{font-weight:700;font-size:10px}
 .cal-inv-count.green{color:var(--green)}.cal-inv-count.yellow{color:var(--yellow)}.cal-inv-count.orange{color:var(--orange)}.cal-inv-count.red{color:var(--red)}
@@ -332,8 +332,7 @@ select:focus{border-color:var(--blue)}
     <!-- Leyenda -->
     <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
       <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--green);display:inline-block"></span>Disponible</span>
-      <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--yellow);display:inline-block"></span>Parcial</span>
-      <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--orange);display:inline-block"></span>Casi lleno</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--orange);display:inline-block"></span>Parcial</span>
       <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:50%;background:var(--red);display:inline-block"></span>Agotado</span>
       <span style="font-size:11px;color:var(--text3);margin-left:4px">· Solo se muestran días con arriendos</span>
     </div>
@@ -2177,8 +2176,8 @@ window.renderDisponibilidad=function(){
       const pct=disp/item.total;
       let cls,dcls,badge;
       if(pct>=1){cls='disponible';dcls='green';badge=item.total===1?'Libre':disp+'/'+item.total+' libres';}
-      else if(pct>0.5){cls='parcial';dcls='yellow';badge=disp+'/'+item.total+' libres';}
-      else if(pct>0){cls='casi';dcls='orange';badge=disp+'/'+item.total+' libre';}
+      else if(pct>0.5){cls='parcial';dcls='orange';badge=disp+'/'+item.total+' libres';}
+      else if(pct>0){cls='casi';dcls='red';badge=disp+'/'+item.total+' libre';}
       else{cls='ocupado';dcls='red';badge='Ocupado';}
       const quien=ocu>0?arriendosDia.filter(a=>a.equipos&&a.equipos.includes(item.nombre)).map(a=>a.cliente.split(' ')[0]).join(', '):'';
       html+=`<div class="disp-item ${cls}">
