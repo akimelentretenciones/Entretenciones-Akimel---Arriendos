@@ -545,12 +545,74 @@ select:focus{border-color:var(--blue)}
         <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--orange);display:inline-block"></span>Personal</span>
         <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--yellow);display:inline-block"></span>Bencina</span>
       </div>
+      <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--text3)">👆 Haz clic en cualquier semana para editar sus costos</div>
     </div>
 
   </div>
 </div>
 
 </div><!-- /main -->
+
+<!-- MODAL EDICIÓN SEMANA HISTÓRICA -->
+<div class="modal-edit" id="modalEditSemana" onclick="if(event.target===this)cerrarModalEditSemana()">
+  <div class="modal-edit-box" style="max-width:700px">
+    <div class="modal-edit-title">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--blue3)" id="mesLabel">—</div>
+        <div style="font-size:12px;color:var(--text3);font-weight:400;margin-top:2px" id="mesRange">—</div>
+      </div>
+      <span onclick="cerrarModalEditSemana()" style="cursor:pointer;color:var(--text3);font-size:22px;line-height:1">✕</span>
+    </div>
+
+    <!-- KPIs rápidos -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+      <div style="background:var(--bg3);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:4px">Ingresos</div>
+        <div style="font-size:16px;font-weight:800;color:var(--green)" id="mes-ing">—</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:4px">Total costos</div>
+        <div style="font-size:16px;font-weight:800;color:var(--orange)" id="mes-cos">—</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:4px">Margen</div>
+        <div style="font-size:16px;font-weight:800" id="mes-mar">—</div>
+      </div>
+    </div>
+
+    <!-- Personal por día -->
+    <div style="font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">👷 Personal por día</div>
+    <div id="mesPersonalDias" style="margin-bottom:16px"></div>
+
+    <!-- Bencina -->
+    <div style="font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">⛽ Bencina</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+      <div>
+        <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:5px">🚐 Fotón 1</div>
+        <input type="number" id="mes-foton1" placeholder="$0" min="0"
+          style="width:100%;border:2px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sora',sans-serif;outline:none;color:var(--text)"
+          oninput="actualizarKpisMes()">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:5px">🚐 Fotón 2</div>
+        <input type="number" id="mes-foton2" placeholder="$0" min="0"
+          style="width:100%;border:2px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sora',sans-serif;outline:none;color:var(--text)"
+          oninput="actualizarKpisMes()">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:5px">🚐 Brillance</div>
+        <input type="number" id="mes-brillance" placeholder="$0" min="0"
+          style="width:100%;border:2px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sora',sans-serif;outline:none;color:var(--text)"
+          oninput="actualizarKpisMes()">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" style="flex:1" onclick="cerrarModalEditSemana()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:2" onclick="guardarSemanaHistorica()">💾 Guardar semana</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL EDICIÓN -->
 <div class="modal-edit" id="modalEdit" onclick="if(event.target===this)cerrarModalEdit()">
@@ -2649,17 +2711,15 @@ window.renderCostos = async function(){
 
 // ── Gráfico histórico Ingresos vs Gastos por semana ──
 let _chartCostosHist = null;
+let _chartSemanas = []; // referencia a las semanas renderizadas
 
 window.renderCostosChart = async function(){
   const n = parseInt(document.getElementById('chartSemanasRango')?.value || '8');
   const canvas = document.getElementById('cCostosHistorico');
   if(!canvas) return;
 
-  // Mostrar loading
   canvas.style.opacity = '0.4';
 
-  // Calcular el rango de semanas desde hoy hacia atrás
-  // Offset actual centrado en costosSemanaOff (semana visible)
   const baseOff = costosSemanaOff;
   const semanas = [];
   for(let i = n - 1; i >= 0; i--){
@@ -2668,14 +2728,13 @@ window.renderCostosChart = async function(){
     const fechas = getCostosSemanaFechas(off);
     semanas.push({ key, fechas, off });
   }
+  _chartSemanas = semanas;
 
-  // Cargar en paralelo las semanas no cacheadas
   const sinCache = semanas.filter(s => !_costosCache[s.key]);
   if(sinCache.length){
     await Promise.all(sinCache.map(s => cargarCostos(s.key)));
   }
 
-  // Armar datos para el gráfico
   const labels = [], dataIngresos = [], dataPersonal = [], dataBencina = [], dataMargen = [];
 
   semanas.forEach(({ key, fechas }) => {
@@ -2683,7 +2742,6 @@ window.renderCostosChart = async function(){
     const anio = fechas[0].getFullYear();
     labels.push(`S${sem}\n${String(fechas[0].getDate()).padStart(2,'0')}/${String(fechas[0].getMonth()+1).padStart(2,'0')}`);
 
-    // Ingresos de esa semana
     const ingSem = ARRIENDOS.filter(a => {
       if(!a.fecha || a.estado === 'Cancelado') return false;
       const dt = parseFechaArr(a.fecha);
@@ -2691,7 +2749,6 @@ window.renderCostosChart = async function(){
       return isoWeek(dt) === sem && dt.getFullYear() === anio;
     }).reduce((s, a) => s + (a.pendiente || 0), 0);
 
-    // Costos desde cache
     const d = _costosCache[key] || {};
     const ben = d.bencina || {};
     const totalBen = (ben.foton1||0) + (ben.foton2||0) + (ben.brillance||0);
@@ -2713,7 +2770,6 @@ window.renderCostosChart = async function(){
 
   canvas.style.opacity = '1';
 
-  // Destruir chart anterior si existe
   if(_chartCostosHist){ try{ _chartCostosHist.destroy(); }catch{} }
 
   _chartCostosHist = new Chart(canvas, {
@@ -2721,79 +2777,223 @@ window.renderCostosChart = async function(){
     data: {
       labels,
       datasets: [
+        { label:'Ingresos', data:dataIngresos, backgroundColor:'rgba(95,180,70,0.85)', borderRadius:4, order:2 },
+        { label:'Personal', data:dataPersonal, backgroundColor:'rgba(250,100,0,0.85)', borderRadius:4, stack:'costos', order:3 },
+        { label:'Bencina',  data:dataBencina,  backgroundColor:'rgba(255,194,32,0.85)', borderRadius:4, stack:'costos', order:3 },
         {
-          label: 'Ingresos',
-          data: dataIngresos,
-          backgroundColor: 'rgba(95,180,70,0.85)',
-          borderRadius: 4,
-          order: 2,
-        },
-        {
-          label: 'Personal',
-          data: dataPersonal,
-          backgroundColor: 'rgba(250,100,0,0.85)',
-          borderRadius: 4,
-          stack: 'costos',
-          order: 3,
-        },
-        {
-          label: 'Bencina',
-          data: dataBencina,
-          backgroundColor: 'rgba(255,194,32,0.85)',
-          borderRadius: 4,
-          stack: 'costos',
-          order: 3,
-        },
-        {
-          label: 'Margen',
-          data: dataMargen,
-          type: 'line',
-          borderColor: '#0071ce',
-          backgroundColor: 'rgba(0,113,206,0.12)',
-          pointBackgroundColor: '#0071ce',
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          tension: 0.35,
-          fill: false,
-          order: 1,
-          yAxisID: 'y',
+          label:'Margen', data:dataMargen, type:'line',
+          borderColor:'#0071ce', backgroundColor:'rgba(0,113,206,0.12)',
+          pointBackgroundColor:'#0071ce', pointRadius:4, pointHoverRadius:7,
+          tension:0.35, fill:false, order:1, yAxisID:'y'
         }
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const v = ctx.parsed.y;
-              const prefix = ctx.dataset.label + ': ';
-              return prefix + '$' + Math.round(v).toLocaleString('es-CL');
-            }
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      cursor: 'pointer',
+      onClick(_, elements){
+        if(!elements.length) return;
+        const idx = elements[0].index;
+        abrirModalEditSemana(idx);
+      },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            label: ctx => ctx.dataset.label+': $'+Math.round(ctx.parsed.y).toLocaleString('es-CL')
           }
         },
-        datalabels: { display: false },
+        datalabels:{ display:false },
       },
-      scales: {
-        x: {
-          ticks: { font: { size: 9 }, color: '#7a93aa' },
-          grid: { display: false },
-        },
-        y: {
-          ticks: {
-            font: { size: 9 },
-            color: '#7a93aa',
-            callback: v => v >= 1000000 ? '$'+(v/1000000).toFixed(1)+'M' : v >= 1000 ? '$'+(v/1000).toFixed(0)+'k' : '$'+v
-          },
-          grid: { color: 'rgba(0,113,206,0.06)' },
-        }
+      scales:{
+        x:{ ticks:{ font:{size:9}, color:'#7a93aa' }, grid:{ display:false } },
+        y:{ ticks:{ font:{size:9}, color:'#7a93aa', callback: v => v>=1000000?'$'+(v/1000000).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'k':'$'+v }, grid:{ color:'rgba(0,113,206,0.06)' } }
       },
-      layout: { padding: { top: 10 } }
+      layout:{ padding:{ top:10 } }
     }
   });
+
+  // Cursor pointer al hover sobre el canvas
+  canvas.style.cursor = 'pointer';
+};
+
+// ── Modal edición semana histórica ──
+let _semanaEditando = null; // { key, fechas, off }
+
+window.abrirModalEditSemana = async function(idx){
+  const sem = _chartSemanas[idx];
+  if(!sem) return;
+  _semanaEditando = sem;
+
+  const { key, fechas } = sem;
+  const numSem = isoWeek(fechas[0]);
+  const lun = fechas[0], dom = fechas[6];
+  const fmtD = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+
+  document.getElementById('mesLabel').textContent = `Semana ${numSem} · ${lun.getFullYear()}`;
+  document.getElementById('mesRange').textContent  = `${fmtD(lun)} — ${fmtD(dom)}`;
+
+  const data = await cargarCostos(key);
+  const ben  = data.bencina || {};
+
+  document.getElementById('mes-foton1').value   = ben.foton1   || '';
+  document.getElementById('mes-foton2').value   = ben.foton2   || '';
+  document.getElementById('mes-brillance').value = ben.brillance || '';
+
+  // Renderizar tabla de personal
+  renderMesPersonalDias(fechas, data);
+  actualizarKpisMes();
+
+  document.getElementById('modalEditSemana').classList.add('show');
+};
+
+window.cerrarModalEditSemana = function(){
+  document.getElementById('modalEditSemana').classList.remove('show');
+  _semanaEditando = null;
+};
+
+function renderMesPersonalDias(fechas, data){
+  const personal = data.personal || {};
+  let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html += '<thead><tr style="background:var(--bg3)">';
+  html += '<th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border)">Día</th>';
+  TRABAJADORES.forEach(t=>{
+    html += `<th style="padding:7px 6px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase;border-bottom:2px solid var(--border);white-space:nowrap">${t.nombre.split(' ')[0]}<br><span style="font-weight:400;color:var(--green)">$${(t.monto/1000).toFixed(0)}k</span></th>`;
+  });
+  html += '<th style="padding:7px 8px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase;border-bottom:2px solid var(--border)">Otro</th>';
+  html += '<th style="padding:7px 10px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase;border-bottom:2px solid var(--border)">Total</th>';
+  html += '</tr></thead><tbody>';
+
+  fechas.forEach((dt, i) => {
+    const fStr = fechaToStr(dt);
+    const dKey = 'd'+i;
+    const selIds = (personal[dKey]&&personal[dKey].trabajadores)||[];
+    const otroMonto = (personal[dKey]&&personal[dKey].otro)||0;
+    const nArr = ARRIENDOS.filter(a=>{
+      if(!a.fecha||a.estado==='Cancelado') return false;
+      let f=a.fecha;
+      if(f.includes('-')&&f.length===10){const p=f.split('-');f=p[2]+'/'+p[1]+'/'+p[0];}
+      return f===fStr;
+    }).length;
+
+    let montodia = otroMonto;
+    TRABAJADORES.forEach(t=>{ if(selIds.includes(t.id)) montodia+=t.monto; });
+
+    const bgRow = nArr>0 ? 'background:rgba(0,113,206,.03)' : '';
+    html += `<tr style="${bgRow};border-bottom:1px solid var(--border)">`;
+    html += `<td style="padding:7px 10px;font-weight:600;white-space:nowrap">
+      ${DIAS_SEM[i].slice(0,3)} ${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}
+      ${nArr>0?`<span style="font-size:9px;background:var(--blue);color:#fff;padding:1px 5px;border-radius:8px;margin-left:3px">${nArr} arr</span>`:''}
+    </td>`;
+    TRABAJADORES.forEach(t=>{
+      const sel = selIds.includes(t.id);
+      html += `<td style="padding:7px 6px;text-align:center">
+        <input type="checkbox" data-mes-dia="${dKey}" data-mes-tid="${t.id}" ${sel?'checked':''}
+          onchange="recalcularTotalMesDia('${dKey}')"
+          style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
+      </td>`;
+    });
+    html += `<td style="padding:7px 6px;text-align:center">
+      <input type="number" id="mes-otro-${dKey}" placeholder="" value="${otroMonto||''}"
+        style="width:65px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:11px;font-family:'Sora',sans-serif;outline:none;color:var(--text);text-align:right"
+        oninput="recalcularTotalMesDia('${dKey}')">
+    </td>`;
+    html += `<td id="mes-total-dia-${dKey}" style="padding:7px 10px;text-align:right;font-weight:700;color:${montodia>0?'var(--orange)':'var(--text3)'}">
+      ${montodia>0?'$'+montodia.toLocaleString('es-CL'):'—'}
+    </td>`;
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('mesPersonalDias').innerHTML = html;
+}
+
+window.recalcularTotalMesDia = function(dKey){
+  let monto = 0;
+  document.querySelectorAll(`input[data-mes-dia="${dKey}"][data-mes-tid]`).forEach(c=>{
+    if(!c.checked) return;
+    const t = TRABAJADORES.find(x=>x.id===c.dataset.mesTid);
+    if(t) monto += t.monto;
+  });
+  const otroEl = document.getElementById('mes-otro-'+dKey);
+  if(otroEl) monto += parseInt(otroEl.value)||0;
+  const cel = document.getElementById('mes-total-dia-'+dKey);
+  if(cel){
+    cel.textContent = monto>0 ? '$'+monto.toLocaleString('es-CL') : '—';
+    cel.style.color = monto>0 ? 'var(--orange)' : 'var(--text3)';
+  }
+  actualizarKpisMes();
+};
+
+window.actualizarKpisMes = function(){
+  if(!_semanaEditando) return;
+  const { fechas } = _semanaEditando;
+  const sem = isoWeek(fechas[0]);
+  const anio = fechas[0].getFullYear();
+
+  const ingresos = ARRIENDOS.filter(a=>{
+    if(!a.fecha||a.estado==='Cancelado') return false;
+    const dt = parseFechaArr(a.fecha);
+    if(!dt) return false;
+    return isoWeek(dt)===sem && dt.getFullYear()===anio;
+  }).reduce((s,a)=>s+(a.pendiente||0),0);
+
+  let totalPers = 0;
+  for(let i=0;i<7;i++){
+    const dKey='d'+i;
+    document.querySelectorAll(`input[data-mes-dia="${dKey}"][data-mes-tid]`).forEach(c=>{
+      if(!c.checked) return;
+      const t = TRABAJADORES.find(x=>x.id===c.dataset.mesTid);
+      if(t) totalPers+=t.monto;
+    });
+    const otroEl=document.getElementById('mes-otro-'+dKey);
+    if(otroEl) totalPers+=parseInt(otroEl.value)||0;
+  }
+
+  const totalBen=(parseInt(document.getElementById('mes-foton1').value)||0)+
+                 (parseInt(document.getElementById('mes-foton2').value)||0)+
+                 (parseInt(document.getElementById('mes-brillance').value)||0);
+
+  const totalCos = totalPers + totalBen;
+  const margen   = ingresos - totalCos;
+
+  document.getElementById('mes-ing').textContent = '$'+ingresos.toLocaleString('es-CL');
+  document.getElementById('mes-cos').textContent = '$'+totalCos.toLocaleString('es-CL');
+  const marEl = document.getElementById('mes-mar');
+  marEl.textContent   = '$'+margen.toLocaleString('es-CL');
+  marEl.style.color   = margen>=0?'var(--green)':'var(--red)';
+};
+
+window.guardarSemanaHistorica = async function(){
+  if(!_semanaEditando) return;
+  const { key } = _semanaEditando;
+
+  // Leer personal
+  const personal = {};
+  for(let i=0;i<7;i++){
+    const dKey='d'+i;
+    const trabajadores=[];
+    document.querySelectorAll(`input[data-mes-dia="${dKey}"][data-mes-tid]`).forEach(c=>{
+      if(c.checked) trabajadores.push(c.dataset.mesTid);
+    });
+    const otroEl=document.getElementById('mes-otro-'+dKey);
+    const otro=parseInt(otroEl?.value)||0;
+    if(trabajadores.length||otro) personal[dKey]={trabajadores,otro};
+  }
+
+  // Leer bencina
+  const bencina={
+    foton1:   parseInt(document.getElementById('mes-foton1').value)||0,
+    foton2:   parseInt(document.getElementById('mes-foton2').value)||0,
+    brillance: parseInt(document.getElementById('mes-brillance').value)||0,
+  };
+
+  const data = { ...(  _costosCache[key]||{}), personal, bencina };
+  await guardarCostosFirestore(key, data);
+
+  toast('✅ Semana guardada','ok');
+  cerrarModalEditSemana();
+  renderCostosChart(); // refrescar gráfico
 };
 
 window.toast=function(msg,tipo='ok'){
