@@ -2366,15 +2366,16 @@ function renderCostosPersonalDias(key, fechas, data){
       const sel = selIds.includes(t.id);
       html += `<td style="padding:8px 6px;text-align:center">
         <input type="checkbox" data-dia="${dKey}" data-tid="${t.id}" ${sel?'checked':''}
-          onchange="toggleWorker(this)"
+          onchange="toggleWorker(this);recalcularTotalDia('${dKey}')"
           style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
       </td>`;
     });
     html += `<td style="padding:8px 6px;text-align:center">
       <input type="number" id="otro-monto-${dKey}" placeholder="0" value="${otroMonto||''}"
-        style="width:70px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:11px;font-family:'Sora',sans-serif;outline:none;color:var(--text);text-align:right">
+        style="width:70px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:11px;font-family:'Sora',sans-serif;outline:none;color:var(--text);text-align:right"
+        oninput="recalcularTotalDia('${dKey}')">
     </td>`;
-    html += `<td style="padding:8px 10px;text-align:right;font-weight:700;color:${montodia>0?'var(--orange)':'var(--text3)'}">
+    html += `<td id="total-dia-${dKey}" style="padding:8px 10px;text-align:right;font-weight:700;color:${montodia>0?'var(--orange)':'var(--text3)'}">
       ${montodia>0?'$'+montodia.toLocaleString('es-CL'):'—'}
     </td>`;
     html += '</tr>';
@@ -2383,11 +2384,42 @@ function renderCostosPersonalDias(key, fechas, data){
   // Fila total
   html += `<tr style="background:var(--bg3);font-weight:800">
     <td colspan="${TRABAJADORES.length+3}" style="padding:10px 10px;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Total personal semana</td>
-    <td style="padding:10px 10px;text-align:right;font-size:14px;font-weight:800;color:var(--orange)">$${totalSemana.toLocaleString('es-CL')}</td>
+    <td id="total-personal-semana" style="padding:10px 10px;text-align:right;font-size:14px;font-weight:800;color:var(--orange)">$${totalSemana.toLocaleString('es-CL')}</td>
   </tr>`;
   html += '</tbody></table></div>';
   document.getElementById('costosPersonalDias').innerHTML = html;
 }
+
+window.recalcularTotalDia = function(dKey){
+  // Leer checkboxes marcados
+  let monto = 0;
+  document.querySelectorAll(`input[data-dia="${dKey}"][data-tid]`).forEach(c=>{
+    if(!c.checked) return;
+    const tid = c.dataset.tid;
+    if(tid==='otro') return;
+    const t = TRABAJADORES.find(x=>x.id===tid);
+    if(t) monto += t.monto;
+  });
+  // Leer campo otro
+  const otroEl = document.getElementById('otro-monto-'+dKey);
+  if(otroEl) monto += parseInt(otroEl.value)||0;
+  // Actualizar celda total
+  const totalEl = document.getElementById('total-dia-'+dKey);
+  if(totalEl){
+    totalEl.textContent = monto>0 ? '$'+monto.toLocaleString('es-CL') : '—';
+    totalEl.style.color = monto>0 ? 'var(--orange)' : 'var(--text3)';
+  }
+  // Recalcular total semana
+  let totalSem = 0;
+  for(let i=0;i<7;i++){
+    const el = document.getElementById('total-dia-d'+i);
+    if(el && el.textContent!=='—'){
+      totalSem += parseInt(el.textContent.replace(/[^0-9]/g,''))||0;
+    }
+  }
+  const totSemEl = document.getElementById('total-personal-semana');
+  if(totSemEl) totSemEl.textContent = '$'+totalSem.toLocaleString('es-CL');
+};
 
 window.toggleWorker = function(el){
   const label = el.closest('label') || el.closest('div');
