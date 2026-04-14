@@ -293,29 +293,34 @@ select:focus{border-color:var(--blue)}
     <div class="kpi green"><div class="kpi-label">Margen neto</div><div class="kpi-value" id="k5">—</div><div class="kpi-sub" id="k5s">—</div></div>
   </div>
 
-  <!-- Gráfico Ingresos vs Gastos (compartido con Costos) -->
+  <!-- 1. Ingresos vs Gastos por semana -->
   <div class="chart-full" style="margin-bottom:16px">
     <div style="margin-bottom:14px">
       <div class="chart-title" style="margin-bottom:0">📊 Ingresos vs Gastos por semana</div>
     </div>
-    <div style="position:relative;height:240px"><canvas id="cCostosHistoricoDash"></canvas></div>
+    <div style="position:relative;height:260px"><canvas id="cCostosHistoricoDash"></canvas></div>
     <div style="display:flex;gap:14px;justify-content:center;margin-top:10px;flex-wrap:wrap">
-      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:var(--green);display:inline-block"></span>Ingresos</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:var(--green);display:inline-block"></span>Margen</span>
       <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:var(--orange);display:inline-block"></span>Personal</span>
       <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:var(--yellow);display:inline-block"></span>Bencina</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--blue)"><span style="width:22px;height:3px;border-radius:2px;background:var(--blue);display:inline-block"></span>Ingreso total</span>
       <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><span style="width:12px;height:12px;border-radius:3px;background:rgba(250,100,0,0.3);border:1px dashed var(--orange);display:inline-block"></span>Estimado</span>
     </div>
   </div>
 
-  <div class="charts-row">
-    <div class="chart-card"><div class="chart-title">Monto por Comuna</div><div style="position:relative;height:220px"><canvas id="cComunas"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Monto por día</div><div style="position:relative;height:220px"><canvas id="cDias"></canvas></div></div>
-  </div>
-  <div class="chart-full"><div class="chart-title">Monto por Semana y Año</div><div style="position:relative;height:220px"><canvas id="cSemanas"></canvas></div></div>
+  <!-- 2. Monto por Mes y Año -->
   <div class="chart-full"><div class="chart-title">Monto por Mes y Año</div><div style="position:relative;height:220px"><canvas id="cMensual"></canvas></div></div>
+
+  <!-- 3. Monto por Año + Monto por día -->
   <div class="charts-row">
     <div class="chart-card"><div class="chart-title">Monto por Año</div><div style="position:relative;height:200px"><canvas id="cAnio"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Top equipos</div><div style="position:relative;height:200px"><canvas id="cEquipos"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Monto por día</div><div style="position:relative;height:200px"><canvas id="cDias"></canvas></div></div>
+  </div>
+
+  <!-- 4. Monto por Comuna + Top equipos -->
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Monto por Comuna</div><div style="position:relative;height:220px"><canvas id="cComunas"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Top equipos</div><div style="position:relative;height:220px"><canvas id="cEquipos"></canvas></div></div>
   </div>
 </div>
 
@@ -560,9 +565,10 @@ select:focus{border-color:var(--blue)}
         <canvas id="cCostosHistorico"></canvas>
       </div>
       <div style="display:flex;gap:16px;justify-content:center;margin-top:14px;flex-wrap:wrap">
-        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--green);display:inline-block"></span>Ingresos</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--green);display:inline-block"></span>Margen</span>
         <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--orange);display:inline-block"></span>Personal</span>
         <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:14px;height:14px;border-radius:3px;background:var(--yellow);display:inline-block"></span>Bencina</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--blue)"><span style="width:22px;height:3px;border-radius:2px;background:var(--blue);display:inline-block"></span>Ingreso total</span>
         <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)"><span style="width:14px;height:14px;border-radius:3px;background:rgba(250,100,0,0.35);border:1px dashed var(--orange);display:inline-block"></span>Estimado 10%</span>
       </div>
       <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--text3)">👆 Haz clic en cualquier semana para editar sus costos</div>
@@ -1988,19 +1994,7 @@ async function renderDashboard(){
       datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
         formatter:v=>v>0?fmtM(v):''}}}});
 
-  // ── Monto por Semana y Año ──
-  const aniosEnSem=Object.keys(semanasPorAnio).sort();
-  const semsAll=new Set(aniosEnSem.flatMap(a=>Object.keys(semanasPorAnio[a]||{})));
-  const semsOrd=[...semsAll].map(Number).sort((a,b)=>a-b);
-  CHARTS.semanas=new Chart(document.getElementById('cSemanas'),{type:'bar',
-    data:{labels:semsOrd,datasets:aniosEnSem.map((anio,i)=>({
-      label:anio,
-      data:semsOrd.map(s=>semanasPorAnio[anio]?.[s]||0),
-      backgroundColor:COLORES_ANIO[i+2]||COLORES_ANIO[i]||'#7a93aa',borderRadius:3
-    }))},
-    options:{...bO,plugins:{legend:{display:aniosEnSem.length>1,position:'top',labels:{font:{size:10},boxWidth:12}},
-      datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
-        formatter:v=>v>0?fmtM(v):''}}}});
+  // ── Monto por Semana y Año — eliminado, datos usados en gráfico ing/gastos ──
 
   // ── Monto por Mes y Año ──
   const aniosEnMes=Object.keys(mesesPorAnio).sort();
@@ -2885,10 +2879,10 @@ async function _renderCostosChartEn(canvasId, rangoSelectId, onClickFn, nFijo){
   const chart = new Chart(canvas, {
     type:'bar',
     data:{ labels, datasets:[
-      { label:'Ingresos', data:dataIngresos, backgroundColor:'rgba(95,180,70,0.85)', borderRadius:4, order:2 },
-      { label:'Personal', data:dataPersonal, backgroundColor:colPers, borderRadius:4, stack:'costos', order:3 },
-      { label:'Bencina',  data:dataBencina,  backgroundColor:colBen,  borderRadius:4, stack:'costos', order:3 },
-      { label:'Margen', data:dataMargen, type:'line',
+      { label:'Margen', data:dataMargen, backgroundColor:'rgba(95,180,70,0.85)', borderRadius:4, stack:'barra', order:2 },
+      { label:'Personal', data:dataPersonal, backgroundColor:colPers, borderRadius:4, stack:'barra', order:2 },
+      { label:'Bencina',  data:dataBencina,  backgroundColor:colBen,  borderRadius:4, stack:'barra', order:2 },
+      { label:'Ingreso total', data:dataIngresos, type:'line',
         borderColor:'#0071ce', backgroundColor:'rgba(0,113,206,0.10)',
         pointBackgroundColor:esEstimado.map(e=>e?'#aac4e0':'#0071ce'),
         pointRadius:4, pointHoverRadius:7, tension:0.35, fill:false, order:1, yAxisID:'y' }
@@ -2905,16 +2899,26 @@ async function _renderCostosChartEn(canvasId, rangoSelectId, onClickFn, nFijo){
       plugins:{
         legend:{ display:false },
         tooltip:{ callbacks:{
-          title: items => items[0]?.label+(esEstimado[items[0]?.dataIndex]?' ⚡ estimado':''),
+          title: items => items[0]?.label.replace('\n',' ')+(esEstimado[items[0]?.dataIndex]?' ⚡ estimado':''),
           label: ctx => ctx.dataset.label+': $'+Math.round(ctx.parsed.y).toLocaleString('es-CL')
         }},
-        datalabels:{ display:false },
+        datalabels:{
+          display: ctx => ctx.datasetIndex === 0,
+          anchor:'end', align:'top',
+          font:{ size:8, weight:'700' },
+          color:'#041e42',
+          formatter:(_, ctx) => {
+            const i = ctx.dataIndex;
+            const total = (dataMargen[i]||0) + (dataPersonal[i]||0) + (dataBencina[i]||0);
+            return total > 0 ? (total>=1000000?'$'+(total/1000000).toFixed(1)+'M': total>=1000?'$'+(total/1000).toFixed(0)+'k':'$'+total) : '';
+          }
+        },
       },
       scales:{
         x:{ ticks:{ font:{size:9}, color:'#7a93aa' }, grid:{ display:false } },
-        y:{ ticks:{ font:{size:9}, color:'#7a93aa', callback: v => v>=1000000?'$'+(v/1000000).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'k':'$'+v }, grid:{ color:'rgba(0,113,206,0.06)' } }
+        y:{ display:false }
       },
-      layout:{ padding:{ top:10 } }
+      layout:{ padding:{ top:28 } }
     }
   });
 
@@ -3011,7 +3015,7 @@ window.renderCostosChartDash = async function(){
 
   semanas.forEach(({ key, fechas }) => {
     const sem = isoWeek(fechas[0]), anio = fechas[0].getFullYear();
-    labels.push(`S${sem}\n${String(fechas[0].getDate()).padStart(2,'0')}/${String(fechas[0].getMonth()+1).padStart(2,'0')}`);
+    labels.push(`S${sem}\n${anio}`);
 
     const ingSem = ARRIENDOS.filter(a => {
       if(!a.fecha || a.estado === 'Cancelado') return false;
@@ -3050,10 +3054,10 @@ window.renderCostosChartDash = async function(){
   _chartCostosDash = new Chart(canvas, {
     type:'bar',
     data:{ labels, datasets:[
-      { label:'Ingresos', data:dataIngresos, backgroundColor:'rgba(95,180,70,0.85)', borderRadius:4, order:2 },
-      { label:'Personal', data:dataPersonal, backgroundColor:colPers, borderRadius:4, stack:'costos', order:3 },
-      { label:'Bencina',  data:dataBencina,  backgroundColor:colBen,  borderRadius:4, stack:'costos', order:3 },
-      { label:'Margen', data:dataMargen, type:'line',
+      { label:'Margen', data:dataMargen, backgroundColor:'rgba(95,180,70,0.85)', borderRadius:4, stack:'barra', order:2 },
+      { label:'Personal', data:dataPersonal, backgroundColor:colPers, borderRadius:4, stack:'barra', order:2 },
+      { label:'Bencina',  data:dataBencina,  backgroundColor:colBen,  borderRadius:4, stack:'barra', order:2 },
+      { label:'Ingreso total', data:dataIngresos, type:'line',
         borderColor:'#0071ce', backgroundColor:'rgba(0,113,206,0.10)',
         pointBackgroundColor:esEstimado.map(e=>e?'#aac4e0':'#0071ce'),
         pointRadius:4, pointHoverRadius:7, tension:0.35, fill:false, order:1, yAxisID:'y' }
@@ -3064,16 +3068,27 @@ window.renderCostosChartDash = async function(){
       plugins:{
         legend:{ display:false },
         tooltip:{ callbacks:{
-          title: items => items[0]?.label+(esEstimado[items[0]?.dataIndex]?' ⚡ estimado':''),
+          title: items => items[0]?.label.replace('\n',' ')+(esEstimado[items[0]?.dataIndex]?' ⚡ estimado':''),
           label: ctx => ctx.dataset.label+': $'+Math.round(ctx.parsed.y).toLocaleString('es-CL')
         }},
-        datalabels:{ display:false },
+        datalabels:{
+          display: ctx => ctx.datasetIndex === 0, // solo en dataset Margen (primer stack = base)
+          anchor:'end', align:'top',
+          font:{ size:8, weight:'700' },
+          color:'#041e42',
+          formatter:(_, ctx) => {
+            // Mostrar ingreso total (suma de los 3 datasets apilados)
+            const i = ctx.dataIndex;
+            const total = (dataMargen[i]||0) + (dataPersonal[i]||0) + (dataBencina[i]||0);
+            return total > 0 ? (total>=1000000?'$'+(total/1000000).toFixed(1)+'M': total>=1000?'$'+(total/1000).toFixed(0)+'k':'$'+total) : '';
+          }
+        },
       },
       scales:{
-        x:{ ticks:{ font:{size:9}, color:'#7a93aa', maxRotation:60 }, grid:{ display:false } },
-        y:{ ticks:{ font:{size:9}, color:'#7a93aa', callback: v => v>=1000000?'$'+(v/1000000).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'k':'$'+v }, grid:{ color:'rgba(0,113,206,0.06)' } }
+        x:{ ticks:{ font:{size:8}, color:'#7a93aa', maxRotation:60 }, grid:{ display:false } },
+        y:{ display:false }
       },
-      layout:{ padding:{ top:10 } }
+      layout:{ padding:{ top:28 } }
     }
   });
 };
