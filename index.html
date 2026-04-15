@@ -3560,50 +3560,52 @@ window.testNotifCompleto = async function(){
   const diag = document.getElementById('notifDiag');
   const log = (msg, ok) => {
     console.log(msg);
-    diag.innerHTML += `<div style="color:${ok===false?'#e00':ok===true?'#0a0':'#666'}">${msg}</div>`;
+    const color = ok===false?'#c00' : ok===true?'green' : '#555';
+    diag.innerHTML += '<div style="color:'+color+';margin:1px 0">'+msg+'</div>';
   };
-  diag.innerHTML = '';
-  log('▶ Iniciando diagnóstico...');
+  diag.innerHTML = '<div style="color:#555">Ejecutando...</div>';
 
-  // 1. Auth
-  const user = auth?.currentUser;
-  log(user ? `✅ Usuario: ${user.email}` : '❌ Sin usuario autenticado', !!user);
-  if(!user) return;
+  try{ log('1. window.auth: '+(window.auth?'OK':'undefined'), !!window.auth); }
+  catch(e){ log('1. Error: '+e, false); }
 
-  // 2. Sonido
-  try{ crearSonidoNotif(); log('✅ Sonido OK', true); }
-  catch(e){ log('❌ Sonido error: '+e.message, false); }
+  try{ log('2. window.db: '+(window.db?'OK':'undefined'), !!window.db); }
+  catch(e){ log('2. Error: '+e, false); }
 
-  // 3. Vibración
-  if(navigator.vibrate){
-    navigator.vibrate([300,100,300]);
-    log('✅ Vibración OK', true);
-  } else {
-    log('⚠️ Vibración no soportada en este dispositivo', null);
-  }
-
-  // 4. Escribir en Firestore
+  let user = null;
   try{
-    const{addDoc,collection:col,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const ref = await addDoc(col(window.db,'notificaciones'),{
-      tipo:'nuevo', cliente:'TEST DIAGNÓSTICO',
-      fecha:'2024-12-25', equipos:'Tobogán Test',
-      monto:0, direccion:'Test', autor: user.email.split('@')[0],
-      ts: serverTimestamp(), tsMs: Date.now(),
+    user = window.auth ? window.auth.currentUser : null;
+    log('3. Usuario: '+(user ? user.email : 'null - NO logueado'), !!user);
+  }catch(e){ log('3. Error: '+e, false); }
+  if(!user){ log('Sin sesion activa', false); return; }
+
+  try{ crearSonidoNotif(); log('4. Sonido: OK', true); }
+  catch(e){ log('4. Sonido error: '+e.message, false); }
+
+  try{
+    if(navigator.vibrate){ navigator.vibrate([300,100,300]); log('5. Vibracion: OK', true); }
+    else{ log('5. Vibracion: no soportada', null); }
+  }catch(e){ log('5. Vibra error: '+e, false); }
+
+  try{
+    const fs = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const ref = await fs.addDoc(fs.collection(window.db,'notificaciones'),{
+      tipo:'nuevo', cliente:'TEST OK',
+      fecha:'2025-12-25', equipos:'Tobogan Test',
+      monto:0, direccion:'Test',
+      autor: user.email.split('@')[0],
+      ts: fs.serverTimestamp(), tsMs: Date.now(),
     });
-    log('✅ Firestore escritura OK: '+ref.id, true);
-  }catch(e){ log('❌ Firestore escritura error: '+e.code+' '+e.message, false); return; }
+    log('6. Escritura Firestore: OK id='+ref.id, true);
+  }catch(e){ log('6. Escritura error: '+e.code+' '+e.message, false); return; }
 
-  // 5. Leer de Firestore
   try{
-    const{getDocs,collection:col,query,limit}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const snap = await getDocs(query(col(window.db,'notificaciones'), limit(5)));
-    log(`✅ Firestore lectura OK: ${snap.size} docs`, true);
-    snap.forEach(d => log(`   → ${d.data().cliente} / ${d.data().tipo}`));
-  }catch(e){ log('❌ Firestore lectura error: '+e.code+' '+e.message, false); }
+    const fs2 = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const snap = await fs2.getDocs(fs2.query(fs2.collection(window.db,'notificaciones'), fs2.limit(5)));
+    log('7. Lectura Firestore: '+snap.size+' docs', true);
+    snap.forEach(d => log('   -> '+d.data().cliente, true));
+  }catch(e){ log('7. Lectura error: '+e.code+' '+e.message, false); }
 
-  // 6. Estado del listener
-  log(_notifUnsubscribe ? '✅ Listener activo' : '❌ Listener NO activo', !!_notifUnsubscribe);
+  log('8. Listener activo: '+(_notifUnsubscribe?'SI':'NO'), !!_notifUnsubscribe);
 };
 
 function fmtTiempo(tsMs){
