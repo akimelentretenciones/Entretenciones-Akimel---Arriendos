@@ -3508,43 +3508,33 @@ async function guardarNotif(tipo, datos){
 async function iniciarNotifListener(){
   if(_notifUnsubscribe) return;
   try{
-    const{onSnapshot,collection:col,query,orderBy,limit,where,Timestamp}=
+    const{onSnapshot,collection:col,query,orderBy,limit}=
       await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
 
-    // NOTA: Requiere índice en Firestore: colección 'notificaciones', campos: tsMs ASC + orderBy tsMs DESC
-    // Si da error de índice, Firestore mostrará el link para crearlo en la consola
-    const hace3dias = new Date(Date.now() - 3*24*60*60*1000);
-    let q;
-    try{
-      q = query(
-        col(db,'notificaciones'),
-        where('tsMs','>',hace3dias.getTime()),
-        orderBy('tsMs','desc'),
-        limit(50)
-      );
-    }catch(e){
-      // Fallback sin where si falta índice
-      q = query(col(db,'notificaciones'), orderBy('tsMs','desc'), limit(50));
-    }
+    const q = query(col(db,'notificaciones'), orderBy('tsMs','desc'), limit(50));
 
     let primeraVez = true;
+    let notifsPrevias = new Set();
+
     _notifUnsubscribe = onSnapshot(q, snap => {
       const notifs = [];
       snap.forEach(d => notifs.push({id:d.id,...d.data()}));
 
-      // En la primera carga no disparar sonido ni vibración
       if(!primeraVez){
         snap.docChanges().forEach(change => {
           if(change.type === 'added'){
             const n = {id:change.doc.id,...change.doc.data()};
-            // No notificar si lo generé yo mismo (menos de 3 seg)
-            if(Date.now() - (n.tsMs||0) > 3000){
+            // Solo notificar si no estaba en la carga inicial
+            if(!notifsPrevias.has(n.id)){
               crearSonidoNotif();
               if(navigator.vibrate) navigator.vibrate([200,100,200]);
               mostrarToastNotif(n);
             }
           }
         });
+      } else {
+        // Guardar IDs de la carga inicial para no duplicar
+        snap.forEach(d => notifsPrevias.add(d.id));
       }
       primeraVez = false;
 
