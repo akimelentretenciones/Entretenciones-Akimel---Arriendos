@@ -392,7 +392,11 @@ select:focus{border-color:var(--blue)}
           <span style="font-size:13px;font-weight:700;color:#fff">🔔 Notificaciones</span>
           <button onclick="marcarTodasLeidas()" style="font-size:11px;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif">Marcar leídas</button>
         </div>
-        <div id="notifList" style="max-height:400px;overflow-y:auto"></div>
+        <div id="notifList" style="max-height:300px;overflow-y:auto"></div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border)">
+          <button onclick="testNotifCompleto()" style="width:100%;padding:8px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
+          <div id="notifDiag" style="font-size:10px;color:#666;margin-top:6px;line-height:1.6"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -3547,6 +3551,57 @@ async function iniciarNotifListener(){
     });
   }catch(e){ console.error('notif listener init error:',e); }
 }
+
+// ── FUNCIÓN DE DIAGNÓSTICO ──────────────────────────
+window.testNotifCompleto = async function(){
+  const diag = document.getElementById('notifDiag');
+  const log = (msg, ok) => {
+    console.log(msg);
+    diag.innerHTML += `<div style="color:${ok===false?'#e00':ok===true?'#0a0':'#666'}">${msg}</div>`;
+  };
+  diag.innerHTML = '';
+  log('▶ Iniciando diagnóstico...');
+
+  // 1. Auth
+  const user = auth?.currentUser;
+  log(user ? `✅ Usuario: ${user.email}` : '❌ Sin usuario autenticado', !!user);
+  if(!user) return;
+
+  // 2. Sonido
+  try{ crearSonidoNotif(); log('✅ Sonido OK', true); }
+  catch(e){ log('❌ Sonido error: '+e.message, false); }
+
+  // 3. Vibración
+  if(navigator.vibrate){
+    navigator.vibrate([300,100,300]);
+    log('✅ Vibración OK', true);
+  } else {
+    log('⚠️ Vibración no soportada en este dispositivo', null);
+  }
+
+  // 4. Escribir en Firestore
+  try{
+    const{addDoc,collection:col,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const ref = await addDoc(col(db,'notificaciones'),{
+      tipo:'nuevo', cliente:'TEST DIAGNÓSTICO',
+      fecha:'2024-12-25', equipos:'Tobogán Test',
+      monto:0, direccion:'Test', autor: user.email.split('@')[0],
+      ts: serverTimestamp(), tsMs: Date.now(),
+    });
+    log('✅ Firestore escritura OK: '+ref.id, true);
+  }catch(e){ log('❌ Firestore escritura error: '+e.code+' '+e.message, false); return; }
+
+  // 5. Leer de Firestore
+  try{
+    const{getDocs,collection:col,query,limit}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const snap = await getDocs(query(col(db,'notificaciones'), limit(5)));
+    log(`✅ Firestore lectura OK: ${snap.size} docs`, true);
+    snap.forEach(d => log(`   → ${d.data().cliente} / ${d.data().tipo}`));
+  }catch(e){ log('❌ Firestore lectura error: '+e.code+' '+e.message, false); }
+
+  // 6. Estado del listener
+  log(_notifUnsubscribe ? '✅ Listener activo' : '❌ Listener NO activo', !!_notifUnsubscribe);
+};
 
 function fmtTiempo(tsMs){
   if(!tsMs) return '';
