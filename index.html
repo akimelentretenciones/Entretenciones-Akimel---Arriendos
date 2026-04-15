@@ -378,10 +378,8 @@ select:focus{border-color:var(--blue)}
   <div class="header-right">
     <div class="conn"><div class="status-dot" id="connDot"></div><span id="connText">Conectando...</span></div>
     <span style="font-size:11px;color:rgba(255,255,255,.5);display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="userEmail"></span>
-    <button class="btn btn-white btn-sm" onclick="actualizarDatos()" title="Actualizar datos">🔄 Actualizar</button>
-    <button class="btn btn-white btn-sm" onclick="exportarCSV()">⬇ Exportar</button>
+    <button class="btn btn-white btn-sm" onclick="actualizarDatos()" title="Actualizar datos">🔄</button>
     <button class="btn btn-white btn-sm" onclick="cerrarSesion()" title="Cerrar sesión">🚪</button>
-    <button class="btn btn-primary btn-sm" onclick="goTab('subir')">+ Agregar Chat</button>
     <!-- CAMPANA DE NOTIFICACIONES -->
     <div style="position:relative" id="notifWrap">
       <button onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;position:relative;padding:4px;display:flex;align-items:center;justify-content:center" title="Notificaciones">
@@ -570,6 +568,7 @@ select:focus{border-color:var(--blue)}
         <option value="Domingo">Domingo</option>
       </select>
       <input type="hidden" id="filtroEstado" value="">
+      <button class="btn btn-ghost btn-sm" onclick="exportarCSV()" title="Exportar CSV" style="white-space:nowrap">⬇ CSV</button>
     </div>
   </div>
   <div class="table-wrap">
