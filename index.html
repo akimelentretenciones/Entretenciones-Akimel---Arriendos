@@ -3490,8 +3490,8 @@ async function guardarNotif(tipo, datos){
     const{addDoc,collection:col,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     const user = auth.currentUser;
     const autor = user?.email?.split('@')[0] || 'Sistema';
-    await addDoc(col(db,'notificaciones'),{
-      tipo,       // 'nuevo' | 'edicion' | 'eliminado'
+    const ref = await addDoc(col(db,'notificaciones'),{
+      tipo,
       cliente:    datos.cliente || '',
       fecha:      datos.fecha   || '',
       equipos:    datos.equipos || datos.equipo || '',
@@ -3501,17 +3501,19 @@ async function guardarNotif(tipo, datos){
       ts:         serverTimestamp(),
       tsMs:       Date.now(),
     });
-  }catch(e){ console.warn('notif error:',e); }
+    console.log('✅ Notificación guardada:', ref.id, tipo, datos.cliente);
+  }catch(e){ console.error('❌ notif error:', e.code, e.message); }
 }
 
 // Iniciar listener en tiempo real
 async function iniciarNotifListener(){
   if(_notifUnsubscribe) return;
   try{
-    const{onSnapshot,collection:col,query,orderBy,limit}=
+    const{onSnapshot,collection:col,query,limit}=
       await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
 
-    const q = query(col(db,'notificaciones'), orderBy('tsMs','desc'), limit(50));
+    // Sin orderBy: evita requerir índice compuesto en Firestore, ordenamos en memoria
+    const q = query(col(db,'notificaciones'), limit(50));
 
     let primeraVez = true;
     let notifsPrevias = new Set();
@@ -3519,12 +3521,13 @@ async function iniciarNotifListener(){
     _notifUnsubscribe = onSnapshot(q, snap => {
       const notifs = [];
       snap.forEach(d => notifs.push({id:d.id,...d.data()}));
+      // Ordenar en memoria: más reciente primero
+      notifs.sort((a,b) => (b.tsMs||0) - (a.tsMs||0));
 
       if(!primeraVez){
         snap.docChanges().forEach(change => {
           if(change.type === 'added'){
             const n = {id:change.doc.id,...change.doc.data()};
-            // Solo notificar si no estaba en la carga inicial
             if(!notifsPrevias.has(n.id)){
               crearSonidoNotif();
               if(navigator.vibrate) navigator.vibrate([200,100,200]);
@@ -3533,15 +3536,16 @@ async function iniciarNotifListener(){
           }
         });
       } else {
-        // Guardar IDs de la carga inicial para no duplicar
         snap.forEach(d => notifsPrevias.add(d.id));
       }
       primeraVez = false;
 
       renderNotifPanel(notifs);
       actualizarBadge(notifs);
+    }, err => {
+      console.error('❌ notif listener error:', err.code, err.message);
     });
-  }catch(e){ console.warn('notif listener:',e); }
+  }catch(e){ console.error('notif listener init error:',e); }
 }
 
 function fmtTiempo(tsMs){
