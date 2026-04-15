@@ -395,6 +395,7 @@ select:focus{border-color:var(--blue)}
         <div id="notifList" style="max-height:300px;overflow-y:auto"></div>
         <div style="padding:10px 14px;border-top:1px solid var(--border)">
           <button onclick="testNotifCompleto()" style="width:100%;padding:8px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
+          <button onclick="_notifLeidas.clear();localStorage.removeItem('akimel_notif_leidas');document.getElementById('notifDiag').innerHTML='✅ Historial limpiado - recarga la página';" style="width:100%;padding:6px;background:#eee;color:#333;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:Sora,sans-serif;margin-top:4px">🗑 Limpiar historial leídos</button>
           <div id="notifDiag" style="font-size:10px;color:#666;margin-top:6px;line-height:1.6"></div>
         </div>
       </div>
@@ -870,6 +871,8 @@ const app = initializeApp({
 });
 const db = getFirestore(app);
 const auth = getAuth(app);
+window.db = db;
+window.auth = auth;
 
 Chart.register(ChartDataLabels);
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
@@ -3492,9 +3495,9 @@ function crearSonidoNotif(){
 async function guardarNotif(tipo, datos){
   try{
     const{addDoc,collection:col,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const user = auth.currentUser;
+    const user = window.auth?.currentUser;
     const autor = user?.email?.split('@')[0] || 'Sistema';
-    const ref = await addDoc(col(db,'notificaciones'),{
+    const ref = await addDoc(col(window.db,'notificaciones'),{
       tipo,
       cliente:    datos.cliente || '',
       fecha:      datos.fecha   || '',
@@ -3517,7 +3520,7 @@ async function iniciarNotifListener(){
       await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
 
     // Sin orderBy: evita requerir índice compuesto en Firestore, ordenamos en memoria
-    const q = query(col(db,'notificaciones'), limit(50));
+    const q = query(col(window.db,'notificaciones'), limit(50));
 
     let primeraVez = true;
     let notifsPrevias = new Set();
@@ -3582,7 +3585,7 @@ window.testNotifCompleto = async function(){
   // 4. Escribir en Firestore
   try{
     const{addDoc,collection:col,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const ref = await addDoc(col(db,'notificaciones'),{
+    const ref = await addDoc(col(window.db,'notificaciones'),{
       tipo:'nuevo', cliente:'TEST DIAGNÓSTICO',
       fecha:'2024-12-25', equipos:'Tobogán Test',
       monto:0, direccion:'Test', autor: user.email.split('@')[0],
@@ -3594,7 +3597,7 @@ window.testNotifCompleto = async function(){
   // 5. Leer de Firestore
   try{
     const{getDocs,collection:col,query,limit}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const snap = await getDocs(query(col(db,'notificaciones'), limit(5)));
+    const snap = await getDocs(query(col(window.db,'notificaciones'), limit(5)));
     log(`✅ Firestore lectura OK: ${snap.size} docs`, true);
     snap.forEach(d => log(`   → ${d.data().cliente} / ${d.data().tipo}`));
   }catch(e){ log('❌ Firestore lectura error: '+e.code+' '+e.message, false); }
@@ -3672,8 +3675,8 @@ window.toggleNotifPanel = function(){
   const panel = document.getElementById('notifPanel');
   const visible = panel.style.display !== 'none';
   panel.style.display = visible ? 'none' : 'block';
-  // Cerrar al hacer clic fuera
   if(!visible){
+    // En móvil el mismo tap que abre también cierra si el timeout es muy corto
     setTimeout(() => {
       document.addEventListener('click', function handler(e){
         if(!document.getElementById('notifWrap').contains(e.target)){
@@ -3681,7 +3684,7 @@ window.toggleNotifPanel = function(){
           document.removeEventListener('click', handler);
         }
       });
-    }, 10);
+    }, 300);
   }
 };
 
