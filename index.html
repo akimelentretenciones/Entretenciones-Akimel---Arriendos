@@ -395,7 +395,7 @@ select:focus{border-color:var(--blue)}
         <div id="notifList" style="max-height:300px;overflow-y:auto"></div>
         <div style="padding:10px 14px;border-top:1px solid var(--border)">
           <button onclick="testNotifCompleto()" style="width:100%;padding:8px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
-          <button onclick="limpiarHistorialLeidas()" style="width:100%;padding:6px;background:#eee;color:#333;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:Sora,sans-serif;margin-top:4px">🗑 Limpiar historial leídos</button>
+          <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:6px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:Sora,sans-serif;margin-top:4px;font-weight:600">🗑 Borrar todas las notificaciones</button>
           <div id="notifDiag" style="font-size:10px;color:#666;margin-top:6px;line-height:1.6"></div>
         </div>
       </div>
@@ -3472,9 +3472,8 @@ window.toast=function(msg,tipo='ok'){
 
 let _notifUnsubscribe = null;
 let _notifLeidas = new Set(JSON.parse(localStorage.getItem('akimel_notif_leidas')||'[]'));
-let _notifSonido = null;
 
-// Crear sonido de notificación usando Web Audio API
+// ── SONIDO via Web Audio API ──
 function crearSonidoNotif(){
   try{
     const ctx = new (window.AudioContext||window.webkitAudioContext)();
@@ -3491,7 +3490,7 @@ function crearSonidoNotif(){
   }catch(e){}
 }
 
-// Guardar notificación en Firestore
+// ── GUARDAR NOTIFICACIÓN EN FIRESTORE ──
 async function guardarNotif(tipo, datos){
   try{
     const{addDoc,collection:col,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
@@ -3512,23 +3511,20 @@ async function guardarNotif(tipo, datos){
   }catch(e){ console.error('❌ notif error:', e.code, e.message); }
 }
 
-// Iniciar listener en tiempo real
+// ── LISTENER FIRESTORE EN TIEMPO REAL ──
 async function iniciarNotifListener(){
   if(_notifUnsubscribe) return;
   try{
     const{onSnapshot,collection:col,query,limit}=
       await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
 
-    // Sin orderBy: evita requerir índice compuesto en Firestore, ordenamos en memoria
     const q = query(col(window.db,'notificaciones'), limit(50));
-
     let primeraVez = true;
     let notifsPrevias = new Set();
 
     _notifUnsubscribe = onSnapshot(q, snap => {
       const notifs = [];
       snap.forEach(d => notifs.push({id:d.id,...d.data()}));
-      // Ordenar en memoria: más reciente primero
       notifs.sort((a,b) => (b.tsMs||0) - (a.tsMs||0));
 
       if(!primeraVez){
@@ -3540,17 +3536,15 @@ async function iniciarNotifListener(){
               crearSonidoNotif();
               if(navigator.vibrate) navigator.vibrate([200,100,200]);
               mostrarToastNotif(n);
-              // Notificación nativa del SO (suena aunque la app esté en segundo plano)
+              // Notificación nativa del SO (funciona con app en segundo plano en Android)
               enviarNotifNativa(n);
             }
           }
         });
       } else {
-        // Primera carga: registrar IDs existentes como "ya vistas" para no notificar al abrir
         snap.forEach(d => notifsPrevias.add(d.id));
       }
       primeraVez = false;
-
       renderNotifPanel(notifs);
       actualizarBadge(notifs);
     }, err => {
@@ -3559,7 +3553,31 @@ async function iniciarNotifListener(){
   }catch(e){ console.error('notif listener init error:',e); }
 }
 
-// ── FUNCIÓN DE DIAGNÓSTICO ──────────────────────────
+// ── BORRAR TODAS LAS NOTIFICACIONES DE FIRESTORE ──
+window.limpiarHistorialNotifs = async function(){
+  const diag = document.getElementById('notifDiag');
+  diag.innerHTML = '<span style="color:#888">Borrando...</span>';
+  try{
+    const{collection:col,getDocs,deleteDoc,doc}=
+      await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const snap = await getDocs(col(window.db,'notificaciones'));
+    const promesas = [];
+    snap.forEach(d => promesas.push(deleteDoc(doc(window.db,'notificaciones',d.id))));
+    await Promise.all(promesas);
+    // Limpiar leídas locales también
+    _notifLeidas.clear();
+    localStorage.removeItem('akimel_notif_leidas');
+    // Limpiar panel visual
+    document.getElementById('notifList').innerHTML = '<div class="notif-empty">Sin notificaciones recientes</div>';
+    document.getElementById('notifBadge').style.display = 'none';
+    diag.innerHTML = `<span style="color:green">✅ ${promesas.length} notificaciones eliminadas</span>`;
+  }catch(e){
+    diag.innerHTML = '<span style="color:red">❌ Error: '+e.message+'</span>';
+    console.error('limpiar notifs error:',e);
+  }
+};
+
+// ── DIAGNÓSTICO / PROBAR NOTIFICACIÓN ──
 window.testNotifCompleto = async function(){
   const diag = document.getElementById('notifDiag');
   const log = (msg, ok) => {
@@ -3571,7 +3589,6 @@ window.testNotifCompleto = async function(){
 
   try{ log('1. window.auth: '+(window.auth?'OK':'undefined'), !!window.auth); }
   catch(e){ log('1. Error: '+e, false); }
-
   try{ log('2. window.db: '+(window.db?'OK':'undefined'), !!window.db); }
   catch(e){ log('2. Error: '+e, false); }
 
@@ -3582,36 +3599,39 @@ window.testNotifCompleto = async function(){
   }catch(e){ log('3. Error: '+e, false); }
   if(!user){ log('Sin sesion activa', false); return; }
 
-  try{ crearSonidoNotif(); log('4. Sonido: OK', true); }
+  try{ crearSonidoNotif(); log('4. Sonido Web Audio: OK', true); }
   catch(e){ log('4. Sonido error: '+e.message, false); }
 
   try{
-    if(navigator.vibrate){ navigator.vibrate([300,100,300]); log('5. Vibracion: OK', true); }
-    else{ log('5. Vibracion: no soportada', null); }
+    if(navigator.vibrate){ navigator.vibrate([300,100,300]); log('5. Vibración: OK', true); }
+    else{ log('5. Vibración: no soportada', null); }
   }catch(e){ log('5. Vibra error: '+e, false); }
+
+  log('6. Permiso notif nativas: '+Notification.permission,
+      Notification.permission==='granted');
 
   try{
     const fs = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     const ref = await fs.addDoc(fs.collection(window.db,'notificaciones'),{
       tipo:'nuevo', cliente:'TEST OK',
-      fecha:'2025-12-25', equipos:'Tobogan Test',
+      fecha:'2025-12-25', equipos:'Tobogán Test',
       monto:0, direccion:'Test',
       autor: user.email.split('@')[0],
       ts: fs.serverTimestamp(), tsMs: Date.now(),
     });
-    log('6. Escritura Firestore: OK id='+ref.id, true);
-  }catch(e){ log('6. Escritura error: '+e.code+' '+e.message, false); return; }
+    log('7. Escritura Firestore: OK id='+ref.id, true);
+  }catch(e){ log('7. Escritura error: '+e.code+' '+e.message, false); return; }
 
   try{
     const fs2 = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     const snap = await fs2.getDocs(fs2.query(fs2.collection(window.db,'notificaciones'), fs2.limit(5)));
-    log('7. Lectura Firestore: '+snap.size+' docs', true);
-    snap.forEach(d => log('   -> '+d.data().cliente, true));
-  }catch(e){ log('7. Lectura error: '+e.code+' '+e.message, false); }
+    log('8. Lectura Firestore: '+snap.size+' docs', true);
+  }catch(e){ log('8. Lectura error: '+e.code+' '+e.message, false); }
 
-  log('8. Listener activo: '+(_notifUnsubscribe?'SI':'NO'), !!_notifUnsubscribe);
+  log('9. Listener activo: '+(_notifUnsubscribe?'SI':'NO'), !!_notifUnsubscribe);
 };
 
+// ── HELPERS UI ──
 function fmtTiempo(tsMs){
   if(!tsMs) return '';
   const diff = Date.now() - tsMs;
@@ -3627,7 +3647,7 @@ function fmtTiempo(tsMs){
 function notifTexto(n){
   const iconos = {nuevo:'➕', edicion:'✏️', eliminado:'🗑️'};
   const icono = iconos[n.tipo] || '🔔';
-  const equipoCorto = n.equipos ? n.equipos.split(',').slice(0,2).map(e=>e.trim()).join(', ')+(n.equipos.split(',').length>2?' +':''): '';
+  const equipoCorto = n.equipos ? n.equipos.split(',').slice(0,2).map(e=>e.trim()).join(', ')+(n.equipos.split(',').length>2?' +':'') : '';
   let texto = `${n.cliente || ''}`;
   if(n.fecha) texto += ` · ${n.fecha}`;
   if(equipoCorto) texto += ` · ${equipoCorto}`;
@@ -3677,12 +3697,44 @@ function mostrarToastNotif(n){
   setTimeout(() => t.remove(), 5000);
 }
 
+// ── NOTIFICACIÓN NATIVA DEL SO ──
+// Funciona aunque la app esté en segundo plano en Android (via SW)
+function enviarNotifNativa(n){
+  if(Notification.permission !== 'granted') return;
+  const {icono, texto} = notifTexto(n);
+  const titulo = {nuevo:'🛝 Nuevo arriendo', edicion:'✏️ Arriendo editado', eliminado:'🗑️ Arriendo eliminado'}[n.tipo] || '🔔 Akimel';
+  // Preferir via Service Worker (funciona en segundo plano)
+  if('serviceWorker' in navigator && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SHOW_NOTIF', titulo, body: texto, tag: n.id,
+    });
+    return;
+  }
+  // Fallback: Notification API directa (solo con app abierta)
+  try{
+    const notif = new Notification(titulo, {
+      body: texto, icon: '/icono-192.png', badge: '/icono-192.png',
+      tag: n.id, renotify: false, silent: false,
+    });
+    notif.onclick = () => { window.focus(); notif.close(); };
+  }catch(e){ console.warn('Notif nativa error:', e); }
+}
+
+// ── SOLICITAR PERMISO NOTIFICACIONES ──
+async function solicitarPermisoNotif(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'granted' || Notification.permission === 'denied') return;
+  setTimeout(async () => {
+    const perm = await Notification.requestPermission();
+    console.log('Permiso notificaciones:', perm);
+  }, 3000);
+}
+
 window.toggleNotifPanel = function(){
   const panel = document.getElementById('notifPanel');
   const visible = panel.style.display !== 'none';
   panel.style.display = visible ? 'none' : 'block';
   if(!visible){
-    // En móvil el mismo tap que abre también cierra si el timeout es muy corto
     setTimeout(() => {
       document.addEventListener('click', function handler(e){
         if(!document.getElementById('notifWrap').contains(e.target)){
@@ -3697,7 +3749,6 @@ window.toggleNotifPanel = function(){
 window.marcarLeida = function(id){
   _notifLeidas.add(id);
   localStorage.setItem('akimel_notif_leidas', JSON.stringify([..._notifLeidas]));
-  // Re-render sin recargar de Firestore
   const items = document.querySelectorAll('.notif-item');
   items.forEach(item => {
     if(item.getAttribute('onclick')?.includes(id)){
@@ -3722,87 +3773,20 @@ window.marcarTodasLeidas = function(){
   document.getElementById('notifBadge').style.display = 'none';
 };
 
-// ── LIMPIAR HISTORIAL DE LEÍDAS (corregido: re-renderiza el panel) ──
-window.limpiarHistorialLeidas = function(){
-  _notifLeidas.clear();
-  localStorage.removeItem('akimel_notif_leidas');
-  // Re-renderizar: marcar todos como no leídos visualmente
-  document.querySelectorAll('.notif-item').forEach(item => {
-    item.classList.add('unread');
-    if(!item.querySelector('.notif-dot')){
-      const dot = document.createElement('div');
-      dot.className = 'notif-dot';
-      item.appendChild(dot);
-    }
-  });
-  // Recalcular badge con las notificaciones actuales del panel
-  const total = document.querySelectorAll('.notif-item').length;
-  const badge = document.getElementById('notifBadge');
-  if(total > 0){
-    badge.style.display = 'flex';
-    badge.textContent = total > 9 ? '9+' : total;
-  }
-  document.getElementById('notifDiag').innerHTML = '✅ Historial limpiado. Todas las notificaciones marcadas como no leídas.';
-};
-
-// ── SOLICITAR PERMISO DE NOTIFICACIONES PUSH NATIVAS ──
-async function solicitarPermisoNotif(){
-  if(!('Notification' in window)) return;
-  if(Notification.permission === 'granted') return;
-  if(Notification.permission === 'denied') return;
-  // Pedir permiso con un pequeño delay para no interrumpir el login
-  setTimeout(async () => {
-    const perm = await Notification.requestPermission();
-    console.log('Permiso notificaciones:', perm);
-  }, 3000);
-}
-
-// ── ENVIAR NOTIFICACIÓN NATIVA DEL SISTEMA OPERATIVO ──
-function enviarNotifNativa(n){
-  if(Notification.permission !== 'granted') return;
-  const {icono, texto} = notifTexto(n);
-  const titulo = {nuevo:'🛝 Nuevo arriendo', edicion:'✏️ Arriendo editado', eliminado:'🗑️ Arriendo eliminado'}[n.tipo] || '🔔 Akimel';
-
-  // Intentar via Service Worker registration (funciona en segundo plano en Android)
-  if('serviceWorker' in navigator && navigator.serviceWorker.controller){
-    navigator.serviceWorker.controller.postMessage({
-      type: 'SHOW_NOTIF',
-      titulo,
-      body: texto,
-      tag: n.id,
-    });
-    return;
-  }
-
-  // Fallback: Notification API directa (solo funciona con la app abierta)
-  try{
-    const notif = new Notification(titulo, {
-      body: texto,
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      tag: n.id,
-      renotify: false,
-      silent: false,
-    });
-    notif.onclick = () => { window.focus(); notif.close(); };
-  }catch(e){ console.warn('Notif nativa error:', e); }
-}
-
 // Animación slide-in para toast
 const styleNotif = document.createElement('style');
 styleNotif.textContent = '@keyframes slideInRight{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}';
 document.head.appendChild(styleNotif);
 </script>
+<script>
+if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('/sw.js')
-        .then(r => {
-          console.log('SW registrado', r.scope);
-          // Solicitar permiso de notificaciones nativas tras registrar SW
-          solicitarPermisoNotif();
-        })
-        .catch(e => console.log('SW error:', e));
-    }
+    navigator.serviceWorker.register('/sw.js')
+      .then(r => {
+        console.log('SW registrado', r.scope);
+        solicitarPermisoNotif();
+      })
+      .catch(e => console.log('SW error:', e));
   });
 }
 </script>
