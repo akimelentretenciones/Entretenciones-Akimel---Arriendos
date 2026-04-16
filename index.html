@@ -380,9 +380,9 @@ select:focus{border-color:var(--blue)}
     <span style="font-size:11px;color:rgba(255,255,255,.5);display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="userEmail"></span>
     <button class="btn btn-white btn-sm" onclick="actualizarDatos()" title="Actualizar datos">🔄</button>
     <button class="btn btn-white btn-sm" onclick="cerrarSesion()" title="Cerrar sesión">🚪</button>
-    <!-- CAMPANA DE NOTIFICACIONES -->
+    <!-- CAMPANA - abre pestaña Alertas -->
     <div id="notifWrap">
-      <button onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;position:relative;padding:4px;display:flex;align-items:center;justify-content:center" title="Notificaciones">
+      <button onclick="goTab('notifs')" style="background:none;border:none;cursor:pointer;position:relative;padding:4px;display:flex;align-items:center;justify-content:center" title="Notificaciones">
         <span style="font-size:22px;line-height:1">🔔</span>
         <span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif"></span>
       </button>
@@ -397,6 +397,7 @@ select:focus{border-color:var(--blue)}
   <div class="nav-tab" onclick="goTab('arriendos')" id="tab-arriendos">📋 Arriendos</div>
   <div class="nav-tab" onclick="goTab('subir')" id="tab-subir">➕ Agregar Chat</div>
   <div class="nav-tab" onclick="goTab('costos')" id="tab-costos">💰 Costos</div>
+  <div class="nav-tab" onclick="goTab('notifs')" id="tab-notifs">🔔 Alertas<span id="notifBadgeTab" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 5px;font-size:9px;font-weight:800;margin-left:4px"></span></div>
 </div>
 
 <div class="main">
@@ -624,6 +625,27 @@ select:focus{border-color:var(--blue)}
 
 
 <!-- COSTOS -->
+<div class="section" id="sec-notifs">
+  <div style="max-width:700px;margin:0 auto">
+    <div style="background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:800;color:var(--blue3)">🔔 Notificaciones</div>
+        <button onclick="marcarTodasLeidas()" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">Marcar leídas</button>
+      </div>
+      <!-- Estado permiso -->
+      <div id="notifPermisoWrap" style="margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px"></div>
+      <!-- Lista -->
+      <div id="notifList" style="max-height:60vh;overflow-y:auto"></div>
+      <!-- Acciones -->
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+        <button onclick="testNotifCompleto()" style="width:100%;padding:10px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
+        <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:8px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:Sora,sans-serif;font-weight:600">🗑 Borrar todas las notificaciones</button>
+        <div id="notifDiag" style="font-size:11px;color:#666;line-height:1.7;margin-top:4px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="section" id="sec-costos">
   <div style="max-width:900px;margin:0 auto">
 
@@ -2377,6 +2399,7 @@ window.goTab=function(tab){
       mostrarInventarioDia(hoy.getDate());
   }
   if(tab==='costos') renderCostos();
+  if(tab==='notifs') actualizarIndicadorPermiso();
 };
 
 // ===== DISPONIBILIDAD RÁPIDA =====
@@ -3687,9 +3710,16 @@ function renderNotifPanel(notifs){
 }
 function actualizarBadge(notifs){
   const noLeidas=notifs.filter(n=>!_notifLeidas.has(n.id)).length;
+  // Badge campana header
   const badge=document.getElementById('notifBadge');
   if(noLeidas>0){badge.style.display='flex';badge.textContent=noLeidas>9?'9+':noLeidas;}
   else badge.style.display='none';
+  // Badge pestaña Alertas
+  const badgeTab=document.getElementById('notifBadgeTab');
+  if(badgeTab){
+    if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}
+    else badgeTab.style.display='none';
+  }
 }
 function mostrarToastNotif(n){
   const{icono,texto}=notifTexto(n);
@@ -3763,27 +3793,5 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
-
-<!-- ── DRAWER NOTIFICACIONES ── fuera del header para evitar clipping en iPhone -->
-<div id="notifOverlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600"></div>
-<div id="notifPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;z-index:601;max-height:85vh;overflow:hidden;box-shadow:0 -4px 32px rgba(0,0,0,.2);padding-bottom:env(safe-area-inset-bottom)">
-  <div onclick="toggleNotifPanel()" style="padding:14px;text-align:center;cursor:pointer">
-    <div style="width:40px;height:4px;background:#cbd5e1;border-radius:2px;margin:0 auto"></div>
-  </div>
-  <div style="padding:0 16px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-    <span style="font-size:15px;font-weight:800;color:var(--blue3)">🔔 Notificaciones</span>
-    <div style="display:flex;gap:10px;align-items:center">
-      <button onclick="marcarTodasLeidas()" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">Marcar leídas</button>
-      <button onclick="toggleNotifPanel()" style="font-size:22px;color:var(--text3);background:none;border:none;cursor:pointer;line-height:1;padding:0 4px">✕</button>
-    </div>
-  </div>
-  <div id="notifList" style="max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
-  <div style="padding:12px 14px;border-top:1px solid var(--border)">
-    <div id="notifPermisoWrap" style="margin-bottom:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px"></div>
-    <button onclick="testNotifCompleto()" style="width:100%;padding:8px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
-    <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:6px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:Sora,sans-serif;margin-top:4px;font-weight:600">🗑 Borrar todas las notificaciones</button>
-    <div id="notifDiag" style="font-size:10px;color:#666;margin-top:6px;line-height:1.6"></div>
-  </div>
-</div>
 </body>
 </html>
