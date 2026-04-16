@@ -387,28 +387,7 @@ select:focus{border-color:var(--blue)}
         <span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif"></span>
       </button>
     </div>
-    <!-- DRAWER NOTIFICACIONES (abre desde abajo, funciona en iPhone) -->
-    <div id="notifOverlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600"></div>
-    <div id="notifPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;z-index:601;max-height:85vh;overflow:hidden;box-shadow:0 -4px 32px rgba(0,0,0,.18);padding-bottom:env(safe-area-inset-bottom)">
-      <!-- Handle para arrastrar -->
-      <div onclick="toggleNotifPanel()" style="padding:12px;text-align:center;cursor:pointer">
-        <div style="width:36px;height:4px;background:#cbd5e1;border-radius:2px;margin:0 auto"></div>
-      </div>
-      <div style="padding:0 16px 10px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:15px;font-weight:800;color:var(--blue3)">🔔 Notificaciones</span>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button onclick="marcarTodasLeidas()" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">Marcar leídas</button>
-          <button onclick="toggleNotifPanel()" style="font-size:20px;color:var(--text3);background:none;border:none;cursor:pointer;line-height:1;padding:0 4px">✕</button>
-        </div>
-      </div>
-      <div id="notifList" style="max-height:45vh;overflow-y:auto"></div>
-      <div style="padding:12px 14px;border-top:1px solid var(--border)">
-        <div id="notifPermisoWrap" style="margin-bottom:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px"></div>
-        <button onclick="testNotifCompleto()" style="width:100%;padding:8px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
-        <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:6px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:Sora,sans-serif;margin-top:4px;font-weight:600">🗑 Borrar todas las notificaciones</button>
-        <div id="notifDiag" style="font-size:10px;color:#666;margin-top:6px;line-height:1.6"></div>
-      </div>
-    </div>
+
   </div>
 </header>
 
@@ -3784,5 +3763,27 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+
+<!-- ── DRAWER NOTIFICACIONES ── fuera del header para evitar clipping en iPhone -->
+<div id="notifOverlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600"></div>
+<div id="notifPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;z-index:601;max-height:85vh;overflow:hidden;box-shadow:0 -4px 32px rgba(0,0,0,.2);padding-bottom:env(safe-area-inset-bottom)">
+  <div onclick="toggleNotifPanel()" style="padding:14px;text-align:center;cursor:pointer">
+    <div style="width:40px;height:4px;background:#cbd5e1;border-radius:2px;margin:0 auto"></div>
+  </div>
+  <div style="padding:0 16px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:15px;font-weight:800;color:var(--blue3)">🔔 Notificaciones</span>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button onclick="marcarTodasLeidas()" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">Marcar leídas</button>
+      <button onclick="toggleNotifPanel()" style="font-size:22px;color:var(--text3);background:none;border:none;cursor:pointer;line-height:1;padding:0 4px">✕</button>
+    </div>
+  </div>
+  <div id="notifList" style="max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
+  <div style="padding:12px 14px;border-top:1px solid var(--border)">
+    <div id="notifPermisoWrap" style="margin-bottom:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px"></div>
+    <button onclick="testNotifCompleto()" style="width:100%;padding:8px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
+    <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:6px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:Sora,sans-serif;margin-top:4px;font-weight:600">🗑 Borrar todas las notificaciones</button>
+    <div id="notifDiag" style="font-size:10px;color:#666;margin-top:6px;line-height:1.6"></div>
+  </div>
+</div>
 </body>
 </html>
