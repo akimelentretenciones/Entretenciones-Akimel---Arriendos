@@ -380,6 +380,35 @@ select:focus{border-color:var(--blue)}
     <span style="font-size:11px;color:rgba(255,255,255,.5);display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="userEmail"></span>
     <button class="btn btn-white btn-sm" onclick="actualizarDatos()" title="Actualizar datos">🔄</button>
     <button class="btn btn-white btn-sm" onclick="cerrarSesion()" title="Cerrar sesión">🚪</button>
+    <!-- CAMPANA DE NOTIFICACIONES -->
+    <div id="notifWrap">
+      <button onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;position:relative;padding:4px;display:flex;align-items:center;justify-content:center" title="Notificaciones">
+        <span style="font-size:22px;line-height:1">🔔</span>
+        <span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif"></span>
+      </button>
+    </div>
+    <!-- DRAWER NOTIFICACIONES (abre desde abajo, funciona en iPhone) -->
+    <div id="notifOverlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600"></div>
+    <div id="notifPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;z-index:601;max-height:85vh;overflow:hidden;box-shadow:0 -4px 32px rgba(0,0,0,.18);padding-bottom:env(safe-area-inset-bottom)">
+      <!-- Handle para arrastrar -->
+      <div onclick="toggleNotifPanel()" style="padding:12px;text-align:center;cursor:pointer">
+        <div style="width:36px;height:4px;background:#cbd5e1;border-radius:2px;margin:0 auto"></div>
+      </div>
+      <div style="padding:0 16px 10px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:15px;font-weight:800;color:var(--blue3)">🔔 Notificaciones</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="marcarTodasLeidas()" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">Marcar leídas</button>
+          <button onclick="toggleNotifPanel()" style="font-size:20px;color:var(--text3);background:none;border:none;cursor:pointer;line-height:1;padding:0 4px">✕</button>
+        </div>
+      </div>
+      <div id="notifList" style="max-height:45vh;overflow-y:auto"></div>
+      <div style="padding:12px 14px;border-top:1px solid var(--border)">
+        <div id="notifPermisoWrap" style="margin-bottom:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px"></div>
+        <button onclick="testNotifCompleto()" style="width:100%;padding:8px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
+        <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:6px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:Sora,sans-serif;margin-top:4px;font-weight:600">🗑 Borrar todas las notificaciones</button>
+        <div id="notifDiag" style="font-size:10px;color:#666;margin-top:6px;line-height:1.6"></div>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -389,7 +418,6 @@ select:focus{border-color:var(--blue)}
   <div class="nav-tab" onclick="goTab('arriendos')" id="tab-arriendos">📋 Arriendos</div>
   <div class="nav-tab" onclick="goTab('subir')" id="tab-subir">➕ Agregar Chat</div>
   <div class="nav-tab" onclick="goTab('costos')" id="tab-costos">💰 Costos</div>
-  <div class="nav-tab" onclick="goTab('notifs')" id="tab-notifs">🔔 Alertas<span id="notifBadgeTab" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:800;margin-left:5px"></span></div>
 </div>
 
 <div class="main">
@@ -617,24 +645,6 @@ select:focus{border-color:var(--blue)}
 
 
 <!-- COSTOS -->
-<div class="section" id="sec-notifs">
-  <div style="max-width:700px;margin:0 auto">
-    <div style="background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div style="font-size:16px;font-weight:800;color:var(--blue3)">🔔 Notificaciones</div>
-        <button onclick="marcarTodasLeidas()" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">Marcar leídas</button>
-      </div>
-      <div id="notifPermisoWrap" style="margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px"></div>
-      <div id="notifList" style="max-height:60vh;overflow-y:auto"></div>
-      <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
-        <button onclick="testNotifCompleto()" style="width:100%;padding:10px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
-        <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:8px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:Sora,sans-serif;font-weight:600">🗑 Borrar todas las notificaciones</button>
-        <div id="notifDiag" style="font-size:11px;color:#666;line-height:1.7;margin-top:4px"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="section" id="sec-costos">
   <div style="max-width:900px;margin:0 auto">
 
@@ -2388,7 +2398,6 @@ window.goTab=function(tab){
       mostrarInventarioDia(hoy.getDate());
   }
   if(tab==='costos') renderCostos();
-  if(tab==='notifs') actualizarIndicadorPermiso();
 };
 
 // ===== DISPONIBILIDAD RÁPIDA =====
@@ -3467,172 +3476,230 @@ window.toast=function(msg,tipo='ok'){
 </script>
 <script>
 // ═══════════════════════════════════════════════════
-// MÓDULO NOTIFICACIONES v5
+// MÓDULO NOTIFICACIONES v4
 // ═══════════════════════════════════════════════════
 let _notifUnsubscribe = null;
 let _notifLeidas = new Set(JSON.parse(localStorage.getItem('akimel_notif_leidas')||'[]'));
 
+// ── SONIDO ──
 function crearSonidoNotif(){
   try{
-    const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    const osc=ctx.createOscillator(),gain=ctx.createGain();
-    osc.connect(gain);gain.connect(ctx.destination);
-    osc.type='sine';
-    osc.frequency.setValueAtTime(880,ctx.currentTime);
-    osc.frequency.setValueAtTime(660,ctx.currentTime+0.1);
-    gain.gain.setValueAtTime(0.3,ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
-    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.4);
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
   }catch(e){}
 }
 
-async function guardarNotif(tipo,datos){
+// ── GUARDAR NOTIFICACIÓN EN FIRESTORE ──
+async function guardarNotif(tipo, datos){
   try{
     const{addDoc,collection:col,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const user=window.auth?.currentUser;
-    const autor=user?.email?.split('@')[0]||'Sistema';
+    const user = window.auth?.currentUser;
+    const autor = user?.email?.split('@')[0] || 'Sistema';
     await addDoc(col(window.db,'notificaciones'),{
-      tipo,cliente:datos.cliente||'',fecha:datos.fecha||'',
-      equipos:datos.equipos||datos.equipo||'',
-      monto:datos.pendiente||datos.monto||0,
-      direccion:datos.direccion||'',autor,
-      ts:serverTimestamp(),tsMs:Date.now(),
+      tipo,
+      cliente:   datos.cliente   || '',
+      fecha:     datos.fecha     || '',
+      equipos:   datos.equipos   || datos.equipo || '',
+      monto:     datos.pendiente || datos.monto  || 0,
+      direccion: datos.direccion || '',
+      autor, ts: serverTimestamp(), tsMs: Date.now(),
     });
-  }catch(e){console.error('notif error:',e.code,e.message);}
+  }catch(e){ console.error('notif error:', e.code, e.message); }
 }
 
-window.limpiarHistorialNotifs=async function(){
-  const diag=document.getElementById('notifDiag');
-  diag.innerHTML='<span style="color:#888">Borrando...</span>';
+// ── BORRAR TODAS DE FIRESTORE ──
+window.limpiarHistorialNotifs = async function(){
+  const diag = document.getElementById('notifDiag');
+  diag.innerHTML = '<span style="color:#888">Borrando...</span>';
   try{
-    const fs=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const snap=await fs.getDocs(fs.collection(window.db,'notificaciones'));
-    await Promise.all([...snap.docs].map(d=>fs.deleteDoc(d.ref)));
-    _notifLeidas.clear();localStorage.removeItem('akimel_notif_leidas');
-    document.getElementById('notifList').innerHTML='<div class="notif-empty">Sin notificaciones recientes</div>';
-    actualizarBadge([]);
-    diag.innerHTML='<span style="color:green">✅ '+snap.size+' notificaciones eliminadas</span>';
-  }catch(e){diag.innerHTML='<span style="color:red">❌ '+e.message+'</span>';}
-};
-
-function actualizarIndicadorPermiso(){
-  const wrap=document.getElementById('notifPermisoWrap');
-  if(!wrap)return;
-  const perm=('Notification' in window)?Notification.permission:'unsupported';
-  if(perm==='granted'){
-    wrap.style.background='#f0fdf4';wrap.style.color='#166534';
-    wrap.innerHTML='<span>✅ Notificaciones del sistema: <b>ACTIVAS</b></span>';
-  }else if(perm==='denied'){
-    wrap.style.background='#fef2f2';wrap.style.color='#991b1b';
-    wrap.innerHTML='<span>🚫 Bloqueadas. Ve a Ajustes del navegador para habilitarlas.</span>';
-  }else if(perm==='default'){
-    wrap.style.background='#fffbeb';wrap.style.color='#92400e';
-    wrap.innerHTML='<span>⚠️ Sin permiso — actívalas para recibir alertas</span><button onclick="pedirPermisoNotif()" style="padding:6px 14px;background:#f97316;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif;white-space:nowrap">Activar 🔔</button>';
-  }else{
-    wrap.style.background='#f1f5f9';wrap.style.color='#64748b';
-    wrap.innerHTML='<span>Notificaciones no soportadas en este navegador</span>';
-  }
-}
-
-window.pedirPermisoNotif=async function(){
-  if(!('Notification' in window))return;
-  const perm=await Notification.requestPermission();
-  actualizarIndicadorPermiso();
-  if(perm==='granted'){
-    const reg=await navigator.serviceWorker?.ready;
-    reg?.showNotification('✅ Akimel activado',{body:'Recibirás alertas de nuevos arriendos',icon:'/icono-192.png',tag:'activado'});
-  }
-};
-
-async function enviarNotifNativa(n){
-  if(!('Notification' in window)||Notification.permission!=='granted')return;
-  const titulo={nuevo:'🛝 Nuevo arriendo',edicion:'✏️ Arriendo editado',eliminado:'🗑️ Arriendo eliminado'}[n.tipo]||'🔔 Akimel';
-  const{texto}=notifTexto(n);
-  try{
-    const reg=await navigator.serviceWorker?.ready;
-    await reg?.showNotification(titulo,{body:texto,icon:'/icono-192.png',badge:'/icono-192.png',tag:n.id,renotify:true,vibrate:[200,100,200]});
+    const fs = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const snap = await fs.getDocs(fs.collection(window.db,'notificaciones'));
+    await Promise.all([...snap.docs].map(d => fs.deleteDoc(d.ref)));
+    _notifLeidas.clear();
+    localStorage.removeItem('akimel_notif_leidas');
+    document.getElementById('notifList').innerHTML = '<div class="notif-empty">Sin notificaciones recientes</div>';
+    document.getElementById('notifBadge').style.display = 'none';
+    diag.innerHTML = '<span style="color:green">✅ '+snap.size+' notificaciones eliminadas</span>';
   }catch(e){
-    try{new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id});}catch(e2){}
+    diag.innerHTML = '<span style="color:red">❌ '+e.message+'</span>';
+  }
+};
+
+// ── INDICADOR DE PERMISO ──
+function actualizarIndicadorPermiso(){
+  const wrap = document.getElementById('notifPermisoWrap');
+  if(!wrap) return;
+  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+  if(perm === 'granted'){
+    wrap.style.background = '#f0fdf4';
+    wrap.style.color = '#166534';
+    wrap.innerHTML = '<span>✅ Notificaciones del sistema: <b>ACTIVAS</b></span>';
+  } else if(perm === 'denied'){
+    wrap.style.background = '#fef2f2';
+    wrap.style.color = '#991b1b';
+    wrap.innerHTML = '<span>🚫 Notificaciones bloqueadas en este dispositivo.<br>Ve a Ajustes del navegador para habilitarlas.</span>';
+  } else if(perm === 'default'){
+    wrap.style.background = '#fffbeb';
+    wrap.style.color = '#92400e';
+    wrap.innerHTML = '<span>⚠️ Sin permiso</span><button onclick="pedirPermisoNotif()" style="padding:5px 12px;background:#f97316;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif;white-space:nowrap">Activar 🔔</button>';
+  } else {
+    wrap.style.background = '#f1f5f9';
+    wrap.style.color = '#64748b';
+    wrap.innerHTML = '<span>Notificaciones del sistema no soportadas en este navegador</span>';
   }
 }
 
-async function iniciarNotifListener(){
-  if(_notifUnsubscribe)return;
+// ── PEDIR PERMISO (debe llamarse desde acción del usuario) ──
+window.pedirPermisoNotif = async function(){
+  if(!('Notification' in window)) return;
+  const perm = await Notification.requestPermission();
+  actualizarIndicadorPermiso();
+  if(perm === 'granted'){
+    // Notif de prueba — iOS requiere Notification directa, no via SW
+    try{
+      new Notification('✅ Akimel activado', {
+        body: 'Recibirás alertas de nuevos arriendos',
+        icon: '/icono-192.png',
+      });
+    }catch(e){ console.warn('notif prueba:', e); }
+  }
+};
+
+// ── NOTIFICACIÓN NATIVA ──
+// iOS PWA: solo acepta new Notification() directamente
+// Android/Chrome: acepta reg.showNotification() via SW (funciona en segundo plano)
+async function enviarNotifNativa(n){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  const titulo = {nuevo:'🛝 Nuevo arriendo', edicion:'✏️ Arriendo editado', eliminado:'🗑️ Arriendo eliminado'}[n.tipo] || '🔔 Akimel';
+  const {texto} = notifTexto(n);
+
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  if(esIOS){
+    // iOS PWA: usar Notification API directa (única opción en iOS)
+    try{
+      new Notification(titulo, {
+        body: texto,
+        icon: '/icono-192.png',
+        tag: n.id,
+      });
+    }catch(e){ console.warn('iOS notif error:', e); }
+    return;
+  }
+
+  // Android / Chrome / otros: via SW registration (funciona en segundo plano)
   try{
-    const{onSnapshot,collection:col,query,limit}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const q=query(col(window.db,'notificaciones'),limit(50));
-    let primeraVez=true,previos=new Set();
-    _notifUnsubscribe=onSnapshot(q,snap=>{
-      const notifs=[];
-      snap.forEach(d=>notifs.push({id:d.id,...d.data()}));
-      notifs.sort((a,b)=>(b.tsMs||0)-(a.tsMs||0));
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification(titulo, {
+      body: texto, icon: '/icono-192.png', badge: '/icono-192.png',
+      tag: n.id, renotify: true, vibrate: [200,100,200],
+    });
+  }catch(e){
+    // Fallback si SW falla
+    try{ new Notification(titulo, { body: texto, icon: '/icono-192.png', tag: n.id }); }catch(e2){}
+  }
+}
+
+// ── LISTENER FIRESTORE ──
+async function iniciarNotifListener(){
+  if(_notifUnsubscribe) return;
+  try{
+    const{onSnapshot,collection:col,query,limit}=
+      await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const q = query(col(window.db,'notificaciones'), limit(50));
+    let primeraVez = true;
+    let previos = new Set();
+
+    _notifUnsubscribe = onSnapshot(q, snap => {
+      const notifs = [];
+      snap.forEach(d => notifs.push({id:d.id,...d.data()}));
+      notifs.sort((a,b) => (b.tsMs||0) - (a.tsMs||0));
+
       if(!primeraVez){
-        snap.docChanges().forEach(change=>{
-          if(change.type==='added'){
-            const n={id:change.doc.id,...change.doc.data()};
+        snap.docChanges().forEach(change => {
+          if(change.type === 'added'){
+            const n = {id:change.doc.id,...change.doc.data()};
             if(!previos.has(n.id)){
               previos.add(n.id);
               crearSonidoNotif();
-              if(navigator.vibrate)navigator.vibrate([200,100,200]);
+              if(navigator.vibrate) navigator.vibrate([200,100,200]);
               mostrarToastNotif(n);
               enviarNotifNativa(n);
             }
           }
         });
-      }else{snap.forEach(d=>previos.add(d.id));}
-      primeraVez=false;
+      } else {
+        snap.forEach(d => previos.add(d.id));
+      }
+      primeraVez = false;
       renderNotifPanel(notifs);
       actualizarBadge(notifs);
-    },err=>console.error('notif listener:',err.code,err.message));
-  }catch(e){console.error('notif init:',e);}
+    }, err => console.error('notif listener:', err.code, err.message));
+  }catch(e){ console.error('notif init:', e); }
 }
 
-window.testNotifCompleto=async function(){
-  const diag=document.getElementById('notifDiag');
-  const log=(msg,ok)=>{const c=ok===false?'#c00':ok===true?'green':'#555';diag.innerHTML+='<div style="color:'+c+'">'+msg+'</div>';};
-  diag.innerHTML='<div style="color:#555">Ejecutando...</div>';
-  log('1. window.auth: '+(window.auth?'OK':'undefined'),!!window.auth);
-  log('2. window.db: '+(window.db?'OK':'undefined'),!!window.db);
-  const user=window.auth?.currentUser;
-  log('3. Usuario: '+(user?user.email:'NO logueado'),!!user);
-  if(!user){log('Sin sesion activa',false);return;}
-  try{crearSonidoNotif();log('4. Sonido: OK',true);}catch(e){log('4. Sonido error: '+e.message,false);}
-  if(navigator.vibrate){navigator.vibrate([300,100,300]);log('5. Vibración: OK',true);}
-  else log('5. Vibración: no soportada',null);
-  const perm=('Notification' in window)?Notification.permission:'no soportado';
-  log('6. Permiso notif: '+perm,perm==='granted');
-  if(perm!=='granted')log('   → Presiona "Activar 🔔" arriba para habilitar',false);
+// ── DIAGNÓSTICO ──
+window.testNotifCompleto = async function(){
+  const diag = document.getElementById('notifDiag');
+  const log = (msg, ok) => {
+    const color = ok===false?'#c00':ok===true?'green':'#555';
+    diag.innerHTML += '<div style="color:'+color+'">'+msg+'</div>';
+  };
+  diag.innerHTML = '<div style="color:#555">Ejecutando...</div>';
+  log('1. window.auth: '+(window.auth?'OK':'undefined'), !!window.auth);
+  log('2. window.db: '+(window.db?'OK':'undefined'), !!window.db);
+  const user = window.auth?.currentUser;
+  log('3. Usuario: '+(user?user.email:'NO logueado'), !!user);
+  if(!user){ log('Sin sesion activa', false); return; }
+  try{ crearSonidoNotif(); log('4. Sonido Web Audio: OK', true); }
+  catch(e){ log('4. Sonido error: '+e.message, false); }
+  if(navigator.vibrate){ navigator.vibrate([300,100,300]); log('5. Vibración: OK', true); }
+  else log('5. Vibración: no soportada', null);
+  const perm = ('Notification' in window) ? Notification.permission : 'no soportado';
+  log('6. Permiso notif nativas: '+perm, perm==='granted');
+  if(perm !== 'granted') log('   ↑ Presiona "Activar 🔔" para habilitar', false);
   try{
-    const fs=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const ref=await fs.addDoc(fs.collection(window.db,'notificaciones'),{
-      tipo:'nuevo',cliente:'TEST OK',fecha:'2025-12-25',equipos:'Tobogán Test',
-      monto:0,direccion:'Test',autor:user.email.split('@')[0],ts:fs.serverTimestamp(),tsMs:Date.now(),
+    const fs = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const ref = await fs.addDoc(fs.collection(window.db,'notificaciones'),{
+      tipo:'nuevo', cliente:'TEST OK', fecha:'2025-12-25',
+      equipos:'Tobogán Test', monto:0, direccion:'Test',
+      autor:user.email.split('@')[0], ts:fs.serverTimestamp(), tsMs:Date.now(),
     });
-    log('7. Escritura Firestore: OK id='+ref.id,true);
-    const snap=await fs.getDocs(fs.collection(window.db,'notificaciones'));
-    log('8. Lectura Firestore: '+snap.size+' docs',true);
-  }catch(e){log('7. Error: '+e.code+' '+e.message,false);}
-  log('9. Listener activo: '+(_notifUnsubscribe?'SI':'NO'),!!_notifUnsubscribe);
-  const swReg='serviceWorker' in navigator?await navigator.serviceWorker.getRegistration():null;
-  log('10. Service Worker: '+(swReg?'Registrado':'NO'),!!swReg);
+    log('7. Escritura Firestore: OK id='+ref.id, true);
+    const snap = await fs.getDocs(fs.collection(window.db,'notificaciones'));
+    log('8. Lectura Firestore: '+snap.size+' docs', true);
+  }catch(e){ log('7. Error Firestore: '+e.code+' '+e.message, false); }
+  log('9. Listener activo: '+(_notifUnsubscribe?'SI':'NO'), !!_notifUnsubscribe);
+  const swReg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+  log('10. Service Worker: '+(swReg?'Registrado':'NO registrado'), !!swReg);
 };
 
+// ── HELPERS UI ──
 function fmtTiempo(tsMs){
-  if(!tsMs)return'';
-  const diff=Date.now()-tsMs,min=Math.floor(diff/60000),hrs=Math.floor(diff/3600000),dias=Math.floor(diff/86400000);
-  if(min<1)return'Ahora';if(min<60)return'Hace '+min+' min';
-  if(hrs<24)return'Hace '+hrs+'h';return'Hace '+dias+'d';
+  if(!tsMs) return '';
+  const diff = Date.now()-tsMs, min=Math.floor(diff/60000), hrs=Math.floor(diff/3600000), dias=Math.floor(diff/86400000);
+  if(min<1) return 'Ahora'; if(min<60) return 'Hace '+min+' min';
+  if(hrs<24) return 'Hace '+hrs+'h'; return 'Hace '+dias+'d';
 }
 function notifTexto(n){
   const iconos={nuevo:'➕',edicion:'✏️',eliminado:'🗑️'};
   const icono=iconos[n.tipo]||'🔔';
   const eq=n.equipos?n.equipos.split(',').slice(0,2).map(e=>e.trim()).join(', ')+(n.equipos.split(',').length>2?' +':''):'';
-  let texto=n.cliente||'';if(n.fecha)texto+=' · '+n.fecha;if(eq)texto+=' · '+eq;
+  let texto=n.cliente||''; if(n.fecha) texto+=' · '+n.fecha; if(eq) texto+=' · '+eq;
   return{icono,texto};
 }
 function renderNotifPanel(notifs){
   const el=document.getElementById('notifList');
-  if(!el)return;
   if(!notifs.length){el.innerHTML='<div class="notif-empty">Sin notificaciones recientes</div>';return;}
   el.innerHTML=notifs.map(n=>{
     const{icono,texto}=notifTexto(n);
@@ -3651,28 +3718,59 @@ function renderNotifPanel(notifs){
 }
 function actualizarBadge(notifs){
   const noLeidas=notifs.filter(n=>!_notifLeidas.has(n.id)).length;
-  // Badge pestaña Alertas
-  const badgeTab=document.getElementById('notifBadgeTab');
-  if(badgeTab){if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}else badgeTab.style.display='none';}
+  const badge=document.getElementById('notifBadge');
+  if(noLeidas>0){badge.style.display='flex';badge.textContent=noLeidas>9?'9+':noLeidas;}
+  else badge.style.display='none';
 }
 function mostrarToastNotif(n){
   const{icono,texto}=notifTexto(n);
   const t=document.createElement('div');
   t.style.cssText='position:fixed;top:70px;right:8px;left:8px;background:var(--blue3);color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.25);animation:slideInRight .3s ease;font-family:Sora,sans-serif;cursor:pointer';
   t.innerHTML=`<div style="font-weight:700;margin-bottom:3px">${icono} ${{nuevo:'Nuevo arriendo',edicion:'Arriendo editado',eliminado:'Arriendo eliminado'}[n.tipo]||'Notificación'}</div><div style="font-size:11px;opacity:.85">${texto}</div>`;
-  t.onclick=()=>{t.remove();goTab('notifs');};
+  t.onclick=()=>{t.remove();toggleNotifPanel();};
   document.body.appendChild(t);
   setTimeout(()=>t.remove(),5000);
 }
+window.toggleNotifPanel=function(){
+  const panel=document.getElementById('notifPanel');
+  const overlay=document.getElementById('notifOverlay');
+  const visible=panel.style.display!=='none';
+  if(visible){
+    // Cerrar con animación
+    panel.style.transform='translateY(100%)';
+    panel.style.transition='transform .3s ease';
+    overlay.style.opacity='0';
+    overlay.style.transition='opacity .3s ease';
+    setTimeout(()=>{
+      panel.style.display='none';
+      overlay.style.display='none';
+      panel.style.transform='';
+      panel.style.transition='';
+    },300);
+  } else {
+    // Abrir desde abajo
+    overlay.style.display='block';
+    overlay.style.opacity='0';
+    panel.style.display='block';
+    panel.style.transform='translateY(100%)';
+    // Forzar reflow
+    panel.getBoundingClientRect();
+    panel.style.transition='transform .3s ease';
+    overlay.style.transition='opacity .3s ease';
+    panel.style.transform='translateY(0)';
+    overlay.style.opacity='1';
+    actualizarIndicadorPermiso();
+  }
+};
 window.marcarLeida=function(id){
   _notifLeidas.add(id);
   localStorage.setItem('akimel_notif_leidas',JSON.stringify([..._notifLeidas]));
   document.querySelectorAll('.notif-item').forEach(item=>{
     if(item.getAttribute('onclick')?.includes(id)){item.classList.remove('unread');item.querySelector('.notif-dot')?.remove();}
   });
-  const noLeidas=document.querySelectorAll('.notif-item.unread').length;
-  const badgeTab=document.getElementById('notifBadgeTab');
-  if(badgeTab){if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}else badgeTab.style.display='none';}
+  const badge=document.getElementById('notifBadge');
+  const n=parseInt(badge.textContent||'0')-1;
+  if(n<=0)badge.style.display='none'; else badge.textContent=n;
 };
 window.marcarTodasLeidas=function(){
   document.querySelectorAll('.notif-item').forEach(item=>{
@@ -3681,8 +3779,7 @@ window.marcarTodasLeidas=function(){
     item.classList.remove('unread');item.querySelector('.notif-dot')?.remove();
   });
   localStorage.setItem('akimel_notif_leidas',JSON.stringify([..._notifLeidas]));
-  const badgeTab=document.getElementById('notifBadgeTab');
-  if(badgeTab)badgeTab.style.display='none';
+  document.getElementById('notifBadge').style.display='none';
 };
 const styleNotif=document.createElement('style');
 styleNotif.textContent='@keyframes slideInRight{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}';
@@ -3690,10 +3787,10 @@ document.head.appendChild(styleNotif);
 </script>
 <script>
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
+  window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then(r=>console.log('SW registrado',r.scope))
-      .catch(e=>console.log('SW error:',e));
+      .then(r => console.log('SW registrado', r.scope))
+      .catch(e => console.log('SW error:', e));
   });
 }
 </script>

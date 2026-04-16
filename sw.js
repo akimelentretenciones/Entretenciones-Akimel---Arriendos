@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════
-// AKIMEL — Service Worker v3
+// AKIMEL — Service Worker v4
 // ═══════════════════════════════════════════════════
-const CACHE_NAME = 'akimel-v3';
+const CACHE_NAME = 'akimel-v4';
 const ASSETS = ['/índice.html', '/manifest.json', '/icono-192.png'];
 
 self.addEventListener('install', event => {
@@ -35,23 +35,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// PUSH desde servidor (FCM futuro)
-self.addEventListener('push', event => {
-  let data = { titulo: '🛝 Akimel', body: 'Nuevo arriendo registrado' };
-  try { if(event.data) data = { ...data, ...event.data.json() }; } catch(e) {}
-  event.waitUntil(
-    self.registration.showNotification(data.titulo, {
-      body: data.body,
-      icon: '/icono-192.png',
-      badge: '/icono-192.png',
-      tag: data.tag || 'akimel',
-      renotify: true,
-    })
-  );
-});
-
-// MESSAGE: la página le pide al SW que muestre notif nativa
-// Funciona aunque la app esté en segundo plano en Android
+// Android/Chrome: mostrar notif via SW (funciona en segundo plano)
 self.addEventListener('message', event => {
   if(event.data?.type === 'SKIP_WAITING') self.skipWaiting();
   if(event.data?.type === 'SHOW_NOTIF'){
@@ -67,7 +51,7 @@ self.addEventListener('message', event => {
   }
 });
 
-// Al tocar la notificación del SO: abrir/enfocar la app
+// Al tocar la notificación: abrir/enfocar la app
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(
