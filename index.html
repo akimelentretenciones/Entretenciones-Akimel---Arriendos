@@ -380,13 +380,6 @@ select:focus{border-color:var(--blue)}
     <span style="font-size:11px;color:rgba(255,255,255,.5);display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="userEmail"></span>
     <button class="btn btn-white btn-sm" onclick="actualizarDatos()" title="Actualizar datos">🔄</button>
     <button class="btn btn-white btn-sm" onclick="cerrarSesion()" title="Cerrar sesión">🚪</button>
-    <!-- CAMPANA: abre pestaña Alertas -->
-    <div id="notifWrap">
-      <button onclick="goTab('notifs')" style="background:none;border:none;cursor:pointer;position:relative;padding:4px;display:flex;align-items:center;justify-content:center" title="Notificaciones">
-        <span style="font-size:22px;line-height:1">🔔</span>
-        <span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif"></span>
-      </button>
-    </div>
       </div>
 </header>
 
@@ -3478,67 +3471,56 @@ window.toast=function(msg,tipo='ok'){
 // ═══════════════════════════════════════════════════
 let _notifUnsubscribe = null;
 let _notifLeidas = new Set(JSON.parse(localStorage.getItem('akimel_notif_leidas')||'[]'));
-
-// ── Detectar iOS PWA ──
 const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+              (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 
-// ── Sonido ──
 function crearSonidoNotif(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    const osc=ctx.createOscillator(), gain=ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type='sine';
-    osc.frequency.setValueAtTime(880,ctx.currentTime);
-    osc.frequency.setValueAtTime(660,ctx.currentTime+0.1);
-    gain.gain.setValueAtTime(0.3,ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.4);
+    const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);osc.type='sine';
+    osc.frequency.setValueAtTime(880,ctx.currentTime);osc.frequency.setValueAtTime(660,ctx.currentTime+0.1);
+    gain.gain.setValueAtTime(0.3,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.4);
   }catch(e){}
 }
 
-// ── Guardar notif en Firestore ──
-async function guardarNotif(tipo, datos){
+async function guardarNotif(tipo,datos){
   try{
     const{addDoc,collection:col,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     const autor=window.auth?.currentUser?.email?.split('@')[0]||'Sistema';
     await addDoc(col(window.db,'notificaciones'),{
-      tipo, cliente:datos.cliente||'', fecha:datos.fecha||'',
-      equipos:datos.equipos||datos.equipo||'',
-      monto:datos.pendiente||datos.monto||0,
-      direccion:datos.direccion||'', autor,
-      ts:serverTimestamp(), tsMs:Date.now(),
+      tipo,cliente:datos.cliente||'',fecha:datos.fecha||'',
+      equipos:datos.equipos||datos.equipo||'',monto:datos.pendiente||datos.monto||0,
+      direccion:datos.direccion||'',autor,ts:serverTimestamp(),tsMs:Date.now(),
     });
-  }catch(e){ console.error('notif error:',e.code,e.message); }
+  }catch(e){console.error('notif error:',e.code,e.message);}
 }
 
-// ── Borrar todas de Firestore ──
-window.limpiarHistorialNotifs = async function(){
+window.limpiarHistorialNotifs=async function(){
   const diag=document.getElementById('notifDiag');
   diag.innerHTML='<span style="color:#888">Borrando...</span>';
   try{
     const fs=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     const snap=await fs.getDocs(fs.collection(window.db,'notificaciones'));
     await Promise.all([...snap.docs].map(d=>fs.deleteDoc(d.ref)));
-    _notifLeidas.clear(); localStorage.removeItem('akimel_notif_leidas');
+    _notifLeidas.clear();localStorage.removeItem('akimel_notif_leidas');
     document.getElementById('notifList').innerHTML='<div class="notif-empty">Sin notificaciones recientes</div>';
     actualizarBadge([]);
     diag.innerHTML='<span style="color:green">✅ '+snap.size+' notificaciones eliminadas</span>';
-  }catch(e){ diag.innerHTML='<span style="color:red">❌ '+e.message+'</span>'; }
+  }catch(e){diag.innerHTML='<span style="color:red">❌ '+e.message+'</span>';}
 };
 
-// ── Indicador de permiso ──
 function actualizarIndicadorPermiso(){
   const wrap=document.getElementById('notifPermisoWrap');
-  if(!wrap) return;
+  if(!wrap)return;
   const perm=('Notification' in window)?Notification.permission:'unsupported';
   if(perm==='granted'){
     wrap.style.cssText='background:#f0fdf4;color:#166534;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px';
     wrap.innerHTML='<span>✅ Notificaciones del sistema: <b>ACTIVAS</b></span>';
   }else if(perm==='denied'){
     wrap.style.cssText='background:#fef2f2;color:#991b1b;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px';
-    wrap.innerHTML='<span>🚫 Bloqueadas. Ve a Ajustes → '+( esIOS?'la app':'el navegador')+' para habilitarlas.</span>';
+    wrap.innerHTML='<span>🚫 Bloqueadas. Ajustes → '+(esIOS?'la app':'el navegador')+' → Notificaciones.</span>';
   }else if(perm==='default'){
     wrap.style.cssText='background:#fffbeb;color:#92400e;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px';
     wrap.innerHTML='<span>⚠️ Sin permiso — actívalas para recibir alertas</span><button onclick="pedirPermisoNotif()" style="padding:6px 14px;background:#f97316;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif;white-space:nowrap;flex-shrink:0">Activar 🔔</button>';
@@ -3548,58 +3530,41 @@ function actualizarIndicadorPermiso(){
   }
 }
 
-// ── Pedir permiso (llamado desde botón — necesario para iOS) ──
-window.pedirPermisoNotif = async function(){
-  if(!('Notification' in window)) return;
+window.pedirPermisoNotif=async function(){
+  if(!('Notification' in window))return;
   const perm=await Notification.requestPermission();
   actualizarIndicadorPermiso();
   if(perm==='granted'){
-    // Notif de confirmación
-    try{ new Notification('✅ Akimel activado',{body:'Recibirás alertas de nuevos arriendos',icon:'/icono-192.png'}); }
-    catch(e){}
+    try{new Notification('✅ Akimel activado',{body:'Recibirás alertas de nuevos arriendos',icon:'/icono-192.png'});}catch(e){}
   }
 };
 
-// ── Enviar notificación nativa ──
-// iOS PWA: solo acepta new Notification() directo
-// Android/Chrome: usa SW registration (funciona en segundo plano)
 async function enviarNotifNativa(n){
-  if(!('Notification' in window)||Notification.permission!=='granted') return;
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
   const titulo={nuevo:'🛝 Nuevo arriendo',edicion:'✏️ Arriendo editado',eliminado:'🗑️ Arriendo eliminado'}[n.tipo]||'🔔 Akimel';
   const{texto}=notifTexto(n);
-
   if(esIOS){
-    // iOS PWA: Notification API directa
-    try{ new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id}); }
-    catch(e){ console.warn('iOS notif:',e); }
+    try{new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id});}catch(e){console.warn('iOS notif:',e);}
     return;
   }
-
-  // Android/Chrome: via SW (funciona con pantalla apagada)
   try{
     const reg=await navigator.serviceWorker.ready;
-    await reg.showNotification(titulo,{
-      body:texto, icon:'/icono-192.png', badge:'/icono-192.png',
-      tag:n.id, renotify:true, vibrate:[200,100,200],
-    });
+    await reg.showNotification(titulo,{body:texto,icon:'/icono-192.png',badge:'/icono-192.png',tag:n.id,renotify:true,vibrate:[200,100,200]});
   }catch(e){
-    try{ new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id}); }catch(e2){}
+    try{new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id});}catch(e2){}
   }
 }
 
-// ── Listener Firestore en tiempo real ──
 async function iniciarNotifListener(){
-  if(_notifUnsubscribe) return;
+  if(_notifUnsubscribe)return;
   try{
     const{onSnapshot,collection:col,query,limit}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     const q=query(col(window.db,'notificaciones'),limit(50));
-    let primeraVez=true, previos=new Set();
-
-    _notifUnsubscribe=onSnapshot(q, snap=>{
+    let primeraVez=true,previos=new Set();
+    _notifUnsubscribe=onSnapshot(q,snap=>{
       const notifs=[];
       snap.forEach(d=>notifs.push({id:d.id,...d.data()}));
       notifs.sort((a,b)=>(b.tsMs||0)-(a.tsMs||0));
-
       if(!primeraVez){
         snap.docChanges().forEach(change=>{
           if(change.type==='added'){
@@ -3607,78 +3572,72 @@ async function iniciarNotifListener(){
             if(!previos.has(n.id)){
               previos.add(n.id);
               crearSonidoNotif();
-              if(navigator.vibrate) navigator.vibrate([200,100,200]);
+              if(navigator.vibrate)navigator.vibrate([200,100,200]);
               mostrarToastNotif(n);
               enviarNotifNativa(n);
             }
           }
         });
-      }else{
-        snap.forEach(d=>previos.add(d.id));
-      }
+      }else{snap.forEach(d=>previos.add(d.id));}
       primeraVez=false;
       renderNotifPanel(notifs);
       actualizarBadge(notifs);
-    }, err=>console.error('notif listener:',err.code,err.message));
-  }catch(e){ console.error('notif init:',e); }
+    },err=>console.error('notif listener:',err.code,err.message));
+  }catch(e){console.error('notif init:',e);}
 }
 
-// ── Diagnóstico ──
-window.testNotifCompleto = async function(){
+window.testNotifCompleto=async function(){
   const diag=document.getElementById('notifDiag');
-  const log=(msg,ok)=>{ const c=ok===false?'#c00':ok===true?'green':'#555'; diag.innerHTML+='<div style="color:'+c+'">'+msg+'</div>'; };
+  const log=(msg,ok)=>{const c=ok===false?'#c00':ok===true?'green':'#555';diag.innerHTML+='<div style="color:'+c+'">'+msg+'</div>';};
   diag.innerHTML='<div style="color:#555">Ejecutando...</div>';
   log('1. window.auth: '+(window.auth?'OK':'undefined'),!!window.auth);
   log('2. window.db: '+(window.db?'OK':'undefined'),!!window.db);
   const user=window.auth?.currentUser;
   log('3. Usuario: '+(user?user.email:'NO logueado'),!!user);
-  if(!user){ log('Sin sesion activa',false); return; }
-  try{ crearSonidoNotif(); log('4. Sonido: OK',true); }catch(e){ log('4. Sonido error: '+e.message,false); }
-  if(navigator.vibrate){ navigator.vibrate([300,100,300]); log('5. Vibración: OK',true); }
-  else log('5. Vibración: no soportada',null);
+  if(!user){log('Sin sesion activa',false);return;}
+  try{crearSonidoNotif();log('4. Sonido: OK',true);}catch(e){log('4. Sonido error: '+e.message,false);}
+  if(navigator.vibrate){navigator.vibrate([300,100,300]);log('5. Vibración: OK',true);}else log('5. Vibración: no soportada',null);
   const perm=('Notification' in window)?Notification.permission:'no soportado';
-  log('6. Permiso notif: '+perm+(esIOS?' (iOS PWA)':' (Android/Chrome)'), perm==='granted');
-  if(perm!=='granted') log('   → Presiona "Activar 🔔" para habilitar',false);
+  log('6. Permiso notif: '+perm+(esIOS?' (iOS)':' (Android/Chrome)'),perm==='granted');
+  if(perm!=='granted')log('   → Presiona "Activar 🔔" para habilitar',false);
   try{
     const fs=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     const ref=await fs.addDoc(fs.collection(window.db,'notificaciones'),{
-      tipo:'nuevo', cliente:'TEST OK', fecha:'2025-12-25',
-      equipos:'Tobogán Test', monto:0, direccion:'Test',
-      autor:user.email.split('@')[0], ts:fs.serverTimestamp(), tsMs:Date.now(),
+      tipo:'nuevo',cliente:'TEST OK',fecha:'2025-12-25',equipos:'Tobogán Test',
+      monto:0,direccion:'Test',autor:user.email.split('@')[0],ts:fs.serverTimestamp(),tsMs:Date.now(),
     });
     log('7. Escritura Firestore: OK id='+ref.id,true);
     const snap=await fs.getDocs(fs.collection(window.db,'notificaciones'));
     log('8. Lectura Firestore: '+snap.size+' docs',true);
-  }catch(e){ log('7. Error Firestore: '+e.code+' '+e.message,false); }
+  }catch(e){log('7. Error Firestore: '+e.code+' '+e.message,false);}
   log('9. Listener activo: '+(_notifUnsubscribe?'SI':'NO'),!!_notifUnsubscribe);
   const swReg='serviceWorker' in navigator?await navigator.serviceWorker.getRegistration():null;
   log('10. Service Worker: '+(swReg?'Registrado':'NO'),!!swReg);
-  log('11. Dispositivo: '+(esIOS?'iOS':'Android/Chrome/otro'),null);
+  log('11. Dispositivo: '+(esIOS?'iOS PWA':'Android/Chrome/otro'),null);
 };
 
-// ── Helpers UI ──
 function fmtTiempo(tsMs){
-  if(!tsMs) return '';
-  const diff=Date.now()-tsMs, min=Math.floor(diff/60000), hrs=Math.floor(diff/3600000), dias=Math.floor(diff/86400000);
-  if(min<1) return 'Ahora'; if(min<60) return 'Hace '+min+' min';
-  if(hrs<24) return 'Hace '+hrs+'h'; return 'Hace '+dias+'d';
+  if(!tsMs)return'';
+  const diff=Date.now()-tsMs,min=Math.floor(diff/60000),hrs=Math.floor(diff/3600000),dias=Math.floor(diff/86400000);
+  if(min<1)return'Ahora';if(min<60)return'Hace '+min+' min';
+  if(hrs<24)return'Hace '+hrs+'h';return'Hace '+dias+'d';
 }
 function notifTexto(n){
   const iconos={nuevo:'➕',edicion:'✏️',eliminado:'🗑️'};
   const icono=iconos[n.tipo]||'🔔';
   const eq=n.equipos?n.equipos.split(',').slice(0,2).map(e=>e.trim()).join(', ')+(n.equipos.split(',').length>2?' +':''):'';
-  let texto=n.cliente||''; if(n.fecha) texto+=' · '+n.fecha; if(eq) texto+=' · '+eq;
+  let texto=n.cliente||'';if(n.fecha)texto+=' · '+n.fecha;if(eq)texto+=' · '+eq;
   return{icono,texto};
 }
 function renderNotifPanel(notifs){
   const el=document.getElementById('notifList');
-  if(!el) return;
-  if(!notifs.length){ el.innerHTML='<div class="notif-empty">Sin notificaciones recientes</div>'; return; }
+  if(!el)return;
+  if(!notifs.length){el.innerHTML='<div class="notif-empty">Sin notificaciones recientes</div>';return;}
   el.innerHTML=notifs.map(n=>{
     const{icono,texto}=notifTexto(n);
     const leida=_notifLeidas.has(n.id);
     const lbl={nuevo:'Nuevo arriendo',edicion:'Arriendo editado',eliminado:'Arriendo eliminado'}[n.tipo]||'Notificación';
-    return `<div class="notif-item ${leida?'':'unread'}" onclick="marcarLeida('${n.id}')">
+    return`<div class="notif-item ${leida?'':'unread'}" onclick="marcarLeida('${n.id}')">
       <div class="notif-icon">${icono}</div>
       <div class="notif-body">
         <div class="notif-txt">${lbl}</div>
@@ -3691,17 +3650,15 @@ function renderNotifPanel(notifs){
 }
 function actualizarBadge(notifs){
   const noLeidas=notifs.filter(n=>!_notifLeidas.has(n.id)).length;
-  const badge=document.getElementById('notifBadge');
-  if(badge){ if(noLeidas>0){badge.style.display='flex';badge.textContent=noLeidas>9?'9+':noLeidas;}else badge.style.display='none'; }
   const badgeTab=document.getElementById('notifBadgeTab');
-  if(badgeTab){ if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}else badgeTab.style.display='none'; }
+  if(badgeTab){if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}else badgeTab.style.display='none';}
 }
 function mostrarToastNotif(n){
   const{icono,texto}=notifTexto(n);
   const t=document.createElement('div');
   t.style.cssText='position:fixed;top:70px;right:8px;left:8px;background:var(--blue3);color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.25);animation:slideInRight .3s ease;font-family:Sora,sans-serif;cursor:pointer';
   t.innerHTML=`<div style="font-weight:700;margin-bottom:3px">${icono} ${{nuevo:'Nuevo arriendo',edicion:'Arriendo editado',eliminado:'Arriendo eliminado'}[n.tipo]||'Notificación'}</div><div style="font-size:11px;opacity:.85">${texto}</div>`;
-  t.onclick=()=>{ t.remove(); goTab('notifs'); };
+  t.onclick=()=>{t.remove();goTab('notifs');};
   document.body.appendChild(t);
   setTimeout(()=>t.remove(),5000);
 }
@@ -3709,20 +3666,21 @@ window.marcarLeida=function(id){
   _notifLeidas.add(id);
   localStorage.setItem('akimel_notif_leidas',JSON.stringify([..._notifLeidas]));
   document.querySelectorAll('.notif-item').forEach(item=>{
-    if(item.getAttribute('onclick')?.includes(id)){ item.classList.remove('unread'); item.querySelector('.notif-dot')?.remove(); }
+    if(item.getAttribute('onclick')?.includes(id)){item.classList.remove('unread');item.querySelector('.notif-dot')?.remove();}
   });
   const noLeidas=document.querySelectorAll('.notif-item.unread').length;
   const badgeTab=document.getElementById('notifBadgeTab');
-  if(badgeTab){ if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}else badgeTab.style.display='none'; }
+  if(badgeTab){if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}else badgeTab.style.display='none';}
 };
 window.marcarTodasLeidas=function(){
   document.querySelectorAll('.notif-item').forEach(item=>{
     const m=item.getAttribute('onclick')?.match(/'([^']+)'/);
-    if(m) _notifLeidas.add(m[1]);
-    item.classList.remove('unread'); item.querySelector('.notif-dot')?.remove();
+    if(m)_notifLeidas.add(m[1]);
+    item.classList.remove('unread');item.querySelector('.notif-dot')?.remove();
   });
   localStorage.setItem('akimel_notif_leidas',JSON.stringify([..._notifLeidas]));
-  ['notifBadge','notifBadgeTab'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  const badgeTab=document.getElementById('notifBadgeTab');
+  if(badgeTab)badgeTab.style.display='none';
 };
 const styleNotif=document.createElement('style');
 styleNotif.textContent='@keyframes slideInRight{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}';
