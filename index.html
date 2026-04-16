@@ -381,25 +381,32 @@ select:focus{border-color:var(--blue)}
     <button class="btn btn-white btn-sm" onclick="actualizarDatos()" title="Actualizar datos">🔄</button>
     <button class="btn btn-white btn-sm" onclick="cerrarSesion()" title="Cerrar sesión">🚪</button>
     <!-- CAMPANA DE NOTIFICACIONES -->
-    <div style="position:relative" id="notifWrap">
+    <div id="notifWrap">
       <button onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;position:relative;padding:4px;display:flex;align-items:center;justify-content:center" title="Notificaciones">
         <span style="font-size:22px;line-height:1">🔔</span>
         <span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif"></span>
       </button>
-      <!-- Panel notificaciones -->
-      <div id="notifPanel" style="display:none;position:fixed;top:calc(56px + env(safe-area-inset-top));right:8px;left:8px;width:auto;max-width:360px;margin:0 auto;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:500;overflow:hidden;border:1px solid var(--border)">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--blue3)">
-          <span style="font-size:13px;font-weight:700;color:#fff">🔔 Notificaciones</span>
-          <button onclick="marcarTodasLeidas()" style="font-size:11px;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif">Marcar leídas</button>
+    </div>
+    <!-- DRAWER NOTIFICACIONES (abre desde abajo, funciona en iPhone) -->
+    <div id="notifOverlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600"></div>
+    <div id="notifPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;z-index:601;max-height:85vh;overflow:hidden;box-shadow:0 -4px 32px rgba(0,0,0,.18);padding-bottom:env(safe-area-inset-bottom)">
+      <!-- Handle para arrastrar -->
+      <div onclick="toggleNotifPanel()" style="padding:12px;text-align:center;cursor:pointer">
+        <div style="width:36px;height:4px;background:#cbd5e1;border-radius:2px;margin:0 auto"></div>
+      </div>
+      <div style="padding:0 16px 10px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:15px;font-weight:800;color:var(--blue3)">🔔 Notificaciones</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="marcarTodasLeidas()" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">Marcar leídas</button>
+          <button onclick="toggleNotifPanel()" style="font-size:20px;color:var(--text3);background:none;border:none;cursor:pointer;line-height:1;padding:0 4px">✕</button>
         </div>
-        <div id="notifList" style="max-height:300px;overflow-y:auto"></div>
-        <div style="padding:10px 14px;border-top:1px solid var(--border)">
-          <!-- Estado y botón de permiso de notificaciones nativas -->
-          <div id="notifPermisoWrap" style="margin-bottom:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px"></div>
-          <button onclick="testNotifCompleto()" style="width:100%;padding:8px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
-          <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:6px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:Sora,sans-serif;margin-top:4px;font-weight:600">🗑 Borrar todas las notificaciones</button>
-          <div id="notifDiag" style="font-size:10px;color:#666;margin-top:6px;line-height:1.6"></div>
-        </div>
+      </div>
+      <div id="notifList" style="max-height:45vh;overflow-y:auto"></div>
+      <div style="padding:12px 14px;border-top:1px solid var(--border)">
+        <div id="notifPermisoWrap" style="margin-bottom:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px"></div>
+        <button onclick="testNotifCompleto()" style="width:100%;padding:8px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
+        <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:6px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:Sora,sans-serif;margin-top:4px;font-weight:600">🗑 Borrar todas las notificaciones</button>
+        <div id="notifDiag" style="font-size:10px;color:#666;margin-top:6px;line-height:1.6"></div>
       </div>
     </div>
   </div>
@@ -3716,19 +3723,33 @@ function mostrarToastNotif(n){
 }
 window.toggleNotifPanel=function(){
   const panel=document.getElementById('notifPanel');
+  const overlay=document.getElementById('notifOverlay');
   const visible=panel.style.display!=='none';
-  panel.style.display=visible?'none':'block';
-  if(!visible){
-    // Posicionar justo debajo del header, respetando safe area (notch iPhone)
-    const header=document.querySelector('header');
-    const hBottom=header ? header.getBoundingClientRect().bottom : 56;
-    panel.style.top=(hBottom+4)+'px';
-    actualizarIndicadorPermiso();
+  if(visible){
+    // Cerrar con animación
+    panel.style.transform='translateY(100%)';
+    panel.style.transition='transform .3s ease';
+    overlay.style.opacity='0';
+    overlay.style.transition='opacity .3s ease';
     setTimeout(()=>{
-      document.addEventListener('click',function h(e){
-        if(!document.getElementById('notifWrap').contains(e.target)){panel.style.display='none';document.removeEventListener('click',h);}
-      });
+      panel.style.display='none';
+      overlay.style.display='none';
+      panel.style.transform='';
+      panel.style.transition='';
     },300);
+  } else {
+    // Abrir desde abajo
+    overlay.style.display='block';
+    overlay.style.opacity='0';
+    panel.style.display='block';
+    panel.style.transform='translateY(100%)';
+    // Forzar reflow
+    panel.getBoundingClientRect();
+    panel.style.transition='transform .3s ease';
+    overlay.style.transition='opacity .3s ease';
+    panel.style.transform='translateY(0)';
+    overlay.style.opacity='1';
+    actualizarIndicadorPermiso();
   }
 };
 window.marcarLeida=function(id){
