@@ -1839,7 +1839,15 @@ function renderTabla(){
     <td>${a.dia||'—'}</td>
     <td style="color:var(--text3);font-size:11px;font-weight:700">${a.semana||isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'))||'—'}</td>
     <td>${a.hora||'—'}</td>
-    <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${a.telefono||'—'}</td>
+    <td style="font-size:11px;white-space:nowrap">${a.telefono ? `
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+        <a href="tel:${a.telefono}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:rgba(0,113,206,.1);color:var(--blue);border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="Llamar">
+          📞 ${a.telefono}
+        </a>
+        <a href="https://wa.me/${a.telefono.replace(/[^0-9]/g,'').replace(/^0/,'56')}" target="_blank" style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:rgba(37,211,102,.15);color:#128c3e;border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="WhatsApp">
+          💬 WA
+        </a>
+      </div>` : '—'}</td>
     <td style="min-width:140px;max-width:200px">${(a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean).map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(0,113,206,0.06);white-space:nowrap">${e}</div>`).join('')}</td>
     <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue)">${a.pendiente?clp(a.pendiente):'—'}</td>
     <td><span class="badge badge-${a.estado==='Cancelado'?'cancel':'pend'}">${a.estado||'—'}</span></td>
