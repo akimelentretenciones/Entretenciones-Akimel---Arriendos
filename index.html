@@ -387,7 +387,7 @@ select:focus{border-color:var(--blue)}
         <span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif"></span>
       </button>
       <!-- Panel notificaciones -->
-      <div id="notifPanel" style="display:none;position:fixed;top:58px;right:8px;width:min(320px,calc(100vw - 16px));background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:500;overflow:hidden;border:1px solid var(--border)">
+      <div id="notifPanel" style="display:none;position:fixed;top:calc(56px + env(safe-area-inset-top));right:8px;left:8px;width:auto;max-width:360px;margin:0 auto;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:500;overflow:hidden;border:1px solid var(--border)">
         <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--blue3)">
           <span style="font-size:13px;font-weight:700;color:#fff">🔔 Notificaciones</span>
           <button onclick="marcarTodasLeidas()" style="font-size:11px;color:rgba(255,255,255,.7);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif">Marcar leídas</button>
@@ -3719,6 +3719,10 @@ window.toggleNotifPanel=function(){
   const visible=panel.style.display!=='none';
   panel.style.display=visible?'none':'block';
   if(!visible){
+    // Posicionar justo debajo del header, respetando safe area (notch iPhone)
+    const header=document.querySelector('header');
+    const hBottom=header ? header.getBoundingClientRect().bottom : 56;
+    panel.style.top=(hBottom+4)+'px';
     actualizarIndicadorPermiso();
     setTimeout(()=>{
       document.addEventListener('click',function h(e){
