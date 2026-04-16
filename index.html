@@ -625,11 +625,10 @@ select:focus{border-color:var(--blue)}
         <button onclick="marcarTodasLeidas()" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">Marcar leídas</button>
       </div>
       <div id="notifPermisoWrap" style="margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px"></div>
-      <div id="notifList" style="max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
-      <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
-        <button onclick="testNotifCompleto()" style="width:100%;padding:10px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif">🧪 Probar notificacion</button>
-        <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:8px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:Sora,sans-serif;font-weight:600">🗑 Borrar todas las notificaciones</button>
-        <div id="notifDiag" style="font-size:11px;color:#666;line-height:1.7;margin-top:4px"></div>
+      <div id="notifList" style="max-height:65vh;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
+      <div style="margin-top:14px">
+        <button onclick="limpiarHistorialNotifs()" style="width:100%;padding:10px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:Sora,sans-serif;font-weight:600">🗑 Borrar todas las notificaciones</button>
+        <div id="notifDiag" style="font-size:11px;color:#666;line-height:1.7;margin-top:8px"></div>
       </div>
     </div>
   </div>
@@ -3544,7 +3543,7 @@ async function enviarNotifNativa(n){
   const titulo={nuevo:'🛝 Nuevo arriendo',edicion:'✏️ Arriendo editado',eliminado:'🗑️ Arriendo eliminado'}[n.tipo]||'🔔 Akimel';
   const{texto}=notifTexto(n);
   if(esIOS){
-    try{new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id});}catch(e){console.warn('iOS notif:',e);}
+    try{new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id});}catch(e){}
     return;
   }
   try{
@@ -3585,36 +3584,6 @@ async function iniciarNotifListener(){
     },err=>console.error('notif listener:',err.code,err.message));
   }catch(e){console.error('notif init:',e);}
 }
-
-window.testNotifCompleto=async function(){
-  const diag=document.getElementById('notifDiag');
-  const log=(msg,ok)=>{const c=ok===false?'#c00':ok===true?'green':'#555';diag.innerHTML+='<div style="color:'+c+'">'+msg+'</div>';};
-  diag.innerHTML='<div style="color:#555">Ejecutando...</div>';
-  log('1. window.auth: '+(window.auth?'OK':'undefined'),!!window.auth);
-  log('2. window.db: '+(window.db?'OK':'undefined'),!!window.db);
-  const user=window.auth?.currentUser;
-  log('3. Usuario: '+(user?user.email:'NO logueado'),!!user);
-  if(!user){log('Sin sesion activa',false);return;}
-  try{crearSonidoNotif();log('4. Sonido: OK',true);}catch(e){log('4. Sonido error: '+e.message,false);}
-  if(navigator.vibrate){navigator.vibrate([300,100,300]);log('5. Vibración: OK',true);}else log('5. Vibración: no soportada',null);
-  const perm=('Notification' in window)?Notification.permission:'no soportado';
-  log('6. Permiso notif: '+perm+(esIOS?' (iOS)':' (Android/Chrome)'),perm==='granted');
-  if(perm!=='granted')log('   → Presiona "Activar 🔔" para habilitar',false);
-  try{
-    const fs=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const ref=await fs.addDoc(fs.collection(window.db,'notificaciones'),{
-      tipo:'nuevo',cliente:'TEST OK',fecha:'2025-12-25',equipos:'Tobogán Test',
-      monto:0,direccion:'Test',autor:user.email.split('@')[0],ts:fs.serverTimestamp(),tsMs:Date.now(),
-    });
-    log('7. Escritura Firestore: OK id='+ref.id,true);
-    const snap=await fs.getDocs(fs.collection(window.db,'notificaciones'));
-    log('8. Lectura Firestore: '+snap.size+' docs',true);
-  }catch(e){log('7. Error Firestore: '+e.code+' '+e.message,false);}
-  log('9. Listener activo: '+(_notifUnsubscribe?'SI':'NO'),!!_notifUnsubscribe);
-  const swReg='serviceWorker' in navigator?await navigator.serviceWorker.getRegistration():null;
-  log('10. Service Worker: '+(swReg?'Registrado':'NO'),!!swReg);
-  log('11. Dispositivo: '+(esIOS?'iOS PWA':'Android/Chrome/otro'),null);
-};
 
 function fmtTiempo(tsMs){
   if(!tsMs)return'';
