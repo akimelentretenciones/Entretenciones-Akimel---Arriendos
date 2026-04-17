@@ -1313,8 +1313,23 @@ function mensajeConfirmacion(a){
   const equipos=a.equipos?` (${a.equipos})`:'';
   return `Hola ${a.cliente||''}! 👋 Te escribimos de Entretenciones Akimel para confirmar tu arriendo del ${dia}${hora}${equipos}. ¿Todo sigue en pie? 🎉`;
 }
+function limpiarTelefono(tel){
+  if(!tel) return '';
+  // Quitar todo excepto dígitos y el + inicial
+  let num = String(tel).replace(/\s+/g,'').replace(/[^0-9+]/g,'');
+  // Quitar + si lo tiene
+  num = num.replace(/^\+/,'');
+  // Si empieza con 56 ya está bien
+  if(num.startsWith('56')) return num;
+  // Si empieza con 9 y tiene 9 dígitos → agregar 56
+  if(num.startsWith('9') && num.length===9) return '56'+num;
+  // Si empieza con 0 → reemplazar por 56
+  if(num.startsWith('0')) return '56'+num.slice(1);
+  // Si tiene 8 dígitos → asumir fijo chileno con 56
+  return '56'+num;
+}
 function urlWAConfirmacion(a){
-  const num=(a.telefono||'').replace(/[^0-9]/g,'').replace(/^0/,'56');
+  const num=limpiarTelefono(a.telefono);
   if(!num) return null;
   return `https://wa.me/${num}?text=${encodeURIComponent(mensajeConfirmacion(a))}`;
 }
@@ -1881,7 +1896,7 @@ function renderTabla(){
     <td style="color:var(--text3);font-size:11px;font-weight:700">${a.semana||isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'))||'—'}</td>
     <td>${a.hora||'—'}</td>
     <td style="font-size:11px;white-space:nowrap">${a.telefono ? `
-      <a href="tel:${a.telefono}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:rgba(0,113,206,.1);color:var(--blue);border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="Llamar">
+      <a href="tel:+${limpiarTelefono(a.telefono)}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:rgba(0,113,206,.1);color:var(--blue);border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="Llamar">
         📞 ${a.telefono}
       </a>` : '—'}</td>
     <td style="text-align:center">${(()=>{
