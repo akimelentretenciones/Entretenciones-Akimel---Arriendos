@@ -1181,6 +1181,16 @@ window.cerrarSesion=async function(){
 };
 
 async function cargarArriendos(){
+  // Guardar estado de filtros antes de recargar
+  const _q        = document.getElementById('searchInput')?.value||'';
+  const _estado   = document.getElementById('filtroEstado')?.value||'';
+  const _semana   = document.getElementById('filtroSemana')?.value||'';
+  const _anio     = document.getElementById('filtroAnio')?.value||'';
+  const _mes      = document.getElementById('filtroMes')?.value||'';
+  const _dia      = document.getElementById('filtroDia')?.value||'';
+  const _selFecha = new Set(seleccionFecha);
+  const _pagina   = PAGINA;
+
   try{
     const snap=await getDocs(collection(db,'arriendos'));
     ARRIENDOS=[];
@@ -1193,9 +1203,20 @@ async function cargarArriendos(){
     FILTRADOS=[...ARRIENDOS];
     document.getElementById('totalCount').textContent=`(${ARRIENDOS.length} registros)`;
   }catch(e){toast('Error cargando datos: '+e.message,'err');return;}
+
+  // Restaurar filtros
+  if(document.getElementById('searchInput')) document.getElementById('searchInput').value=_q;
+  if(document.getElementById('filtroEstado')) document.getElementById('filtroEstado').value=_estado;
+  if(document.getElementById('filtroSemana')) document.getElementById('filtroSemana').value=_semana;
+  if(document.getElementById('filtroAnio'))  document.getElementById('filtroAnio').value=_anio;
+  if(document.getElementById('filtroMes'))   document.getElementById('filtroMes').value=_mes;
+  if(document.getElementById('filtroDia'))   document.getElementById('filtroDia').value=_dia;
+  seleccionFecha.clear(); _selFecha.forEach(v=>seleccionFecha.add(v));
+  PAGINA=_pagina;
+
   // Render fuera del try para ver errores reales
   try{poblarSelectoresDash();}catch(e){console.error('poblar:',e);}
-  try{renderTabla();}catch(e){console.error('tabla:',e);}
+  try{filtrar();}catch(e){console.error('tabla:',e);}
   renderDashboard().catch(e=>console.error('dashboard:',e));
   try{
     renderCalendario();
