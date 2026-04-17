@@ -1884,13 +1884,17 @@ window.generarCatalogoPDF = async function(){
   const paginasVistas = new Set();
   const paginasFinal = [];
 
+  // DEBUG
+  console.log('=== PDF DEBUG día '+fechaStr+' ===');
+  console.log('usados:', JSON.stringify(usados));
+
   // 1. Inflables y avioncitos: solo si están disponibles ese día
-  // Usar exactamente la misma lógica que la pantalla de disponibilidad
   for(const {inv, pag} of ORDEN_INVENTARIO_A_PAGINA){
     const item = INVENTARIO.find(i => i.nombre === inv);
     if(!item) continue;
     const ocu = usados[inv] || 0;
     const libre = Math.max(0, item.total - ocu);
+    console.log(inv+': ocu='+ocu+' libre='+libre);
     if(libre > 0 && !paginasVistas.has(pag)){
       paginasFinal.push(pag);
       paginasVistas.add(pag);
