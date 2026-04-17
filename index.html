@@ -1879,12 +1879,19 @@ window.generarCatalogoPDF = async function(){
     'Tobogán Obstáculo Danger','Tobogán Obstáculo Robot',
     'Avioncitos Voladores','Promociones Electrónicas','Juegos de Interior'
   ];
-  // Inflables filtrados + siempre agregar Electrónicos e Interior al final
-  const paginasFinal = [
-    ...ORDEN_PAGINAS.filter(p => paginasUsadas.has(p)),
+  // Orden final: inflables disponibles en orden correcto + electrónicos + interior siempre al final
+  const ORDEN_FINAL = [
+    'Tobogán Doble Castillo','Tobogán Gold','Tobogán Pro',
+    'Tobogán Ferrari','Tobogán Mario Bross','Tobogán Marvel',
+    'Tobogán Dinopoder','Tobogán Pirata',
+    'Tobogán Obstáculo Danger','Tobogán Obstáculo Robot',
+    'Avioncitos Voladores',
     'Promociones Electrónicas',
     'Juegos de Interior'
   ];
+  const paginasFinal = ORDEN_FINAL.filter(p =>
+    paginasUsadas.has(p) || p === 'Promociones Electrónicas' || p === 'Juegos de Interior'
+  );
 
   if(!paginasFinal.length){
     toast('No hay juegos disponibles para ese día','err');
