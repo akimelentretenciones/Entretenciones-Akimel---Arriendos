@@ -1794,6 +1794,45 @@ const CATALOGO_INFO = {
 };
 
 window.generarCatalogoPDF = async function(){
+  // Usar catálogo PDF pre-generado desde GitHub
+  const PDF_URL = 'https://raw.githubusercontent.com/akimelentretenciones/Entretenciones-Akimel---Arriendos/main/catalogo_akimel.pdf';
+  const filename = 'Catalogo_Akimel.pdf';
+
+  try {
+    const btn = document.getElementById('btnCompartirCatalogo');
+    if(btn) { btn.textContent = '⏳ Cargando...'; btn.style.pointerEvents='none'; }
+
+    const response = await fetch(PDF_URL);
+    if(!response.ok) throw new Error('No se pudo descargar el catálogo');
+    const blob = await response.blob();
+    const file = new File([blob], filename, {type:'application/pdf'});
+
+    if(btn) { btn.innerHTML = '📄 Compartir catálogo'; btn.style.pointerEvents='auto'; }
+
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({
+          files:[file],
+          title:'Catálogo Entretenciones Akimel',
+          text:'¡Hola! Te compartimos nuestro catálogo de juegos disponibles. Cualquier consulta estamos a tu disposición. +56 9 5080 3204'
+        });
+      }catch(e){
+        if(e.name!=='AbortError'){ saveAs(blob, filename); toast('Catálogo descargado','ok'); }
+      }
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      toast('Catálogo descargado — adjúntalo en WhatsApp','ok');
+    }
+  } catch(e) {
+    toast('Error al cargar el catálogo: '+e.message,'err');
+    const btn = document.getElementById('btnCompartirCatalogo');
+    if(btn) { btn.innerHTML = '📄 Compartir catálogo'; btn.style.pointerEvents='auto'; }
+  }
+  return; // fin — no ejecutar el resto de la función original
+  // — HELPER: obtener imagen desde base64 embebida —
   if(!CAL_DIA_SEL) return;
   const mes=String(CAL_MONTH+1).padStart(2,'0');
   const año=String(CAL_YEAR);
@@ -1868,104 +1907,148 @@ window.generarCatalogoPDF = async function(){
     return FOTOS_B64[key]||null;
   }
 
-  // — JUEGOS —
-  let y=57;
-  const catColors={'Inflable':azul,'Electrónico':verde,'Interior':[250,100,0]};
-  let currentCat='';
+  // — JUEGOS: 3 por página, fotos grandes —
+  // Altura página útil: 297 - header(52) - footer(14) - margin = ~220mm
+  // 3 cards por página → cada card ~70mm de alto
+  const CARD_H = 74;
+  const PAGE_TOP = 57;    // inicio primera página (tras header)
+  const PAGE_TOP_REST = 18; // inicio páginas siguientes
+  const PAGE_BOT = 283;   // límite antes del footer
+  const CARDS_PER_PAGE = 3;
+
+  let cardCount = 0;
+  let y = PAGE_TOP;
 
   for(const item of disponibles){
     const info=item.info;
-    const cat=info.cat||item.cat;
     const fotos=FOTOS[item.nombre]||[];
     const foto1=fotos[0]||null;
+    const foto2=fotos[1]||null;
 
-    if(cat!==currentCat){
-      if(y>255){doc.addPage();y=20;}
-      currentCat=cat;
-      const cc=catColors[cat]||azul;
-      doc.setFillColor(...cc);
-      doc.roundedRect(14,y,W-28,8,1,1,'F');
-      doc.setTextColor(...blanco);
-      doc.setFont('helvetica','bold');
-      doc.setFontSize(8.5);
-      doc.text(cat.toUpperCase(), 19, y+5.5);
-      y+=12;
+    // Nueva página cada 3 cards
+    if(cardCount>0 && cardCount%CARDS_PER_PAGE===0){
+      doc.addPage();
+      y=PAGE_TOP_REST;
     }
 
-    const cardH=foto1?52:26;
-    if(y>297-cardH-10){doc.addPage();y=20;}
+    // — CARD —
+    const cx=14, cy=y, cw=W-28, ch=CARD_H;
 
-    // Card fondo
+    // Fondo card
     doc.setFillColor(...bgCard);
-    doc.roundedRect(14,y,W-28,cardH,2,2,'F');
-    doc.setFillColor(...azul);
-    doc.roundedRect(14,y,3,cardH,1,1,'F');
+    doc.roundedRect(cx,cy,cw,ch,3,3,'F');
+    // Borde izquierdo color categoría
+    const cat=info.cat||item.cat;
+    const catC={'Inflable':azul,'Electrónico':verde,'Interior':[250,100,0]};
+    doc.setFillColor(...(catC[cat]||azul));
+    doc.roundedRect(cx,cy,4,ch,2,2,'F');
 
-    if(foto1){
-      // Con foto: imagen a la izquierda, texto a la derecha
-      const imgData=cargarImg(foto1);
-      if(imgData){
-        doc.addImage(imgData,'JPEG',18,y+2,44,cardH-4,undefined,'FAST');
-      }
-      const tx=66;
-      // Nombre
+    if(foto1 && foto2){
+      // DOS FOTOS: cada una ocupa la mitad izquierda
+      const fotoW=42, fotoH=ch-6;
+      const imgData1=cargarImg(foto1);
+      const imgData2=cargarImg(foto2);
+      if(imgData1) doc.addImage(imgData1,'JPEG',cx+6,cy+3,fotoW,fotoH,undefined,'FAST');
+      if(imgData2) doc.addImage(imgData2,'JPEG',cx+6+fotoW+3,cy+3,fotoW,fotoH,undefined,'FAST');
+      const tx=cx+6+fotoW*2+9;
+      const tw=W-tx-16;
+      // Info a la derecha
       doc.setTextColor(...azulOsc);
       doc.setFont('helvetica','bold');
       doc.setFontSize(10);
-      doc.text(item.nombre, tx, y+8);
-      // Badge precio
+      doc.text(item.nombre, tx, cy+10);
+      // Precio
       doc.setFillColor(...amarillo);
-      doc.roundedRect(W-52,y+2,38,9,2,2,'F');
+      doc.roundedRect(tx,cy+13,tw,9,2,2,'F');
       doc.setTextColor(...azulOsc);
       doc.setFont('helvetica','bold');
-      doc.setFontSize(9.5);
-      doc.text(info.precio, W-51, y+8);
-      // Descripción
-      doc.setTextColor(...gris);
-      doc.setFont('helvetica','normal');
-      doc.setFontSize(7.5);
-      const dl=doc.splitTextToSize(info.desc, W-tx-48);
-      doc.text(dl.slice(0,2), tx, y+15);
-      // Medidas
-      doc.setTextColor(170,185,200);
-      doc.setFontSize(7);
-      doc.text(info.medidas, tx, y+27);
-      // Badge disponibles
+      doc.setFontSize(9);
+      doc.text(info.precio, tx+2, cy+19.5);
+      // Disponibles
       doc.setFillColor(...verde);
-      doc.roundedRect(W-52,y+13,38,7,2,2,'F');
+      doc.roundedRect(tx,cy+25,tw,8,2,2,'F');
       doc.setTextColor(...blanco);
       doc.setFont('helvetica','bold');
+      doc.setFontSize(8);
+      doc.text(`${item.disp} disponible${item.disp!==1?'s':''}`, tx+2, cy+30.5);
+      // Desc
+      doc.setTextColor(...gris);
+      doc.setFont('helvetica','normal');
       doc.setFontSize(7);
-      doc.text(`${item.disp} disponible${item.disp!==1?'s':''}`, W-50, y+17.5);
-    } else {
-      // Sin foto: layout original
+      const dl=doc.splitTextToSize(info.desc,tw);
+      doc.text(dl.slice(0,3), tx, cy+38);
+      // Medidas
+      doc.setTextColor(170,185,200);
+      doc.setFontSize(6.5);
+      doc.text(info.medidas, tx, cy+60);
+    } else if(foto1){
+      // UNA FOTO: ocupa 40% del ancho
+      const fotoW=72, fotoH=ch-6;
+      const imgData=cargarImg(foto1);
+      if(imgData) doc.addImage(imgData,'JPEG',cx+6,cy+3,fotoW,fotoH,undefined,'FAST');
+      const tx=cx+6+fotoW+6;
+      const tw=W-tx-16;
+      // Nombre
       doc.setTextColor(...azulOsc);
       doc.setFont('helvetica','bold');
       doc.setFontSize(11);
-      doc.text(item.nombre, 21, y+8);
-      doc.setFillColor(...amarillo);
-      doc.roundedRect(W-52,y+2,38,9,2,2,'F');
-      doc.setTextColor(...azulOsc);
-      doc.setFont('helvetica','bold');
-      doc.setFontSize(9.5);
-      doc.text(info.precio, W-51, y+8);
+      doc.text(item.nombre, tx, cy+10);
+      // Desc
       doc.setTextColor(...gris);
       doc.setFont('helvetica','normal');
-      doc.setFontSize(7.5);
-      const descLines=doc.splitTextToSize(info.desc, W-65);
-      doc.text(descLines[0], 21, y+15);
+      doc.setFontSize(8);
+      const dl=doc.splitTextToSize(info.desc,tw);
+      doc.text(dl.slice(0,3), tx, cy+19);
+      // Medidas
       doc.setTextColor(170,185,200);
       doc.setFontSize(7);
-      doc.text(info.medidas, 21, y+21);
+      doc.text(info.medidas, tx, cy+40);
+      // Precio badge
+      doc.setFillColor(...amarillo);
+      doc.roundedRect(tx,cy+45,tw,10,2,2,'F');
+      doc.setTextColor(...azulOsc);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(11);
+      doc.text(info.precio, tx+4, cy+52);
+      // Disponibles
       doc.setFillColor(...verde);
-      doc.roundedRect(W-52,y+13,38,7,2,2,'F');
+      doc.roundedRect(tx,cy+58,tw,9,2,2,'F');
       doc.setTextColor(...blanco);
       doc.setFont('helvetica','bold');
-      doc.setFontSize(7);
-      doc.text(`${item.disp} disponible${item.disp!==1?'s':''}`, W-50, y+17.5);
+      doc.setFontSize(8.5);
+      doc.text(`${item.disp} disponible${item.disp!==1?'s':''}`, tx+4, cy+64.5);
+    } else {
+      // SIN FOTO: solo texto centrado
+      doc.setTextColor(...azulOsc);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(12);
+      doc.text(item.nombre, cx+10, cy+14);
+      doc.setTextColor(...gris);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8.5);
+      const dl=doc.splitTextToSize(info.desc, cw-20);
+      doc.text(dl.slice(0,2), cx+10, cy+24);
+      doc.setTextColor(170,185,200);
+      doc.setFontSize(7.5);
+      doc.text(info.medidas, cx+10, cy+38);
+      // Precio
+      doc.setFillColor(...amarillo);
+      doc.roundedRect(cx+10,cy+44,60,10,2,2,'F');
+      doc.setTextColor(...azulOsc);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(11);
+      doc.text(info.precio, cx+14, cy+51);
+      // Disponibles
+      doc.setFillColor(...verde);
+      doc.roundedRect(cx+75,cy+44,50,10,2,2,'F');
+      doc.setTextColor(...blanco);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(8);
+      doc.text(`${item.disp} disp.`, cx+79, cy+51);
     }
 
-    y+=cardH+4;
+    y += ch + 5;
+    cardCount++;
   }
 
   // — FOOTER —
