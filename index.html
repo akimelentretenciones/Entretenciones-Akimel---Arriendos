@@ -1853,7 +1853,15 @@ window.generarCatalogoPDF = async function(){
 
   // Filtrar disponibles en orden correcto
   const paginasUsadas = new Set();
-  ORDEN_CATALOGO.forEach(nombre => {
+  // Solo inflables y avioncitos se filtran por disponibilidad real
+  const INFLABLES_ORDEN = [
+    'Tobogán Doble Castillo','Tobogán Gold','Tobogán Pro',
+    'Tobogán F1','Tobogán Mario Bross','Tobogán Marvel',
+    'Tobogán Dinopoder','Tobogán Pirata',
+    'Tobogán Obstáculo Danger','Tobogán Obstáculo Robot',
+    'Avioncitos Voladores'
+  ];
+  INFLABLES_ORDEN.forEach(nombre => {
     const item = INVENTARIO.find(i => i.nombre === nombre);
     if(!item) return;
     const ocu = usados[nombre] || 0;
@@ -1863,7 +1871,7 @@ window.generarCatalogoPDF = async function(){
     }
   });
 
-  // Mantener orden correcto de páginas
+  // Páginas de packs siempre al final (electrónicos e interior siempre disponibles)
   const ORDEN_PAGINAS = [
     'Tobogán Doble Castillo','Tobogán Gold','Tobogán Pro',
     'Tobogán Ferrari','Tobogán Mario Bross','Tobogán Marvel',
@@ -1871,7 +1879,12 @@ window.generarCatalogoPDF = async function(){
     'Tobogán Obstáculo Danger','Tobogán Obstáculo Robot',
     'Avioncitos Voladores','Promociones Electrónicas','Juegos de Interior'
   ];
-  const paginasFinal = ORDEN_PAGINAS.filter(p => paginasUsadas.has(p));
+  // Inflables filtrados + siempre agregar Electrónicos e Interior al final
+  const paginasFinal = [
+    ...ORDEN_PAGINAS.filter(p => paginasUsadas.has(p)),
+    'Promociones Electrónicas',
+    'Juegos de Interior'
+  ];
 
   if(!paginasFinal.length){
     toast('No hay juegos disponibles para ese día','err');
