@@ -1288,9 +1288,24 @@ function isoWeek(dt){
 
 function esLunes(){return new Date().getDay()===1;}
 function semanaActual(){return isoWeek(new Date());}
+function parseFechaFlexible(f){
+  if(!f) return null;
+  // dd/mm/yyyy
+  let m=f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return new Date(+m[3],+m[2]-1,+m[1]);
+  // yyyy-mm-dd
+  m=f.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  return null;
+}
 function esSemanaActual(a){
+  // Primero intentar con campo semana guardado
   const sem=a.semana||calcularSemana(a.fecha);
-  return parseInt(sem)===semanaActual();
+  if(sem && parseInt(sem)===semanaActual()) return true;
+  // Fallback: calcular directo desde fecha
+  const dt=parseFechaFlexible(a.fecha);
+  if(!dt) return false;
+  return isoWeek(dt)===semanaActual();
 }
 function mensajeConfirmacion(a){
   const dia=a.dia||'';
