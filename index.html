@@ -1659,7 +1659,9 @@ function calcularUsados(fecha){
   const usados={};
   for(const a of arriendosDia){
     if(!a.equipos) continue;
-    for(const eq of a.equipos.split(',')){
+    // Estandarizar nombres para que coincidan exactamente con el inventario
+    const eqNorm = estandarizar(a.equipos)||a.equipos;
+    for(const eq of eqNorm.split(',')){
       const e=eq.trim();
       if(e) usados[e]=(usados[e]||0)+1;
     }
@@ -1862,6 +1864,7 @@ window.generarCatalogoPDF = async function(){
   const paginasFinal = [];
 
   // 1. Inflables y avioncitos: solo si están disponibles ese día
+  // Usar exactamente la misma lógica que la pantalla de disponibilidad
   for(const {inv, pag} of ORDEN_INVENTARIO_A_PAGINA){
     const item = INVENTARIO.find(i => i.nombre === inv);
     if(!item) continue;
