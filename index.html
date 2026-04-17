@@ -1315,17 +1315,17 @@ function mensajeConfirmacion(a){
 }
 function limpiarTelefono(tel){
   if(!tel) return '';
-  // Quitar todo excepto dígitos y el + inicial
-  let num = String(tel).replace(/\s+/g,'').replace(/[^0-9+]/g,'');
+  // Quitar espacios, guiones, paréntesis, puntos — dejar solo dígitos y +
+  let num = String(tel).replace(/[\s\-().]/g,'').replace(/[^0-9+]/g,'');
   // Quitar + si lo tiene
   num = num.replace(/^\+/,'');
   // Si empieza con 56 ya está bien
-  if(num.startsWith('56')) return num;
-  // Si empieza con 9 y tiene 9 dígitos → agregar 56
-  if(num.startsWith('9') && num.length===9) return '56'+num;
+  if(num.startsWith('56') && num.length>=11) return num;
+  // Si empieza con 9 → agregar 56
+  if(num.startsWith('9')) return '56'+num;
   // Si empieza con 0 → reemplazar por 56
   if(num.startsWith('0')) return '56'+num.slice(1);
-  // Si tiene 8 dígitos → asumir fijo chileno con 56
+  // Cualquier otro caso → prefijo 56
   return '56'+num;
 }
 function urlWAConfirmacion(a){
@@ -1897,7 +1897,7 @@ function renderTabla(){
     <td>${a.hora||'—'}</td>
     <td style="font-size:11px;white-space:nowrap">${a.telefono ? `
       <a href="tel:+${limpiarTelefono(a.telefono)}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:rgba(0,113,206,.1);color:var(--blue);border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="Llamar">
-        📞 ${a.telefono}
+        📞 ${limpiarTelefono(a.telefono)}
       </a>` : '—'}</td>
     <td style="text-align:center">${(()=>{
       const url=urlWAConfirmacion(a);
