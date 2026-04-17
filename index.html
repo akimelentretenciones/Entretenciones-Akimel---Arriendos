@@ -486,8 +486,15 @@ select:focus{border-color:var(--blue)}
     </div>
     <div id="calGrid"></div>
     <div class="inv-panel" id="invPanel" style="margin-top:20px">
-      <div class="inv-panel-title" id="invPanelTitle">Selecciona un día</div>
-      <div class="inv-panel-sub" id="invPanelSub">Haz clic en cualquier día con arriendos</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <div>
+          <div class="inv-panel-title" id="invPanelTitle">Selecciona un día</div>
+          <div class="inv-panel-sub" id="invPanelSub">Haz clic en cualquier día con arriendos</div>
+        </div>
+        <button id="btnCompartirCatalogo" onclick="generarCatalogoPDF()" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:#25d366;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(37,211,102,.35)">
+          📄 Compartir catálogo
+        </button>
+      </div>
       <div class="inv-categorias" id="invCategorias"></div>
       <div id="invArriendosDia"></div>
     </div>
@@ -854,6 +861,7 @@ select:focus{border-color:var(--blue)}
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
@@ -1674,6 +1682,8 @@ window.mostrarInventarioDia=function(dia){
   const{usados,arriendosDia}=calcularUsados(fechaStr);
 
   document.getElementById('invPanelTitle').textContent=`${diaNombre} ${dia} de ${MESES_FULL[CAL_MONTH]} ${CAL_YEAR}`;
+  const btnCat=document.getElementById('btnCompartirCatalogo');
+  if(btnCat) btnCat.style.display='flex';
   document.getElementById('invPanelSub').textContent=`${arriendosDia.length} arriendo(s) agendado(s) ese día`;
 
   const catColors={Inflable:['#0071ce','🏰'],Electrónico:['#5fb446','🎮'],Interior:['#fa6400','🏓']};
@@ -1721,6 +1731,163 @@ window.mostrarInventarioDia=function(dia){
   renderCalendario();
 };
 
+
+// ===== CATÁLOGO PDF =====
+const CATALOGO_INFO = {
+  'Tobogán Obstáculo Danger': {precio:'$100.000', medidas:'Alto 5.5M · Largo 13M · Ancho 4M', desc:'Pista de aventura de 13 metros con saltos, rampas, trepadas y zonas de competencia.', cat:'Inflable'},
+  'Tobogán Obstáculo Robot':  {precio:'$100.000', medidas:'Alto 5.5M · Largo 13M · Ancho 4M', desc:'Pista de aventura de 13 metros con saltos, rampas, trepadas y zonas de competencia.', cat:'Inflable'},
+  'Tobogán Dinopoder':        {precio:'$80.000',  medidas:'Alto 8.2M · Largo 7.5M · Ancho 4M', desc:'Dinosaurio inflable gigante, experiencia llena de adrenalina para todos.', cat:'Inflable'},
+  'Tobogán Pirata':           {precio:'$80.000',  medidas:'Alto 8.2M · Largo 7.5M · Ancho 5M', desc:'Pirata inflable espectacular, aventura llena de adrenalina que todos amarán.', cat:'Inflable'},
+  'Tobogán Marvel':           {precio:'$75.000',  medidas:'Alto 7.2M · Largo 7.5M · Ancho 4M', desc:'Tus héroes favoritos en una aventura épica llena de emoción y diversión.', cat:'Inflable'},
+  'Tobogán Mario Bross':      {precio:'$75.000',  medidas:'Alto 7.2M · Largo 7.5M · Ancho 4M', desc:'Diversión al máximo con el clásico Mario Bross en tu evento.', cat:'Inflable'},
+  'Tobogán F1':               {precio:'$70.000',  medidas:'Alto 6M · Largo 7.5M · Ancho 4M',   desc:'Siente la velocidad con nuestro Tobogán Ferrari, emoción garantizada.', cat:'Inflable'},
+  'Tobogán Pro':              {precio:'$60.000',  medidas:'Alto 6M · Largo 7M · Ancho 3.5M',   desc:'La nueva era de la diversión, para niños grandes y chicos.', cat:'Inflable'},
+  'Tobogán Gold':             {precio:'$50.000',  medidas:'Alto 5M · Largo 5M · Ancho 3.2M',   desc:'Cada celebración es un golazo de diversión con el Tobogán Gold.', cat:'Inflable'},
+  'Tobogán Doble Castillo':   {precio:'$40.000',  medidas:'Alto 2.5M · Largo 5M · Ancho 3M',   desc:'Magia y diversión para los más pequeños, risas y emoción garantizada.', cat:'Inflable'},
+  'Avioncitos Voladores':     {precio:'$80.000',  medidas:'Con diseño incluido',                desc:'Hasta 8 niños pueden montar este maravilloso juego al mismo tiempo.', cat:'Electrónico'},
+  'Carrusel Pony':            {precio:'$80.000',  medidas:'Juego electrónico',                  desc:'Carrusel grande para los más pequeños, diversión clásica garantizada.', cat:'Electrónico'},
+  'Atrapa Ranita':            {precio:'$50.000',  medidas:'Juego electrónico',                  desc:'Juego de habilidad para toda la familia, diversión en cada turno.', cat:'Electrónico'},
+  'Moto':                     {precio:'$50.000',  medidas:'Juego electrónico',                  desc:'Simulador de moto para los más aventureros, emoción garantizada.', cat:'Electrónico'},
+  'Disparadores':             {precio:'$50.000',  medidas:'Juego electrónico',                  desc:'Juego arcade de disparos, entretenimiento para todas las edades.', cat:'Electrónico'},
+  'Arcade':                   {precio:'$50.000',  medidas:'Juego electrónico',                  desc:'Máquina arcade clásica, horas de entretenimiento aseguradas.', cat:'Electrónico'},
+  'Taca Taca':                {precio:'$28.000',  medidas:'Interior · Pack 2x $40.000',          desc:'El clásico juego de mesa, diversión y competencia para todos.', cat:'Interior'},
+  'Mesa de Hockey':           {precio:'$28.000',  medidas:'Interior · Pack 2x $40.000',          desc:'Mesa de hockey profesional, emoción y competencia en cada partido.', cat:'Interior'},
+};
+
+window.generarCatalogoPDF = async function(){
+  if(!CAL_DIA_SEL) return;
+  const mes=String(CAL_MONTH+1).padStart(2,'0');
+  const año=String(CAL_YEAR);
+  const fechaStr=String(CAL_DIA_SEL).padStart(2,'0')+'/'+mes+'/'+año;
+  const diaNombre=DIAS_ORD[new Date(CAL_YEAR,CAL_MONTH,CAL_DIA_SEL).getDay()===0?6:new Date(CAL_YEAR,CAL_MONTH,CAL_DIA_SEL).getDay()-1];
+  const{usados}=calcularUsados(fechaStr);
+
+  // Juegos disponibles
+  const disponibles=INVENTARIO.filter(item=>{
+    const ocu=usados[item.nombre]||0;
+    return Math.max(0,item.total-ocu)>0;
+  }).map(item=>({
+    ...item,
+    disp:Math.max(0,item.total-(usados[item.nombre]||0)),
+    info:CATALOGO_INFO[item.nombre]||{precio:'Consultar',medidas:'',desc:'',cat:item.cat}
+  }));
+
+  if(!disponibles.length){toast('No hay juegos disponibles para ese día','err');return;}
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210, H=297;
+  const azul=[4,30,66], naranja=[249,115,22], gris=[120,147,170], blanco=[255,255,255];
+  const verdeOsc=[37,120,70];
+
+  // — HEADER —
+  doc.setFillColor(...azul);
+  doc.rect(0,0,W,38,'F');
+  doc.setTextColor(...blanco);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(22);
+  doc.text('AKIMEL', 14, 16);
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  doc.text('Entretenciones Akimel · +56 9 5080 3204', 14, 23);
+  doc.setFontSize(13);
+  doc.setFont('helvetica','bold');
+  doc.text(`Disponibilidad ${diaNombre} ${CAL_DIA_SEL} de ${MESES_FULL[CAL_MONTH]} ${año}`, 14, 33);
+
+  // — SUBTÍTULO —
+  doc.setFillColor(...naranja);
+  doc.rect(0,38,W,8,'F');
+  doc.setTextColor(...blanco);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','bold');
+  doc.text(`${disponibles.length} juego${disponibles.length!==1?'s':''} disponible${disponibles.length!==1?'s':''} para tu evento`, 14, 43.5);
+
+  // — JUEGOS —
+  let y=54;
+  const catColors={'Inflable':azul,'Electrónico':verdeOsc,'Interior':[200,80,0]};
+  let currentCat='';
+
+  for(const item of disponibles){
+    const info=item.info;
+    const cat=info.cat||item.cat;
+
+    // Categoría header
+    if(cat!==currentCat){
+      if(y>260){doc.addPage();y=20;}
+      currentCat=cat;
+      doc.setFillColor(...(catColors[cat]||azul));
+      doc.rect(14,y,W-28,7,'F');
+      doc.setTextColor(...blanco);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(8);
+      const catIcon=cat==='Inflable'?'🏰 ':cat==='Electrónico'?'🎮 ':'🏓 ';
+      doc.text(cat.toUpperCase(), 18, y+5);
+      y+=11;
+    }
+
+    // Card de juego
+    if(y>265){doc.addPage();y=20;}
+    const cardH=24;
+    doc.setFillColor(248,251,255);
+    doc.roundedRect(14,y,W-28,cardH,2,2,'F');
+    doc.setDrawColor(220,232,245);
+    doc.roundedRect(14,y,W-28,cardH,2,2,'S');
+
+    // Nombre
+    doc.setTextColor(...azul);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.text(item.nombre, 20, y+8);
+
+    // Precio badge
+    doc.setFillColor(...naranja);
+    doc.roundedRect(W-50,y+3,34,8,2,2,'F');
+    doc.setTextColor(...blanco);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.text(info.precio, W-49+1, y+8.5);
+
+    // Descripción
+    doc.setTextColor(...gris);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8);
+    const descLines=doc.splitTextToSize(info.desc, W-60);
+    doc.text(descLines[0], 20, y+14);
+
+    // Medidas
+    doc.setTextColor(150,170,190);
+    doc.setFontSize(7.5);
+    doc.text(info.medidas, 20, y+20);
+
+    // Unidades disponibles
+    if(item.disp>1){
+      doc.setTextColor(...verdeOsc);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(7);
+      doc.text(`${item.disp} unidades disponibles`, W-55, y+21);
+    }
+
+    y+=cardH+4;
+  }
+
+  // — FOOTER —
+  const pageCount=doc.getNumberOfPages();
+  for(let i=1;i<=pageCount;i++){
+    doc.setPage(i);
+    doc.setFillColor(...azul);
+    doc.rect(0,H-14,W,14,'F');
+    doc.setTextColor(...blanco);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8);
+    doc.text('Entretenciones Akimel · +56 9 5080 3204 · Región Metropolitana', 14, H-6);
+    doc.text(`Pág ${i}/${pageCount}`, W-22, H-6);
+  }
+
+  // Descargar
+  const filename=`Akimel_Disponibilidad_${String(CAL_DIA_SEL).padStart(2,'0')}-${mes}-${año}.pdf`;
+  doc.save(filename);
+  toast('PDF generado — adjúntalo en WhatsApp','ok');
+};
 // ===== CALENDARIO =====
 function renderCalendario(){
   document.getElementById('calTitulo').textContent=MESES_FULL[CAL_MONTH]+' '+CAL_YEAR;
