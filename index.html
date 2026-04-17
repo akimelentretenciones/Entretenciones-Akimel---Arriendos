@@ -1762,7 +1762,6 @@ window.generarCatalogoPDF = async function(){
   const diaNombre=DIAS_ORD[new Date(CAL_YEAR,CAL_MONTH,CAL_DIA_SEL).getDay()===0?6:new Date(CAL_YEAR,CAL_MONTH,CAL_DIA_SEL).getDay()-1];
   const{usados}=calcularUsados(fechaStr);
 
-  // Juegos disponibles
   const disponibles=INVENTARIO.filter(item=>{
     const ocu=usados[item.nombre]||0;
     return Math.max(0,item.total-ocu)>0;
@@ -1777,94 +1776,117 @@ window.generarCatalogoPDF = async function(){
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   const W=210, H=297;
-  const azul=[4,30,66], naranja=[249,115,22], gris=[120,147,170], blanco=[255,255,255];
-  const verdeOsc=[37,120,70];
+  // Paleta de la app
+  const azulOsc=[4,30,66];       // --blue3 #041e42
+  const azul=[0,113,206];        // --blue  #0071ce
+  const amarillo=[255,194,32];   // --yellow #ffc220
+  const verde=[95,180,70];       // --green  #5fb446
+  const gris=[122,147,170];      // --text3  #7a93aa
+  const blanco=[255,255,255];
+  const bgCard=[240,244,248];    // --bg     #f0f4f8
 
   // — HEADER —
-  doc.setFillColor(...azul);
-  doc.rect(0,0,W,38,'F');
-  doc.setTextColor(...blanco);
+  doc.setFillColor(...azulOsc);
+  doc.rect(0,0,W,42,'F');
+  // Logo badge amarillo
+  doc.setFillColor(...amarillo);
+  doc.roundedRect(14,8,14,14,2,2,'F');
+  doc.setTextColor(...azulOsc);
   doc.setFont('helvetica','bold');
-  doc.setFontSize(22);
-  doc.text('AKIMEL', 14, 16);
   doc.setFontSize(10);
-  doc.setFont('helvetica','normal');
-  doc.text('Entretenciones Akimel · +56 9 5080 3204', 14, 23);
-  doc.setFontSize(13);
-  doc.setFont('helvetica','bold');
-  doc.text(`Disponibilidad ${diaNombre} ${CAL_DIA_SEL} de ${MESES_FULL[CAL_MONTH]} ${año}`, 14, 33);
-
-  // — SUBTÍTULO —
-  doc.setFillColor(...naranja);
-  doc.rect(0,38,W,8,'F');
+  doc.text('AK', 17.5, 17);
+  // Nombre
   doc.setTextColor(...blanco);
-  doc.setFontSize(9);
   doc.setFont('helvetica','bold');
-  doc.text(`${disponibles.length} juego${disponibles.length!==1?'s':''} disponible${disponibles.length!==1?'s':''} para tu evento`, 14, 43.5);
+  doc.setFontSize(20);
+  doc.text('AKIMEL', 32, 17);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(180,200,220);
+  doc.text('Entretenciones · +56 9 5080 3204 · Región Metropolitana', 32, 23);
+  // Línea separadora amarilla
+  doc.setFillColor(...amarillo);
+  doc.rect(14,28,W-28,1,'F');
+  // Título fecha
+  doc.setTextColor(...blanco);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(12);
+  doc.text(`Disponibilidad para el ${diaNombre} ${CAL_DIA_SEL} de ${MESES_FULL[CAL_MONTH]} ${año}`, 14, 37);
+
+  // — BANNER VERDE —
+  doc.setFillColor(...verde);
+  doc.rect(0,42,W,9,'F');
+  doc.setTextColor(...blanco);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.text(`${disponibles.length} juego${disponibles.length!==1?'s':''} disponible${disponibles.length!==1?'s':''} para tu evento`, 14, 48);
 
   // — JUEGOS —
-  let y=54;
-  const catColors={'Inflable':azul,'Electrónico':verdeOsc,'Interior':[200,80,0]};
+  let y=57;
+  const catColors={'Inflable':azul,'Electrónico':verde,'Interior':[250,100,0]};
   let currentCat='';
 
   for(const item of disponibles){
     const info=item.info;
     const cat=info.cat||item.cat;
 
-    // Categoría header
     if(cat!==currentCat){
-      if(y>260){doc.addPage();y=20;}
+      if(y>262){doc.addPage();y=20;}
       currentCat=cat;
-      doc.setFillColor(...(catColors[cat]||azul));
-      doc.rect(14,y,W-28,7,'F');
+      const cc=catColors[cat]||azul;
+      doc.setFillColor(...cc);
+      doc.roundedRect(14,y,W-28,8,1,1,'F');
       doc.setTextColor(...blanco);
       doc.setFont('helvetica','bold');
-      doc.setFontSize(8);
-      const catIcon=cat==='Inflable'?'🏰 ':cat==='Electrónico'?'🎮 ':'🏓 ';
-      doc.text(cat.toUpperCase(), 18, y+5);
-      y+=11;
+      doc.setFontSize(8.5);
+      doc.text(cat.toUpperCase(), 19, y+5.5);
+      y+=12;
     }
 
-    // Card de juego
     if(y>265){doc.addPage();y=20;}
-    const cardH=24;
-    doc.setFillColor(248,251,255);
+    const cardH=26;
+
+    // Card fondo
+    doc.setFillColor(...bgCard);
     doc.roundedRect(14,y,W-28,cardH,2,2,'F');
-    doc.setDrawColor(220,232,245);
-    doc.roundedRect(14,y,W-28,cardH,2,2,'S');
+    // Borde izquierdo azul
+    doc.setFillColor(...azul);
+    doc.roundedRect(14,y,3,cardH,1,1,'F');
 
     // Nombre
-    doc.setTextColor(...azul);
+    doc.setTextColor(...azulOsc);
     doc.setFont('helvetica','bold');
     doc.setFontSize(11);
-    doc.text(item.nombre, 20, y+8);
+    doc.text(item.nombre, 21, y+8);
 
-    // Precio badge
-    doc.setFillColor(...naranja);
-    doc.roundedRect(W-50,y+3,34,8,2,2,'F');
-    doc.setTextColor(...blanco);
+    // Badge precio amarillo
+    doc.setFillColor(...amarillo);
+    doc.roundedRect(W-52,y+2,38,9,2,2,'F');
+    doc.setTextColor(...azulOsc);
     doc.setFont('helvetica','bold');
-    doc.setFontSize(9);
-    doc.text(info.precio, W-49+1, y+8.5);
+    doc.setFontSize(9.5);
+    doc.text(info.precio, W-51,y+8);
 
     // Descripción
     doc.setTextColor(...gris);
     doc.setFont('helvetica','normal');
-    doc.setFontSize(8);
-    const descLines=doc.splitTextToSize(info.desc, W-60);
-    doc.text(descLines[0], 20, y+14);
+    doc.setFontSize(7.5);
+    const descLines=doc.splitTextToSize(info.desc, W-65);
+    doc.text(descLines[0], 21, y+15);
 
     // Medidas
-    doc.setTextColor(150,170,190);
-    doc.setFontSize(7.5);
-    doc.text(info.medidas, 20, y+20);
+    doc.setTextColor(170,185,200);
+    doc.setFontSize(7);
+    doc.text(info.medidas, 21, y+21);
 
-    // Unidades disponibles
+    // Badge unidades si hay más de 1
     if(item.disp>1){
-      doc.setTextColor(...verdeOsc);
+      doc.setFillColor(...verde);
+      doc.roundedRect(W-52,y+13,38,7,2,2,'F');
+      doc.setTextColor(...blanco);
       doc.setFont('helvetica','bold');
       doc.setFontSize(7);
-      doc.text(`${item.disp} unidades disponibles`, W-55, y+21);
+      doc.text(`${item.disp} disponibles`, W-50, y+17.5);
     }
 
     y+=cardH+4;
@@ -1874,19 +1896,38 @@ window.generarCatalogoPDF = async function(){
   const pageCount=doc.getNumberOfPages();
   for(let i=1;i<=pageCount;i++){
     doc.setPage(i);
-    doc.setFillColor(...azul);
-    doc.rect(0,H-14,W,14,'F');
+    doc.setFillColor(...azulOsc);
+    doc.rect(0,H-12,W,12,'F');
+    doc.setFillColor(...amarillo);
+    doc.rect(0,H-12,4,12,'F');
     doc.setTextColor(...blanco);
     doc.setFont('helvetica','normal');
-    doc.setFontSize(8);
-    doc.text('Entretenciones Akimel · +56 9 5080 3204 · Región Metropolitana', 14, H-6);
-    doc.text(`Pág ${i}/${pageCount}`, W-22, H-6);
+    doc.setFontSize(7.5);
+    doc.text('Entretenciones Akimel · www.akimel.cl', 10, H-5);
+    doc.setTextColor(180,200,220);
+    doc.text(`Pág ${i} de ${pageCount}`, W-22, H-5);
   }
 
-  // Descargar
+  // — COMPARTIR —
   const filename=`Akimel_Disponibilidad_${String(CAL_DIA_SEL).padStart(2,'0')}-${mes}-${año}.pdf`;
-  doc.save(filename);
-  toast('PDF generado — adjúntalo en WhatsApp','ok');
+  const pdfBlob=doc.output('blob');
+  const file=new File([pdfBlob], filename, {type:'application/pdf'});
+
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({
+        files:[file],
+        title:'Disponibilidad Akimel',
+        text:`Hola! Te compartimos los juegos disponibles para el ${diaNombre} ${CAL_DIA_SEL} de ${MESES_FULL[CAL_MONTH]}. Cualquier consulta estamos a tu disposición.`
+      });
+    } catch(e){
+      if(e.name!=='AbortError') { doc.save(filename); toast('PDF descargado','ok'); }
+    }
+  } else {
+    // Fallback: descarga directa
+    doc.save(filename);
+    toast('PDF descargado — adjúntalo en WhatsApp','ok');
+  }
 };
 // ===== CALENDARIO =====
 function renderCalendario(){
