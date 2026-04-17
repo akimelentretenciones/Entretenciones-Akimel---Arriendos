@@ -503,6 +503,14 @@ select:focus{border-color:var(--blue)}
 
 <!-- ARRIENDOS -->
 <div class="section" id="sec-arriendos">
+  <!-- Banner lunes: confirmación semana -->
+  <div id="bannerConfirmacion" style="display:none;margin-bottom:14px;padding:12px 16px;background:linear-gradient(90deg,rgba(37,211,102,.12),rgba(37,211,102,.06));border:1.5px solid rgba(37,211,102,.35);border-radius:10px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">📋</span>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#128c3e">Confirma los arriendos de esta semana</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">Haz clic en <b>✅ Confirmar</b> para enviar el mensaje de confirmación por WhatsApp a cada cliente.</div>
+    </div>
+  </div>
   <div class="table-header">
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:15px;font-weight:700;color:var(--blue3)">Arriendos</span>
@@ -1277,6 +1285,24 @@ function isoWeek(dt){
   const jan4=new Date(tmp.getFullYear(),0,4);
   return 1+Math.round(((tmp-jan4)/864e5-(3-(jan4.getDay()+6)%7))/7);
 }
+
+function esLunes(){return new Date().getDay()===1;}
+function semanaActual(){return isoWeek(new Date());}
+function esSemanaActual(a){
+  const sem=a.semana||calcularSemana(a.fecha);
+  return parseInt(sem)===semanaActual();
+}
+function mensajeConfirmacion(a){
+  const dia=a.dia||'';
+  const hora=a.hora?` a las ${a.hora}hrs`:'';
+  const equipos=a.equipos?` (${a.equipos})`:'';
+  return `Hola ${a.cliente||''}! 👋 Te escribimos de Entretenciones Akimel para confirmar tu arriendo del ${dia}${hora}${equipos}. ¿Todo sigue en pie? 🎉`;
+}
+function urlWAConfirmacion(a){
+  const num=(a.telefono||'').replace(/[^0-9]/g,'').replace(/^0/,'56');
+  if(!num) return null;
+  return `https://wa.me/${num}?text=${encodeURIComponent(mensajeConfirmacion(a))}`;
+}
 function calcularSemana(f){
   if(!f) return '';
   try{const[d,m,y]=f.split('/').map(Number);return isoWeek(new Date(y,m-1,d));}catch{return '';}
@@ -1843,10 +1869,14 @@ function renderTabla(){
       <a href="tel:${a.telefono}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:rgba(0,113,206,.1);color:var(--blue);border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="Llamar">
         📞 ${a.telefono}
       </a>` : '—'}</td>
-    <td style="text-align:center">${a.telefono ? `
-      <a href="https://wa.me/${a.telefono.replace(/[^0-9]/g,'').replace(/^0/,'56')}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:3px 8px;background:rgba(37,211,102,.15);color:#128c3e;border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="WhatsApp">
-        💬 WA
-      </a>` : '—'}</td>
+    <td style="text-align:center">${(()=>{
+      const url=urlWAConfirmacion(a);
+      if(!url) return '—';
+      if(esSemanaActual(a)){
+        return `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:4px 9px;background:rgba(37,211,102,.9);color:#fff;border-radius:6px;font-size:10px;font-weight:700;text-decoration:none;box-shadow:0 1px 4px rgba(37,211,102,.4)" title="Enviar confirmación de arriendo">✅ Confirmar</a>`;
+      }
+      return `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:3px 8px;background:rgba(37,211,102,.15);color:#128c3e;border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="WhatsApp">💬 WA</a>`;
+    })()}</td>
     <td style="min-width:140px;max-width:200px">${(a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean).map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(0,113,206,0.06);white-space:nowrap">${e}</div>`).join('')}</td>
     <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue)">${a.pendiente?clp(a.pendiente):'—'}</td>
     <td><span class="badge badge-${a.estado==='Cancelado'?'cancel':'pend'}">${a.estado||'—'}</span></td>
@@ -1876,6 +1906,12 @@ function renderTabla(){
     <td style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:var(--blue)">${clp(sumaTotal)}</td>
     <td colspan="4"></td>
   </tr>`;
+  // Mostrar banner si hay arriendos de la semana actual
+  const banner = document.getElementById('bannerConfirmacion');
+  if(banner){
+    const hayConfirm = DATOS.some(a => esSemanaActual(a) && a.estado !== 'Cancelado');
+    banner.style.display = hayConfirm ? 'flex' : 'none';
+  }
 }
 window.paginaAnterior=()=>{if(PAGINA>1){PAGINA--;renderTabla();}};
 window.paginaSiguiente=()=>{if(PAGINA<Math.ceil(FILTRADOS.length/POR_PAGINA)){PAGINA++;renderTabla();}};
