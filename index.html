@@ -1895,10 +1895,15 @@ function renderTabla(){
     <td>${a.dia||'—'}</td>
     <td style="color:var(--text3);font-size:11px;font-weight:700">${a.semana||isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'))||'—'}</td>
     <td>${a.hora||'—'}</td>
-    <td style="font-size:11px;white-space:nowrap">${a.telefono ? `
-      <a href="tel:+${limpiarTelefono(a.telefono)}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:rgba(0,113,206,.1);color:var(--blue);border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="Llamar">
-        📞 ${limpiarTelefono(a.telefono)}
-      </a>` : '—'}</td>
+    <td style="font-size:11px;white-space:nowrap">${(()=>{
+      if(!a.telefono) return '—';
+      const clean=limpiarTelefono(a.telefono);
+      const digitos=clean.replace(/^56/,'');
+      const incompleto=digitos.length<9;
+      return `<a href="tel:+${clean}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:${incompleto?'rgba(239,68,68,.1)':'rgba(0,113,206,.1)'};color:${incompleto?'var(--red)':'var(--blue)'};border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="${incompleto?'Número incompleto, edita el arriendo':'Llamar'}">
+        ${incompleto?'⚠️':'📞'} ${clean}
+      </a>`;
+    })()}</td>
     <td style="text-align:center">${(()=>{
       const url=urlWAConfirmacion(a);
       if(!url) return '—';
