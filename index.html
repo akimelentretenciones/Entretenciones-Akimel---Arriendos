@@ -1654,16 +1654,31 @@ window.handleDrop=function(e){e.preventDefault();document.getElementById('upload
 window.setUploadTab=function(tab,btn){document.querySelectorAll('.upload-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.getElementById('panelPegar').style.display=tab==='pegar'?'block':'none';document.getElementById('panelArchivo').style.display=tab==='archivo'?'block':'none';};
 
 // ===== INVENTARIO POR DÍA =====
+function normalizarNombreEquipo(nombre){
+  // 1. Intentar match exacto con inventario
+  const exact = INVENTARIO.find(i => i.nombre.toLowerCase() === nombre.toLowerCase());
+  if(exact) return exact.nombre;
+  // 2. Intentar con MAPEO por keywords
+  const lower = nombre.toLowerCase().trim();
+  if(MAPEO[lower]) return MAPEO[lower];
+  // 3. Buscar si algún nombre del inventario está contenido
+  const partial = INVENTARIO.find(i => 
+    lower.includes(i.nombre.toLowerCase().slice(0,8)) ||
+    i.nombre.toLowerCase().includes(lower.slice(0,8))
+  );
+  if(partial) return partial.nombre;
+  return nombre;
+}
 function calcularUsados(fecha){
   const arriendosDia=ARRIENDOS.filter(a=>a.fecha===fecha&&a.estado!=='Cancelado');
   const usados={};
   for(const a of arriendosDia){
     if(!a.equipos) continue;
-    // Estandarizar nombres para que coincidan exactamente con el inventario
-    const eqNorm = estandarizar(a.equipos)||a.equipos;
-    for(const eq of eqNorm.split(',')){
-      const e=eq.trim();
-      if(e) usados[e]=(usados[e]||0)+1;
+    for(const eq of a.equipos.split(',')){
+      const raw=eq.trim();
+      if(!raw) continue;
+      const nombre=normalizarNombreEquipo(raw);
+      usados[nombre]=(usados[nombre]||0)+1;
     }
   }
   return{usados,arriendosDia};
