@@ -2069,9 +2069,9 @@ window.generarCatalogoPDF = async function(){
   }
 
   // — COMPARTIR —
-  const filename=`Akimel_Disponibilidad_${String(CAL_DIA_SEL).padStart(2,'0')}-${mes}-${año}.pdf`;
+  const dispFilename=`Akimel_Disponibilidad_${String(CAL_DIA_SEL).padStart(2,'0')}-${mes}-${año}.pdf`;
   const pdfBlob=doc.output('blob');
-  const file=new File([pdfBlob], filename, {type:'application/pdf'});
+  const file=new File([pdfBlob], dispFilename, {type:'application/pdf'});
 
   if(navigator.canShare && navigator.canShare({files:[file]})){
     try{
@@ -2081,11 +2081,11 @@ window.generarCatalogoPDF = async function(){
         text:`Hola! Te compartimos los juegos disponibles para el ${diaNombre} ${CAL_DIA_SEL} de ${MESES_FULL[CAL_MONTH]}. Cualquier consulta estamos a tu disposición.`
       });
     } catch(e){
-      if(e.name!=='AbortError') { doc.save(filename); toast('PDF descargado','ok'); }
+      if(e.name!=='AbortError') { doc.save(dispFilename); toast('PDF descargado','ok'); }
     }
   } else {
     // Fallback: descarga directa
-    doc.save(filename);
+    doc.save(dispFilename);
     toast('PDF descargado — adjúntalo en WhatsApp','ok');
   }
 };
