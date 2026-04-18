@@ -1675,8 +1675,20 @@ function normalizarNombreEquipo(nombre){
   if(anagram) return anagram.nombre;
   return nombre;
 }
+function normalizarFecha(f){
+  if(!f) return '';
+  // dd/mm/yyyy → dd/mm/yyyy (ya correcto)
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(f)) return f;
+  // yyyy-mm-dd → dd/mm/yyyy
+  if(/^\d{4}-\d{2}-\d{2}$/.test(f)){
+    const[y,m,d]=f.split('-');
+    return d+'/'+m+'/'+y;
+  }
+  return f;
+}
 function calcularUsados(fecha){
-  const arriendosDia=ARRIENDOS.filter(a=>a.fecha===fecha&&a.estado!=='Cancelado');
+  const fechaNorm=normalizarFecha(fecha);
+  const arriendosDia=ARRIENDOS.filter(a=>normalizarFecha(a.fecha)===fechaNorm&&a.estado!=='Cancelado');
   const usados={};
   for(const a of arriendosDia){
     if(!a.equipos) continue;
@@ -1884,17 +1896,12 @@ window.generarCatalogoPDF = async function(){
   const paginasVistas = new Set();
   const paginasFinal = [];
 
-  // DEBUG
-  console.log('=== PDF DEBUG día '+fechaStr+' ===');
-  console.log('usados:', JSON.stringify(usados));
-
   // 1. Inflables y avioncitos: solo si están disponibles ese día
   for(const {inv, pag} of ORDEN_INVENTARIO_A_PAGINA){
     const item = INVENTARIO.find(i => i.nombre === inv);
     if(!item) continue;
     const ocu = usados[inv] || 0;
     const libre = Math.max(0, item.total - ocu);
-    console.log(inv+': ocu='+ocu+' libre='+libre);
     if(libre > 0 && !paginasVistas.has(pag)){
       paginasFinal.push(pag);
       paginasVistas.add(pag);
