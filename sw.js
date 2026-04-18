@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════
-// AKIMEL — Service Worker v3
+// AKIMEL — Service Worker v4
 // ═══════════════════════════════════════════════════
-const CACHE_NAME = 'akimel-v5';
+const CACHE_NAME = 'akimel-v6';
 const ASSETS = ['/índice.html', '/manifest.json', '/icono-192.png'];
 
 self.addEventListener('install', event => {
