@@ -1825,7 +1825,8 @@ window.generarCatalogoPDF = async function(){
 
   // Inflables primero
   const INFLABLES = ['Tobogán Dinopoder','Tobogán Obs. Danger','Tobogán Obs. Robot','Tobogán Pirata',
-    'Tobogán Marvel','Tobogán Mario Bross','Tobogán F1','Tobogán Pro','Tobogán Gold','Tobogán Doble Castillo'];
+    'Tobogán Marvel','Tobogán Mario Bross','Tobogán F1','Tobogán Pro','Tobogán Gold','Tobogán Doble Castillo',
+    'Avioncitos Voladores'];
   for(const nombre of INFLABLES){
     const item = INVENTARIO.find(i=>i.nombre===nombre);
     if(!item) continue;
