@@ -2036,11 +2036,13 @@ window.copiarParaWA=function(a){
   const comuna=a.comuna||'';
   const ubicacion=[dir,comuna].filter(Boolean).join(', ');
   const equipos=(a.equipos||'').split(',').map(e=>e.trim()).filter(Boolean).join(', ');
+  const telefono=a.telefono||'';
   const lineas=[
     `📋 *${a.cliente||'—'}*`,
     `📅 ${[dia+' '+fecha,hora].filter(Boolean).join(' · ')}`,
     ubicacion?`📍 ${ubicacion}`:'',
     equipos?`🎮 ${equipos}`:'',
+    telefono?`📞 ${telefono}`:'',
   ].filter(Boolean).join('\n');
   navigator.clipboard.writeText(lineas).then(()=>toast('✓ Copiado para WhatsApp','ok')).catch(()=>toast('Error al copiar','err'));
 };
