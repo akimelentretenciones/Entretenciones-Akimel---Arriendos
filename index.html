@@ -503,7 +503,12 @@ select:focus{border-color:var(--blue)}
 
   <!-- VISTA POR DÍA -->
   <div id="vista-dia" style="display:none">
-    <div id="dispResumen" style="margin-bottom:20px"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div id="dispResumen" style="flex:1"></div>
+      <button id="btnCatalogoWA2" onclick="compartirCatalogoWA2()" style="display:none;align-items:center;gap:6px;padding:9px 16px;background:#25d366;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 10px rgba(37,211,102,.4);flex-shrink:0">
+        📲 Compartir catálogo
+      </button>
+    </div>
     <div id="dispGrid"></div>
     <div id="dispArriendos" style="margin-top:20px"></div>
   </div>
@@ -2574,15 +2579,7 @@ window.cambiarDiaDisp=function(dir){
 window.renderDisponibilidad=function(){
   const input=document.getElementById('fechaDisp');
   if(!input.value) return;
-  // Verificar que la fecha tenga al menos 1 arriendo
   const fechaStr=inputAFecha(input.value);
-  const tieneArriendos=ARRIENDOS.some(a=>a.fecha===fechaStr&&a.estado!=='Cancelado');
-  if(!tieneArriendos){
-    document.getElementById('dispResumen').innerHTML=`<div style="text-align:center;padding:30px;color:var(--text3)">📭 Sin arriendos para esta fecha</div>`;
-    document.getElementById('dispGrid').innerHTML='';
-    document.getElementById('dispArriendos').innerHTML='';
-    return;
-  }
   const{usados,arriendosDia}=calcularUsados(fechaStr);
 
   const dt=new Date(input.value+'T12:00:00');
@@ -2614,6 +2611,10 @@ window.renderDisponibilidad=function(){
       <div class="disp-res-item"><div class="disp-res-num" style="color:var(--green)">${libres}</div><div style="color:var(--text3)">🟢 Disponibles</div></div>
       <div class="disp-res-item"><div class="disp-res-num" style="color:var(--red)">${parciales+ocupados}</div><div style="color:var(--text3)">🔴 Agotados</div></div>
     </div>`;
+  // Mostrar botón compartir + guardar fecha para la función
+  window._fechaDispActual = {fechaStr, diaNom, dia: dt.getDate(), mesNom, anio: dt.getFullYear()};
+  const _btn2=document.getElementById('btnCatalogoWA2');
+  if(_btn2) _btn2.style.display='flex';
 
   // Grid compacto 2 columnas por categoría
   const cats=[
@@ -3911,6 +3912,75 @@ window.compartirCatalogoWA = async function(){
   }
 };
 
+
+// ===== COMPARTIR CATÁLOGO DESDE VISTA POR DÍA =====
+window.compartirCatalogoWA2 = async function(){
+  const btn = document.getElementById('btnCatalogoWA2');
+  if(btn){ btn.innerHTML='⏳ Generando...'; btn.style.pointerEvents='none'; }
+
+  if(!window._fechaDispActual){
+    toast('Selecciona un día primero','err');
+    if(btn){ btn.innerHTML='📲 Compartir catálogo'; btn.style.pointerEvents='auto'; }
+    return;
+  }
+
+  const {fechaStr, diaNom, dia, mesNom, anio} = window._fechaDispActual;
+  const{usados} = calcularUsados(fechaStr);
+
+  const paginasSet = new Set();
+  const juegosDisp = [];
+
+  for(const item of INVENTARIO){
+    const ocu = usados[item.nombre] || 0;
+    const libre = Math.max(0, item.total - ocu);
+    if(libre > 0){
+      juegosDisp.push(item.nombre);
+      const imgKey = INV_A_CATALOGO[item.nombre];
+      if(imgKey && CATALOGO_IMGS[imgKey]) paginasSet.add(imgKey);
+    }
+  }
+
+  if(paginasSet.size === 0){
+    toast('No hay juegos disponibles para este día','err');
+    if(btn){ btn.innerHTML='📲 Compartir catálogo'; btn.style.pointerEvents='auto'; }
+    return;
+  }
+
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({orientation:'portrait', unit:'pt', format:'a4'});
+  const W=595, H=842;
+  [...paginasSet].forEach((pag, idx) => {
+    if(idx > 0) doc.addPage();
+    doc.addImage(CATALOGO_IMGS[pag], 'JPEG', 0, 0, W, H, undefined, 'FAST');
+  });
+
+  const nombreDia = `${diaNom} ${dia} de ${mesNom} ${anio}`;
+  const filename = `Akimel_Disponible_${nombreDia.replace(/\s+/g,'_')}.pdf`;
+  const pdfBlob = doc.output('blob');
+  const file = new File([pdfBlob], filename, {type:'application/pdf'});
+
+  const listaJuegos = juegosDisp.map(j=>`  ✅ ${j}`).join('\n');
+  const msg = `🎪 *Entretenciones AKIMEL*\n\n📅 Disponibilidad para: *${nombreDia}*\n\nJuegos disponibles:\n${listaJuegos}\n\n📲 Más info al +56 9 5080 3204\n¡Reserva ya! 🎉`;
+
+  if(btn){ btn.innerHTML='📲 Compartir catálogo'; btn.style.pointerEvents='auto'; }
+
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({ files:[file], title:'Disponibilidad Akimel', text:msg });
+    }catch(e){
+      if(e.name !== 'AbortError'){
+        doc.save(filename);
+        navigator.clipboard.writeText(msg).catch(()=>{});
+        toast('PDF descargado — adjúntalo en WhatsApp','ok');
+      }
+    }
+  } else {
+    doc.save(filename);
+    const waUrl = 'https://api.whatsapp.com/send?text='+encodeURIComponent(msg);
+    window.open(waUrl,'_blank');
+    toast('PDF descargado — envíalo junto al mensaje que se abrió','ok');
+  }
+};
 </script>
 </body>
 </html>
