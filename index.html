@@ -1879,10 +1879,12 @@ window.generarCatalogoPDF = async function(){
 
   if(navigator.canShare && navigator.canShare({files:[file]})){
     try{
+      const listaJuegos = paginasFinal.map(p => `• ${p}`).join('\n');
+      const fechaTexto = `${String(CAL_DIA_SEL).padStart(2,'0')}/${mes}/${año}`;
       await navigator.share({
         files:[file],
-        title:'Disponibilidad Akimel',
-        text:`Hola! Te compartimos los juegos disponibles para el ${diaNombre} ${CAL_DIA_SEL} de ${['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][CAL_MONTH]}. Consultas al +56 9 5080 3204 ☎️`
+        title:'Catálogo Akimel',
+        text:`Te enviamos los juegos que nos quedan disponibles en el catálogo, fecha ${fechaTexto}:\n\n${listaJuegos}`
       });
     }catch(e){
       if(e.name!=='AbortError'){ doc.save(filename); toast('PDF descargado','ok'); }
