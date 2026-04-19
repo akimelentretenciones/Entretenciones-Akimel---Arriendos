@@ -564,7 +564,7 @@ select:focus{border-color:var(--blue)}
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Estado</th><th title="Pagado">✓</th><th>Pago</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Estado</th><th title="Pagado">✓</th><th>Pago</th><th></th><th title="Copiar para WhatsApp">📋</th></tr></thead>
       <tbody id="tablaBody"><tr><td colspan="16" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
     </table>
   </div>
@@ -1985,6 +1985,11 @@ function renderTabla(){
       <button onclick="abrirEdicion('${a.id}')" style="background:rgba(0,113,206,.1);color:var(--blue);border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">✏️ Editar</button>
       <button class="btn-red" onclick="eliminarArriendo('${a.id}')">✕</button>
     </td>
+    <td style="text-align:center">
+      <button onclick="copiarParaWA(${JSON.stringify(a).replace(/"/g,'&quot;')})" title="Copiar para WhatsApp"
+        style="background:rgba(37,211,102,.12);color:#128c3e;border:none;border-radius:6px;padding:5px 9px;font-size:13px;cursor:pointer;transition:all .15s"
+        onmouseenter="this.style.background='rgba(37,211,102,.25)'" onmouseleave="this.style.background='rgba(37,211,102,.12)'">📋</button>
+    </td>
   </tr>`).join('')+`
   <tr style="background:var(--bg3);font-weight:700">
     <td colspan="11" style="padding:10px 14px;font-size:12px;color:var(--text3)">
@@ -2021,6 +2026,23 @@ window.marcarPasadosPagados = async function(){
     toast('✅ '+pasados.length+' arriendos marcados como pagados','ok');
     renderTabla();
   }catch(e){ toast('Error: '+e.message,'err'); }
+};
+
+window.copiarParaWA=function(a){
+  const dia=a.dia||'';
+  const fecha=a.fecha||'';
+  const hora=a.hora?a.hora+' hrs':'';
+  const dir=a.direccion||'';
+  const comuna=a.comuna||'';
+  const ubicacion=[dir,comuna].filter(Boolean).join(', ');
+  const equipos=(a.equipos||'').split(',').map(e=>e.trim()).filter(Boolean).join(', ');
+  const lineas=[
+    `📋 *${a.cliente||'—'}*`,
+    `📅 ${[dia+' '+fecha,hora].filter(Boolean).join(' · ')}`,
+    ubicacion?`📍 ${ubicacion}`:'',
+    equipos?`🎮 ${equipos}`:'',
+  ].filter(Boolean).join('\n');
+  navigator.clipboard.writeText(lineas).then(()=>toast('✓ Copiado para WhatsApp','ok')).catch(()=>toast('Error al copiar','err'));
 };
 
 window.togglePago=async function(id){
