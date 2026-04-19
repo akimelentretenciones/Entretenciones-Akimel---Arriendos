@@ -492,11 +492,14 @@ select:focus{border-color:var(--blue)}
           <div class="inv-panel-title" id="invPanelTitle">Selecciona un día</div>
           <div class="inv-panel-sub" id="invPanelSub">Haz clic en cualquier día con arriendos</div>
         </div>
-        <button id="btnCatalogoWA" onclick="compartirCatalogoWA()" style="display:none;align-items:center;gap:6px;padding:9px 16px;background:#25d366;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 10px rgba(37,211,102,.4)">
-          📲 Compartir catálogo
-        </button>
+
       </div>
       <div class="inv-categorias" id="invCategorias"></div>
+      <div id="btnCatWrap" style="display:none;margin:14px 0 4px">
+        <button id="btnCatalogoWA" onclick="compartirCatalogoWA()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;background:#25d366;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 10px rgba(37,211,102,.4)">
+          📲 Compartir catálogo por WhatsApp
+        </button>
+      </div>
       <div id="invArriendosDia"></div>
     </div>
   </div>
@@ -1717,8 +1720,8 @@ window.mostrarInventarioDia=function(dia){
 
   document.getElementById('invPanelTitle').textContent=`${diaNombre} ${dia} de ${MESES_FULL[CAL_MONTH]} ${CAL_YEAR}`;
   CAL_DIA_SEL_NOMBRE=`${diaNombre} ${dia} de ${MESES_FULL[CAL_MONTH]} ${CAL_YEAR}`;
-  const _btnCat=document.getElementById('btnCatalogoWA');
-  if(_btnCat){_btnCat.style.display='flex';}
+  const _btnWrap=document.getElementById('btnCatWrap');
+  if(_btnWrap){_btnWrap.style.display='block';}
 
   document.getElementById('invPanelSub').textContent=`${arriendosDia.length} arriendo(s) agendado(s) ese día`;
 
@@ -1872,6 +1875,7 @@ window.calCambiarMes=function(dir){
   document.getElementById('invPanelSub').textContent='Haz clic en cualquier día del calendario';
   document.getElementById('invCategorias').innerHTML='';
   document.getElementById('invArriendosDia').innerHTML='';
+  const _bw=document.getElementById('btnCatWrap');if(_bw)_bw.style.display='none';
 };
 window.calHoy=function(){
   CAL_YEAR=new Date().getFullYear();CAL_MONTH=new Date().getMonth();
