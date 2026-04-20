@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Akimel — Equipo</title>
+<meta name="theme-color" content="#0d0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Akimel Equipo">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0f14;--s1:#161920;--s2:#1c2030;--s3:#242838;
+  --border:#2d3344;--accent:#f97316;--accent-d:#c2590f;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;
+  --text:#f0f4f8;--t2:#94a3b8;--t3:#4a5568;
+  --r:12px;--r-lg:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;-webkit-text-size-adjust:100%}
+input,select,textarea,button{font-size:16px;font-family:'Sora',sans-serif}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-box{background:var(--s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:32px 24px;width:100%;max-width:360px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo-icon{width:56px;height:56px;background:var(--accent);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px}
+.login-title{font-size:22px;font-weight:800;color:var(--accent)}
+.login-sub{font-size:13px;color:var(--t2);margin-top:4px}
+.fg{margin-bottom:16px}
+.fl{font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:block;font-weight:600}
+.fi{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:13px 14px;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.fi:focus{border-color:var(--accent)}
+.btn-primary{width:100%;padding:14px;border:none;border-radius:var(--r);font-family:'Sora',sans-serif;font-weight:700;font-size:15px;cursor:pointer;background:var(--accent);color:#fff;transition:opacity .2s;margin-top:4px}
+.btn-primary:active{opacity:.8}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
+
+/* ── APP ── */
+.app{display:none;flex-direction:column;min-height:100vh}
+.app.active{display:flex}
+
+/* Header */
+.hdr{background:var(--s1);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.hdr-left{display:flex;align-items:center;gap:10px}
+.hdr-icon{width:34px;height:34px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.hdr-name{font-weight:800;font-size:16px;color:var(--accent)}
+.hdr-fecha{font-size:11px;color:var(--t2);margin-top:1px}
+.btn-logout{background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--t2);padding:6px 12px;font-size:12px;cursor:pointer;font-family:'Sora',sans-serif}
+
+/* Contenido */
+.main{flex:1;padding:16px;padding-bottom:40px;max-width:600px;margin:0 auto;width:100%}
+
+/* Badge trabajador */
+.worker-badge{background:linear-gradient(135deg,var(--accent),var(--accent-d));border-radius:var(--r);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.worker-avatar{width:42px;height:42px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0}
+.worker-info-name{font-weight:800;font-size:16px;color:#fff}
+.worker-info-sub{font-size:12px;color:rgba(255,255,255,.75);margin-top:2px}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.stat{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+.stat-v{font-weight:800;font-size:20px;color:var(--accent)}
+.stat-l{font-size:10px;color:var(--t2);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+/* Sección */
+.sec-label{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1.2px;margin:20px 0 10px}
+.sec-label:first-of-type{margin-top:0}
+
+/* Card arriendo */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:12px;overflow:hidden}
+.card-header{padding:14px 15px 10px;border-bottom:1px solid var(--border)}
+.card-cliente{font-weight:800;font-size:16px;margin-bottom:4px}
+.card-meta{font-size:12px;color:var(--t2);display:flex;flex-wrap:wrap;gap:8px}
+.card-meta span{display:flex;align-items:center;gap:4px}
+.card-body{padding:12px 15px}
+.info-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.info-row:last-child{border-bottom:none}
+.info-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.info-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.info-val{font-size:13px;font-weight:500;line-height:1.4}
+.equipos-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.equipo-tag{background:var(--s3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--t2)}
+
+/* Acciones del trabajador */
+.card-actions{background:var(--s2);padding:14px 15px;display:flex;flex-direction:column;gap:10px}
+.action-title{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
+
+/* Pago */
+.pago-row{display:flex;gap:8px}
+.pago-btn{flex:1;padding:10px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--s1);color:var(--t2);font-family:'Sora',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .2s}
+.pago-btn.sel-transfer{background:rgba(59,130,246,.15);border-color:var(--blue);color:var(--blue)}
+.pago-btn.sel-efectivo{background:rgba(34,197,94,.15);border-color:var(--green);color:var(--green)}
+
+/* Retiro */
+.retiro-row{display:flex;gap:8px;align-items:center}
+.fi-hora{flex:1;background:var(--s1);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;outline:none;-webkit-appearance:none}
+.fi-hora:focus{border-color:var(--accent)}
+.btn-guardar-retiro{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-family:'Sora',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+.btn-guardar-retiro:disabled{opacity:.5}
+
+/* Estado badges */
+.badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700}
+.badge-pend{background:rgba(249,115,22,.15);color:var(--accent)}
+.badge-ok{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-canc{background:rgba(239,68,68,.15);color:var(--red)}
+
+/* Confirmación guardado */
+.saved-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:var(--green);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;margin-top:6px}
+
+/* Empty */
+.empty{text-align:center;padding:48px 20px;color:var(--t3)}
+.empty-icon{font-size:42px;margin-bottom:10px}
+.empty-txt{font-size:14px;line-height:1.5}
+
+/* Loading */
+.loading{text-align:center;padding:48px 20px;color:var(--t2)}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--s3);border:1px solid var(--border);color:var(--text);border-radius:30px;padding:10px 20px;font-size:13px;z-index:999;transition:transform .3s;white-space:nowrap;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.4);color:var(--green)}
+.toast.err{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.4);color:#fca5a5}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">⚡</div>
+      <div class="login-title">Akimel Equipo</div>
+      <div class="login-sub">Acceso para trabajadores</div>
+    </div>
+    <div class="login-err" id="loginErr"></div>
+    <div class="fg">
+      <label class="fl">Correo</label>
+      <input type="email" class="fi" id="loginEmail" placeholder="tu@akimel.cl" autocomplete="email">
+    </div>
+    <div class="fg">
+      <label class="fl">Contraseña</label>
+      <input type="password" class="fi" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="btnLogin" onclick="doLogin()">Ingresar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="appWrap">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-icon">⚡</div>
+      <div>
+        <div class="hdr-name" id="hdrName">Cargando...</div>
+        <div class="hdr-fecha" id="hdrFecha"></div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Salir</button>
+  </div>
+
+  <!-- Contenido -->
+  <div class="main" id="mainContent">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div>Cargando arriendos...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getFirestore, collection, doc, onSnapshot, updateDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+// ── Firebase Config (Entretenciones Akimel) ──
+const app = initializeApp({
+  apiKey: "AIzaSyBjqhymOUtMxdbqh3EdB6YSykB1--WGtiY",
+  authDomain: "entretenciones-akimel.firebaseapp.com",
+  projectId: "entretenciones-akimel",
+  storageBucket: "entretenciones-akimel.firebasestorage.app",
+  messagingSenderId: "288378375192",
+  appId: "1:288378375192:web:f77a3c76075684ee8c876d"
+});
+
+// ── Firebase también conectada al proyecto principal de arriendos ──
+import { initializeApp as initApp2 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getFirestore as getFS2 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+const app2 = initApp2({
+  apiKey:"AIzaSyCwqFq4B3YOAT5q5LiKHCSYNQhQphviQHE",
+  authDomain:"base-de-datos-akimel-arriendos.firebaseapp.com",
+  projectId:"base-de-datos-akimel-arriendos",
+  storageBucket:"base-de-datos-akimel-arriendos.firebasestorage.app",
+  messagingSenderId:"515460008647",
+  appId:"1:515460008647:web:6c6b72c53c31312b12cce2"
+}, 'arriendos');
+
+const db = getFirestore(app);          // Para asignaciones y reportes del equipo
+const dbArriendos = getFS2(app2);      // Para leer/actualizar arriendos reales
+const auth = getAuth(app);
+
+// ── Trabajadores registrados ──
+const TRABAJADORES = {
+  'cristobal': 'Cristóbal',
+  'leo':       'Leo',
+  'cristofer': 'Cristófer',
+  'martin':    'Martín'
+};
+
+// Mapa email → nombre
+const EMAIL_NOMBRE = {
+  'cristobal@akimel.cl': 'cristobal',
+  'leo@akimel.cl':       'leo',
+  'cristofer@akimel.cl': 'cristofer',
+  'martin@akimel.cl':    'martin'
+};
+
+let currentUser = null;
+let currentWorkerKey = null;
+let unsubArriendos = null;
+
+// ── Utils ──
+function today() {
+  return new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+}
+function todayISO() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' '+type : '');
+  setTimeout(()=>{ t.className='toast'; }, 2800);
+}
+function fmtFecha(f) {
+  if(!f) return '—';
+  const p = f.split('/');
+  if(p.length===3) {
+    const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    return `${p[0]} ${meses[parseInt(p[1])-1]} ${p[2]}`;
+  }
+  return f;
+}
+
+// ── Login ──
+window.doLogin = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const err   = document.getElementById('loginErr');
+  const btn   = document.getElementById('btnLogin');
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Ingresando...';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    err.textContent = '⚠️ Correo o contraseña incorrectos';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Ingresar';
+  }
+};
+
+// Enter en login
+document.getElementById('loginPass').addEventListener('keydown', e => {
+  if(e.key === 'Enter') window.doLogin();
+});
+
+// ── Logout ──
+window.doLogout = async function() {
+  if(unsubArriendos) unsubArriendos();
+  await signOut(auth);
+};
+
+// ── Auth state ──
+onAuthStateChanged(auth, async user => {
+  if(user) {
+    currentUser = user;
+    // Detectar trabajador por email
+    const emailLower = user.email.toLowerCase();
+    currentWorkerKey = EMAIL_NOMBRE[emailLower] || emailLower.split('@')[0];
+    const nombre = TRABAJADORES[currentWorkerKey] || currentWorkerKey;
+
+    // Mostrar app
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('appWrap').classList.add('active');
+    document.getElementById('hdrName').textContent = nombre;
+    document.getElementById('hdrFecha').textContent = today();
+
+    // Cargar arriendos
+    cargarArriendos(currentWorkerKey, nombre);
+  } else {
+    currentUser = null;
+    if(unsubArriendos) { unsubArriendos(); unsubArriendos=null; }
+    document.getElementById('loginWrap').style.display = 'flex';
+    document.getElementById('appWrap').classList.remove('active');
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('btnLogin').disabled = false;
+    document.getElementById('btnLogin').textContent = 'Ingresar';
+  }
+});
+
+// ── Cargar arriendos asignados ──
+function cargarArriendos(workerKey, nombre) {
+  const hoy = todayISO();
+  const col = collection(dbArriendos, 'arriendos');
+
+  // Escuchar cambios en tiempo real
+  if(unsubArriendos) unsubArriendos();
+  unsubArriendos = onSnapshot(col, snap => {
+    const todos = [];
+    snap.forEach(d => todos.push({id:d.id, ...d.data()}));
+
+    // Filtrar: asignados a este trabajador Y de hoy
+    const misTareas = todos.filter(a => {
+      const esHoy = a.fecha === hoy;
+      const asignado = (a.trabajadorAsignado||'').toLowerCase() === workerKey.toLowerCase();
+      const noCancelado = a.estado !== 'Cancelado';
+      return esHoy && asignado && noCancelado;
+    });
+
+    renderApp(misTareas, nombre, workerKey);
+  }, err => {
+    console.error('Error cargando arriendos:', err);
+    renderError();
+  });
+}
+
+// ── Render principal ──
+function renderApp(arriendos, nombre, workerKey) {
+  const main = document.getElementById('mainContent');
+  const hoy = todayISO();
+
+  // Stats
+  const total = arriendos.length;
+  const conPago = arriendos.filter(a=>a.medioPago_equipo).length;
+  const conRetiro = arriendos.filter(a=>a.horaRetiro).length;
+
+  let html = `
+    <div class="worker-badge">
+      <div class="worker-avatar">${nombre.charAt(0)}</div>
+      <div>
+        <div class="worker-info-name">Hola, ${nombre} 👋</div>
+        <div class="worker-info-sub">Tus arriendos de hoy · ${hoy}</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-v">${total}</div>
+        <div class="stat-l">Arriendos</div>
+      </div>
+      <div class="stat">
+        <div class="stat-v">${conPago}</div>
+        <div class="stat-l">Con pago</div>
+      </div>
+      <div class="stat">
+        <div class="stat-v">${conRetiro}</div>
+        <div class="stat-l">Retiro ok</div>
+      </div>
+    </div>
+  `;
+
+  if(total === 0) {
+    html += `
+      <div class="empty">
+        <div class="empty-icon">📭</div>
+        <div class="empty-txt">No tienes arriendos asignados para hoy.<br>Consulta con el administrador.</div>
+      </div>
+    `;
+  } else {
+    html += `<div class="sec-label">Mis arriendos del día</div>`;
+    arriendos.forEach(a => {
+      html += renderCard(a);
+    });
+  }
+
+  main.innerHTML = html;
+}
+
+function renderCard(a) {
+  const equiposTags = (a.equipos||'').split(',').map(e=>e.trim()).filter(Boolean)
+    .map(e=>`<span class="equipo-tag">${e}</span>`).join('');
+
+  const badgeClass = a.estado==='Pagado'?'badge-ok':a.estado==='Cancelado'?'badge-canc':'badge-pend';
+  const pagoEquipo = a.medioPago_equipo||'';
+  const horaRetiro = a.horaRetiro||'';
+  const savedPago = pagoEquipo ? `<div class="saved-chip">✓ ${pagoEquipo==='transferencia'?'Transferencia':'Efectivo'} registrado</div>` : '';
+  const savedRetiro = horaRetiro ? `<div class="saved-chip">✓ Retiro ${horaRetiro} registrado</div>` : '';
+
+  return `
+  <div class="card" id="card-${a.id}">
+    <div class="card-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div class="card-cliente">${a.cliente||'—'}</div>
+        <span class="badge ${badgeClass}">${a.estado||'Pendiente'}</span>
+      </div>
+      <div class="card-meta">
+        ${a.hora?`<span>🕐 ${a.hora} hrs</span>`:''}
+        ${a.pendiente?`<span>💰 $${parseInt(a.pendiente).toLocaleString('es-CL')}</span>`:''}
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="info-row">
+        <div class="info-icon">📍</div>
+        <div>
+          <div class="info-label">Dirección</div>
+          <div class="info-val">${a.direccion||'—'}${a.comuna?', '+a.comuna:''}</div>
+        </div>
+      </div>
+      ${a.telefono?`
+      <div class="info-row">
+        <div class="info-icon">📞</div>
+        <div>
+          <div class="info-label">Teléfono cliente</div>
+          <div class="info-val"><a href="tel:${a.telefono}" style="color:var(--accent);text-decoration:none">${a.telefono}</a></div>
+        </div>
+      </div>`:''}
+      <div class="info-row">
+        <div class="info-icon">🎮</div>
+        <div style="flex:1">
+          <div class="info-label">Equipos</div>
+          <div class="equipos-list">${equiposTags||'—'}</div>
+        </div>
+      </div>
+      ${a.semana?`
+      <div class="info-row">
+        <div class="info-icon">📅</div>
+        <div>
+          <div class="info-label">Fecha</div>
+          <div class="info-val">${fmtFecha(a.fecha)}${a.dia?' · '+a.dia:''}</div>
+        </div>
+      </div>`:''}
+    </div>
+
+    <div class="card-actions">
+      <div>
+        <div class="action-title">💳 Medio de pago recibido</div>
+        <div class="pago-row" style="margin-top:8px">
+          <button class="pago-btn ${pagoEquipo==='transferencia'?'sel-transfer':''}"
+            onclick="registrarPago('${a.id}','transferencia')">
+            🏦 Transferencia
+          </button>
+          <button class="pago-btn ${pagoEquipo==='efectivo'?'sel-efectivo':''}"
+            onclick="registrarPago('${a.id}','efectivo')">
+            💵 Efectivo
+          </button>
+        </div>
+        ${savedPago}
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:12px">
+        <div class="action-title">🚚 Hora de retiro del equipo</div>
+        <div class="retiro-row" style="margin-top:8px">
+          <input type="time" class="fi fi-hora" id="retiro-${a.id}"
+            value="${horaRetiro}" placeholder="00:00">
+          <button class="btn-guardar-retiro" onclick="registrarRetiro('${a.id}')">
+            Guardar
+          </button>
+        </div>
+        ${savedRetiro}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderError() {
+  document.getElementById('mainContent').innerHTML = `
+    <div class="empty">
+      <div class="empty-icon">⚠️</div>
+      <div class="empty-txt">Error al cargar datos.<br>Verifica tu conexión.</div>
+    </div>`;
+}
+
+// ── Registrar pago ──
+window.registrarPago = async function(id, tipo) {
+  try {
+    const ref = doc(dbArriendos, 'arriendos', id);
+    await updateDoc(ref, { medioPago_equipo: tipo });
+    toast(`✓ ${tipo==='transferencia'?'Transferencia':'Efectivo'} registrado`, 'ok');
+  } catch(e) {
+    toast('Error al guardar', 'err');
+    console.error(e);
+  }
+};
+
+// ── Registrar hora retiro ──
+window.registrarRetiro = async function(id) {
+  const hora = document.getElementById('retiro-'+id)?.value;
+  if(!hora) { toast('Ingresa la hora de retiro', 'err'); return; }
+  try {
+    const ref = doc(dbArriendos, 'arriendos', id);
+    await updateDoc(ref, { horaRetiro: hora });
+    toast('✓ Hora de retiro guardada', 'ok');
+  } catch(e) {
+    toast('Error al guardar', 'err');
+    console.error(e);
+  }
+};
+
+</script>
+</body>
+</html>

@@ -567,7 +567,7 @@ select:focus{border-color:var(--blue)}
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Estado</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Estado</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th title="Trabajador asignado">👷</th><th title="Retiro">🚚</th><th></th></tr></thead>
       <tbody id="tablaBody"><tr><td colspan="16" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
     </table>
   </div>
@@ -849,6 +849,16 @@ select:focus{border-color:var(--blue)}
           <option value="Cancelado">Cancelado</option>
         </select>
       </div>
+      <div class="edit-field" style="grid-column:1/-1">
+        <label class="edit-label">👷 Asignar trabajador</label>
+        <select class="edit-input" id="editTrabajador">
+          <option value="">— Sin asignar —</option>
+          <option value="cristobal">Cristóbal</option>
+          <option value="leo">Leo</option>
+          <option value="cristofer">Cristófer</option>
+          <option value="martin">Martín</option>
+        </select>
+      </div>
     </div>
     <div id="editError" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none;background:rgba(222,28,36,.06);padding:10px 12px;border-radius:8px;border-left:3px solid var(--red)"></div>
     <div style="display:flex;gap:10px">
@@ -1121,6 +1131,7 @@ window.abrirEdicion=function(id){
   document.getElementById('editEquipos').value=a.equipos||'';
   document.getElementById('editPendiente').value=a.pendiente||'';
   document.getElementById('editEstado').value=a.estado||'Pendiente';
+  document.getElementById('editTrabajador').value=a.trabajadorAsignado||'';
   document.getElementById('editError').style.display='none';
   document.getElementById('modalEdit').classList.add('show');
 };
@@ -1170,6 +1181,7 @@ window.guardarEdicion=async function(){
       equipos,
       pendiente:parseInt(document.getElementById('editPendiente').value)||0,
       estado:document.getElementById('editEstado').value,
+      trabajadorAsignado:document.getElementById('editTrabajador').value,
       anio:fecha.split('/')[2]||'2026',
     };
     const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
@@ -2121,6 +2133,8 @@ function renderTabla(){
         style="background:rgba(37,211,102,.12);color:#128c3e;border:none;border-radius:6px;padding:5px 9px;font-size:13px;cursor:pointer;transition:all .15s"
         onmouseenter="this.style.background='rgba(37,211,102,.25)'" onmouseleave="this.style.background='rgba(37,211,102,.12)'">📋</button>
     </td>
+    <td style="text-align:center;font-size:12px;font-weight:600">${(()=>{const m={'cristobal':'Cristóbal','leo':'Leo','cristofer':'Cristófer','martin':'Martín'};return m[a.trabajadorAsignado]?`<span style="background:rgba(249,115,22,.15);color:var(--orange);border-radius:12px;padding:2px 8px">${m[a.trabajadorAsignado]}</span>`:'<span style="color:var(--text3)">—</span>'})()}</td>
+    <td style="text-align:center;font-size:12px">${a.horaRetiro?`<span style="background:rgba(34,197,94,.15);color:var(--green);border-radius:12px;padding:2px 8px">🚚 ${a.horaRetiro}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
     <td style="white-space:nowrap;display:flex;gap:6px">
       <button onclick="abrirEdicion('${a.id}')" style="background:rgba(0,113,206,.1);color:var(--blue);border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">✏️ Editar</button>
       <button class="btn-red" onclick="eliminarArriendo('${a.id}')">✕</button>
