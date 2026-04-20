@@ -192,31 +192,18 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebas
 import { getFirestore, collection, doc, onSnapshot, updateDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
-// ── Firebase Config (Entretenciones Akimel) ──
+// ── Firebase — proyecto principal Akimel Arriendos ──
 const app = initializeApp({
-  apiKey: "AIzaSyBjqhymOUtMxdbqh3EdB6YSykB1--WGtiY",
-  authDomain: "entretenciones-akimel.firebaseapp.com",
-  projectId: "entretenciones-akimel",
-  storageBucket: "entretenciones-akimel.firebasestorage.app",
-  messagingSenderId: "288378375192",
-  appId: "1:288378375192:web:f77a3c76075684ee8c876d"
-});
-
-// ── Firebase también conectada al proyecto principal de arriendos ──
-import { initializeApp as initApp2 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import { getFirestore as getFS2 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
-
-const app2 = initApp2({
   apiKey:"AIzaSyCwqFq4B3YOAT5q5LiKHCSYNQhQphviQHE",
   authDomain:"base-de-datos-akimel-arriendos.firebaseapp.com",
   projectId:"base-de-datos-akimel-arriendos",
   storageBucket:"base-de-datos-akimel-arriendos.firebasestorage.app",
   messagingSenderId:"515460008647",
   appId:"1:515460008647:web:6c6b72c53c31312b12cce2"
-}, 'arriendos');
+});
 
-const db = getFirestore(app);          // Para asignaciones y reportes del equipo
-const dbArriendos = getFS2(app2);      // Para leer/actualizar arriendos reales
+const db = getFirestore(app);
+const dbArriendos = db;
 const auth = getAuth(app);
 
 // ── Trabajadores registrados ──
