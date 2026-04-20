@@ -70,36 +70,38 @@ input,select,textarea,button{font-size:16px;font-family:'Sora',sans-serif}
 /* Sección */
 .sec-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin:20px 0 10px}
 
-/* Card arriendo */
-.card{background:#fff;border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border)}
-.card-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);border-left:4px solid var(--blue)}
-.card-cliente{font-weight:800;font-size:16px;margin-bottom:4px;color:var(--blue3)}
-.card-meta{font-size:12px;color:var(--text3);display:flex;flex-wrap:wrap;gap:8px}
-.card-meta span{display:flex;align-items:center;gap:4px}
-.card-body{padding:12px 16px}
-.info-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
-.info-row:last-child{border-bottom:none}
-.info-icon{font-size:16px;flex-shrink:0;margin-top:1px}
-.info-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;font-weight:700}
-.info-val{font-size:13px;font-weight:500;line-height:1.4;color:var(--text2)}
-.equipos-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
-.equipo-tag{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--text2);font-weight:600}
+/* Card ejecutiva */
+.card{background:#fff;border-radius:var(--radius);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);border-left:4px solid var(--blue)}
+.card-top{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 16px 10px}
+.card-cliente{font-weight:800;font-size:15px;color:var(--blue3)}
+.card-meta{font-size:11px;color:var(--text3);display:flex;flex-wrap:wrap;gap:10px;margin-top:3px}
+.card-meta span{display:flex;align-items:center;gap:3px}
 
-/* Acciones */
-.card-actions{background:var(--bg3);padding:14px 16px;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--border)}
-.action-title{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+/* Grid ejecutivo de datos */
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--border)}
+.card-cell{padding:10px 14px;border-right:1px solid var(--border)}
+.card-cell:last-child{border-right:none}
+.cell-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:3px}
+.cell-val{font-size:12px;font-weight:600;color:var(--text2);line-height:1.3}
+.cell-val a{color:var(--blue);text-decoration:none;font-weight:700}
+.equipos-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.equipo-tag{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:10px;color:var(--text2);font-weight:600}
+
+/* Acciones — fila horizontal */
+.card-actions{background:var(--bg3);padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid var(--border);align-items:start}
+.action-title{font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
 
 /* Pago */
-.pago-row{display:flex;gap:8px}
-.pago-btn{flex:1;padding:11px 8px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text3);font-family:'Sora',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .2s;box-shadow:var(--shadow)}
+.pago-row{display:flex;gap:6px}
+.pago-btn{flex:1;padding:8px 6px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--text3);font-family:'Sora',sans-serif;font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .2s}
 .pago-btn.sel-transfer{background:rgba(0,113,206,.1);border-color:var(--blue);color:var(--blue)}
 .pago-btn.sel-efectivo{background:rgba(95,180,70,.1);border-color:var(--green);color:var(--green)}
 
 /* Retiro */
-.retiro-row{display:flex;gap:8px;align-items:center}
-.fi-hora{flex:1;background:#fff;border:1.5px solid var(--border);border-radius:10px;color:var(--text);padding:11px 12px;outline:none;box-shadow:var(--shadow)}
+.retiro-row{display:flex;gap:6px;align-items:center}
+.fi-hora{flex:1;background:#fff;border:1.5px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;outline:none;font-size:12px}
 .fi-hora:focus{border-color:var(--blue)}
-.btn-guardar-retiro{background:var(--blue);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-family:'Sora',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;box-shadow:var(--shadow)}
+.btn-guardar-retiro{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:'Sora',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
 .btn-guardar-retiro:disabled{opacity:.5}
 
 /* Badges */
@@ -323,6 +325,11 @@ function cargarArriendos(workerKey, nombre) {
     const todos = [];
     snap.forEach(d => todos.push({id:d.id, ...d.data()}));
 
+    // DEBUG
+    const misAsignados = todos.filter(a => (a.trabajadorAsignado||'').toLowerCase() === workerKey.toLowerCase());
+    console.log('workerKey:', workerKey, '| hoy:', hoy, '| total:', todos.length, '| asignados a mi:', misAsignados.length);
+    misAsignados.forEach(a => console.log('  fecha:', JSON.stringify(a.fecha), 'cliente:', a.cliente));
+
     // Filtrar: asignados a este trabajador Y de hoy
     const misTareas = todos.filter(a => {
       const esHoy = a.fecha === hoy;
@@ -400,80 +407,63 @@ function renderCard(a) {
   const savedPago = pagoEquipo ? `<div class="saved-chip">✓ ${pagoEquipo==='transferencia'?'Transferencia':'Efectivo'} registrado</div>` : '';
   const savedRetiro = horaRetiro ? `<div class="saved-chip">✓ Retiro: ${horaRetiro}</div>` : '';
 
+  const clp = n => n ? '$'+parseInt(n).toLocaleString('es-CL') : '—';
+
   return `
   <div class="card" id="card-${a.id}">
-    <div class="card-header">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+
+    <!-- Fila superior: nombre + badge + hora + monto -->
+    <div class="card-top">
+      <div>
         <div class="card-cliente">${a.cliente||'—'}</div>
-        <span class="badge ${badgeClass}">${a.estado||'Pendiente'}</span>
+        <div class="card-meta">
+          ${a.hora?'<span>🕐 '+a.hora+' hrs</span>':''}
+          ${a.pendiente?'<span>💰 '+clp(a.pendiente)+'</span>':''}
+          ${a.comuna?'<span>📍 '+a.comuna+'</span>':''}
+        </div>
       </div>
-      <div class="card-meta">
-        ${a.hora?`<span>🕐 ${a.hora} hrs</span>`:''}
-        ${a.pendiente?`<span>💰 $${parseInt(a.pendiente).toLocaleString('es-CL')}</span>`:''}
+      <span class="badge ${badgeClass}">${a.estado||'Pendiente'}</span>
+    </div>
+
+    <!-- Grid de 3 columnas: dirección | teléfono | equipos -->
+    <div class="card-grid">
+      <div class="card-cell">
+        <div class="cell-label">📍 Dirección</div>
+        <div class="cell-val">${a.direccion||'—'}</div>
+      </div>
+      <div class="card-cell">
+        <div class="cell-label">📞 Teléfono</div>
+        <div class="cell-val">${a.telefono?'<a href="tel:'+a.telefono+'">'+a.telefono+'</a>':'—'}</div>
+      </div>
+      <div class="card-cell">
+        <div class="cell-label">🎮 Equipos</div>
+        <div class="equipos-list">${equiposTags||'<span style="color:var(--text3)">—</span>'}</div>
       </div>
     </div>
 
-    <div class="card-body">
-      <div class="info-row">
-        <div class="info-icon">📍</div>
-        <div>
-          <div class="info-label">Dirección</div>
-          <div class="info-val">${a.direccion||'—'}${a.comuna?', '+a.comuna:''}</div>
-        </div>
-      </div>
-      ${a.telefono?`
-      <div class="info-row">
-        <div class="info-icon">📞</div>
-        <div>
-          <div class="info-label">Teléfono cliente</div>
-          <div class="info-val"><a href="tel:${a.telefono}" style="color:var(--blue);text-decoration:none;font-weight:700">${a.telefono}</a></div>
-        </div>
-      </div>`:''}
-      <div class="info-row">
-        <div class="info-icon">🎮</div>
-        <div style="flex:1">
-          <div class="info-label">Equipos</div>
-          <div class="equipos-list">${equiposTags||'—'}</div>
-        </div>
-      </div>
-      ${a.semana?`
-      <div class="info-row">
-        <div class="info-icon">📅</div>
-        <div>
-          <div class="info-label">Fecha</div>
-          <div class="info-val">${fmtFecha(a.fecha)}${a.dia?' · '+a.dia:''}</div>
-        </div>
-      </div>`:''}
-    </div>
-
+    <!-- Acciones en 2 columnas: pago | retiro -->
     <div class="card-actions">
       <div>
-        <div class="action-title">💳 Medio de pago recibido</div>
-        <div class="pago-row" style="margin-top:8px">
+        <div class="action-title">💳 Pago recibido</div>
+        <div class="pago-row">
           <button class="pago-btn ${pagoEquipo==='transferencia'?'sel-transfer':''}"
-            onclick="registrarPago('${a.id}','transferencia')">
-            🏦 Transferencia
-          </button>
+            onclick="registrarPago('${a.id}','transferencia')">🏦 Transf.</button>
           <button class="pago-btn ${pagoEquipo==='efectivo'?'sel-efectivo':''}"
-            onclick="registrarPago('${a.id}','efectivo')">
-            💵 Efectivo
-          </button>
+            onclick="registrarPago('${a.id}','efectivo')">💵 Efectivo</button>
         </div>
         ${savedPago}
       </div>
-
-      <div style="border-top:1px solid var(--border);padding-top:12px">
-        <div class="action-title">🚚 Hora de retiro del equipo</div>
-        <div class="retiro-row" style="margin-top:8px">
+      <div>
+        <div class="action-title">🚚 Retiro del equipo</div>
+        <div class="retiro-row">
           <input type="text" class="fi fi-hora" id="retiro-${a.id}"
             value="${horaRetiro}" placeholder="ej: 22:00 a 22:30">
-          <button class="btn-guardar-retiro" onclick="registrarRetiro('${a.id}')">
-            Guardar
-          </button>
+          <button class="btn-guardar-retiro" onclick="registrarRetiro('${a.id}')">Guardar</button>
         </div>
         ${savedRetiro}
       </div>
     </div>
+
   </div>`;
 }
 
