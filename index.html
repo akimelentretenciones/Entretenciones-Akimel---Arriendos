@@ -2258,6 +2258,7 @@ window.guardarHoraRetiro=async function(id,valor){
 };
 
 
+window.eliminarArriendo=async function(id){
   if(!id){toast('ID no válido','err');return;}
   if(!confirm('¿Eliminar este arriendo?')) return;
   try{
