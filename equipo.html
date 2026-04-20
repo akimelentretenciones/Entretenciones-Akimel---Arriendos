@@ -380,35 +380,32 @@ function renderApp(arriendos, nombre, workerKey) {
         </thead>
         <tbody>
           ${arriendos.map((a,i) => {
-            const badgeClass = a.estado==='Pagado'?'badge-ok':a.estado==='Cancelado'?'badge-canc':'badge-pend';
-            const pagoEquipo = a.medioPago_equipo||'';
-            const horaRetiro = a.horaRetiro||'';
-            const equiposTags = (a.equipos||'').split(',').map(e=>e.trim()).filter(Boolean)
-              .map(e=>'<div class="equipo-tag">'+e+'</div>').join('');
-            return \`<tr>
-              <td style="color:var(--text3);font-size:11px">\${i+1}</td>
-              <td style="font-weight:700;color:var(--blue3)">\${a.cliente||'—'}</td>
-              <td style="font-size:12px">\${a.direccion||'—'}\${a.comuna?'<br><span style="color:var(--text3);font-size:11px">'+a.comuna+'</span>':''}</td>
-              <td style="font-weight:600">\${a.hora||'—'}</td>
-              <td>\${a.telefono?'<a href="tel:'+a.telefono+'" style="color:var(--blue);font-weight:700;text-decoration:none;font-size:12px">'+a.telefono+'</a>':'—'}</td>
-              <td><div class="equipos-cell">\${equiposTags||'—'}</div></td>
-              <td style="font-family:monospace;font-weight:700;color:var(--blue)">\${clp(a.pendiente)}</td>
-              <td><span class="badge \${badgeClass}">\${a.estado||'Pendiente'}</span></td>
-              <td>
-                <div class="pago-row">
-                  <button class="pago-btn \${pagoEquipo==='transferencia'?'sel-transfer':''}" onclick="registrarPago('\${a.id}','transferencia')">🏦</button>
-                  <button class="pago-btn \${pagoEquipo==='efectivo'?'sel-efectivo':''}" onclick="registrarPago('\${a.id}','efectivo')">💵</button>
-                </div>
-                \${pagoEquipo?'<div class="saved-chip" style="margin-top:4px">✓ '+( pagoEquipo==='transferencia'?'Transf.':'Efectivo')+'</div>':''}
-              </td>
-              <td>
-                <div class="retiro-cell">
-                  <input type="text" class="fi-hora" id="retiro-\${a.id}" value="\${horaRetiro}" placeholder="ej: 22:00 a 22:30">
-                  <button class="btn-guardar-retiro" onclick="registrarRetiro('\${a.id}')">✓</button>
-                </div>
-                \${horaRetiro?'<div class="saved-chip" style="margin-top:4px">✓ '+horaRetiro+'</div>':''}
-              </td>
-            </tr>\`;
+            const bc = a.estado==='Pagado'?'badge-ok':a.estado==='Cancelado'?'badge-canc':'badge-pend';
+            const pg = a.medioPago_equipo||'';
+            const hr = a.horaRetiro||'';
+            const etags = (a.equipos||'').split(',').map(e=>e.trim()).filter(Boolean).map(e=>'<div class="equipo-tag">'+e+'</div>').join('');
+            const telLink = a.telefono ? '<a href="tel:'+a.telefono+'" style="color:var(--blue);font-weight:700;text-decoration:none">'+a.telefono+'</a>' : '—';
+            const comunaSub = a.comuna ? '<br><span style="color:var(--text3);font-size:11px">'+a.comuna+'</span>' : '';
+            const savedPago = pg ? '<div class="saved-chip" style="margin-top:4px">✓ '+(pg==='transferencia'?'Transf.':'Efectivo')+'</div>' : '';
+            const savedRetiro = hr ? '<div class="saved-chip" style="margin-top:4px">✓ '+hr+'</div>' : '';
+            return '<tr>'
+              + '<td style="color:var(--text3);font-size:11px">'+(i+1)+'</td>'
+              + '<td style="font-weight:700;color:var(--blue3)">'+(a.cliente||'—')+'</td>'
+              + '<td style="font-size:12px">'+(a.direccion||'—')+comunaSub+'</td>'
+              + '<td style="font-weight:600">'+(a.hora||'—')+'</td>'
+              + '<td>'+telLink+'</td>'
+              + '<td><div class="equipos-cell">'+(etags||'—')+'</div></td>'
+              + '<td style="font-family:monospace;font-weight:700;color:var(--blue)">'+clp(a.pendiente)+'</td>'
+              + '<td><span class="badge '+bc+'">'+(a.estado||'Pendiente')+'</span></td>'
+              + '<td><div class="pago-row">'
+              +   '<button class="pago-btn '+(pg==='transferencia'?'sel-transfer':'')+'" onclick="registrarPago(''+a.id+'','transferencia')">🏦</button>'
+              +   '<button class="pago-btn '+(pg==='efectivo'?'sel-efectivo':'')+'" onclick="registrarPago(''+a.id+'','efectivo')">💵</button>'
+              + '</div>'+savedPago+'</td>'
+              + '<td><div class="retiro-cell">'
+              +   '<input type="text" class="fi-hora" id="retiro-'+a.id+'" value="'+hr+'" placeholder="ej: 22:00 a 22:30">'
+              +   '<button class="btn-guardar-retiro" onclick="registrarRetiro(''+a.id+'')">✓</button>'
+              + '</div>'+savedRetiro+'</td>'
+              + '</tr>';
           }).join('')}
         </tbody>
       </table>
