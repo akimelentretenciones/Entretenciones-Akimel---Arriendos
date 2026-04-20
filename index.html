@@ -2240,7 +2240,7 @@ window.asignarTrabajador=async function(id,valor){
     const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db,'arriendos',id),{trabajadorAsignado:valor});
     const nombres={'cristobal':'Cristóbal','leo':'Leo','cristofer':'Cristófer','martin':'Martín'};
-    toast(valor?`👷 Asignado a ${nombres[valor]}`:'👷 Asignación removida','ok');
+    toast(valor?'👷 Asignado a '+nombres[valor]:'👷 Asignación removida','ok');
     renderTabla();
   }catch(e){toast('Error: '+e.message,'err');}
 };
@@ -2252,7 +2252,7 @@ window.guardarHoraRetiro=async function(id,valor){
   try{
     const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db,'arriendos',id),{horaRetiro:valor});
-    toast(valor?`🚚 Retiro a las ${valor} guardado`:'🚚 Hora de retiro removida','ok');
+    toast(valor?'🚚 Retiro a las '+valor+' guardado':'🚚 Hora de retiro removida','ok');
     renderTabla();
   }catch(e){toast('Error: '+e.message,'err');}
 };
