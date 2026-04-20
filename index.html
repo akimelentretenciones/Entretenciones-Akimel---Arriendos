@@ -2133,7 +2133,17 @@ function renderTabla(){
         style="background:rgba(37,211,102,.12);color:#128c3e;border:none;border-radius:6px;padding:5px 9px;font-size:13px;cursor:pointer;transition:all .15s"
         onmouseenter="this.style.background='rgba(37,211,102,.25)'" onmouseleave="this.style.background='rgba(37,211,102,.12)'">📋</button>
     </td>
-    <td style="text-align:center;font-size:12px;font-weight:600">${(()=>{const m={'cristobal':'Cristóbal','leo':'Leo','cristofer':'Cristófer','martin':'Martín'};return m[a.trabajadorAsignado]?`<span style="background:rgba(249,115,22,.15);color:var(--orange);border-radius:12px;padding:2px 8px">${m[a.trabajadorAsignado]}</span>`:'<span style="color:var(--text3)">—</span>'})()}</td>
+    <td style="text-align:center">
+      <select onchange="asignarTrabajador('${a.id}',this.value)"
+        title="Asignar trabajador"
+        style="font-size:10px;padding:3px 6px;border-radius:6px;border:1.5px solid ${a.trabajadorAsignado?'var(--orange)':'var(--border)'};background:${a.trabajadorAsignado?'rgba(249,115,22,.1)':'#fff'};color:${a.trabajadorAsignado?'var(--orange)':'var(--text3)'};font-family:'Sora',sans-serif;cursor:pointer;font-weight:${a.trabajadorAsignado?'700':'400'};max-width:90px">
+        <option value="" ${!a.trabajadorAsignado?'selected':''}>— Sin asignar</option>
+        <option value="cristobal" ${a.trabajadorAsignado==='cristobal'?'selected':''}>Cristóbal</option>
+        <option value="leo" ${a.trabajadorAsignado==='leo'?'selected':''}>Leo</option>
+        <option value="cristofer" ${a.trabajadorAsignado==='cristofer'?'selected':''}>Cristófer</option>
+        <option value="martin" ${a.trabajadorAsignado==='martin'?'selected':''}>Martín</option>
+      </select>
+    </td>
     <td style="text-align:center;font-size:12px">${a.horaRetiro?`<span style="background:rgba(34,197,94,.15);color:var(--green);border-radius:12px;padding:2px 8px">🚚 ${a.horaRetiro}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
     <td style="white-space:nowrap;display:flex;gap:6px">
       <button onclick="abrirEdicion('${a.id}')" style="background:rgba(0,113,206,.1);color:var(--blue);border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">✏️ Editar</button>
@@ -2214,6 +2224,19 @@ window.cambiarMediopago=async function(id,valor){
   try{
     const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db,'arriendos',id),{medioPago:valor});
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+window.asignarTrabajador=async function(id,valor){
+  const a=ARRIENDOS.find(x=>x.id===id);
+  if(!a) return;
+  a.trabajadorAsignado=valor;
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',id),{trabajadorAsignado:valor});
+    const nombres={'cristobal':'Cristóbal','leo':'Leo','cristofer':'Cristófer','martin':'Martín'};
+    toast(valor?`👷 Asignado a ${nombres[valor]}`:'👷 Asignación removida','ok');
+    renderTabla();
   }catch(e){toast('Error: '+e.message,'err');}
 };
 
