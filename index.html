@@ -2144,7 +2144,12 @@ function renderTabla(){
         <option value="martin" ${a.trabajadorAsignado==='martin'?'selected':''}>Martín</option>
       </select>
     </td>
-    <td style="text-align:center;font-size:12px">${a.horaRetiro?`<span style="background:rgba(34,197,94,.15);color:var(--green);border-radius:12px;padding:2px 8px">🚚 ${a.horaRetiro}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+    <td style="text-align:center">
+      <input type="time" value="${a.horaRetiro||''}"
+        onchange="guardarHoraRetiro('${a.id}',this.value)"
+        title="Hora de retiro"
+        style="font-size:11px;padding:3px 6px;border-radius:6px;border:1.5px solid ${a.horaRetiro?'var(--green)':'var(--border)'};background:${a.horaRetiro?'rgba(34,197,94,.1)':'#fff'};color:${a.horaRetiro?'var(--green)':'var(--text3)'};font-family:'Sora',sans-serif;font-weight:${a.horaRetiro?'700':'400'};width:80px;cursor:pointer;outline:none">
+    </td>
     <td style="white-space:nowrap;display:flex;gap:6px">
       <button onclick="abrirEdicion('${a.id}')" style="background:rgba(0,113,206,.1);color:var(--blue);border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600">✏️ Editar</button>
       <button class="btn-red" onclick="eliminarArriendo('${a.id}')">✕</button>
@@ -2240,7 +2245,19 @@ window.asignarTrabajador=async function(id,valor){
   }catch(e){toast('Error: '+e.message,'err');}
 };
 
-window.eliminarArriendo=async function(id){
+window.guardarHoraRetiro=async function(id,valor){
+  const a=ARRIENDOS.find(x=>x.id===id);
+  if(!a) return;
+  a.horaRetiro=valor;
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',id),{horaRetiro:valor});
+    toast(valor?`🚚 Retiro a las ${valor} guardado`:'🚚 Hora de retiro removida','ok');
+    renderTabla();
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+
   if(!id){toast('ID no válido','err');return;}
   if(!confirm('¿Eliminar este arriendo?')) return;
   try{
