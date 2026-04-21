@@ -3587,198 +3587,6 @@ window.toast=function(msg,tipo='ok'){
   t.textContent=msg;t.className='toast toast-'+(tipo==='err'?'err':'ok')+' show';
   setTimeout(()=>t.classList.remove('show'),3500);
 };
-</script>
-<script>
-// ═══════════════════════════════════════════════════
-// MÓDULO NOTIFICACIONES v5 — iOS + Android
-// ═══════════════════════════════════════════════════
-let _notifUnsubscribe = null;
-let _notifLeidas = new Set(JSON.parse(localStorage.getItem('akimel_notif_leidas')||'[]'));
-const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-              (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
-
-function crearSonidoNotif(){
-  try{
-    const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    const osc=ctx.createOscillator(),gain=ctx.createGain();
-    osc.connect(gain);gain.connect(ctx.destination);osc.type='sine';
-    osc.frequency.setValueAtTime(880,ctx.currentTime);osc.frequency.setValueAtTime(660,ctx.currentTime+0.1);
-    gain.gain.setValueAtTime(0.3,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
-    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.4);
-  }catch(e){}
-}
-
-async function guardarNotif(tipo,datos){
-  try{
-    const{addDoc,collection:col,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const autor=window.auth?.currentUser?.email?.split('@')[0]||'Sistema';
-    await addDoc(col(window.db,'notificaciones'),{
-      tipo,cliente:datos.cliente||'',fecha:datos.fecha||'',
-      equipos:datos.equipos||datos.equipo||'',monto:datos.pendiente||datos.monto||0,
-      direccion:datos.direccion||'',autor,ts:serverTimestamp(),tsMs:Date.now(),
-    });
-  }catch(e){console.error('notif error:',e.code,e.message);}
-}
-
-window.limpiarHistorialNotifs=async function(){
-  const diag=document.getElementById('notifDiag');
-  diag.innerHTML='<span style="color:#888">Borrando...</span>';
-  try{
-    const fs=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const snap=await fs.getDocs(fs.collection(window.db,'notificaciones'));
-    await Promise.all([...snap.docs].map(d=>fs.deleteDoc(d.ref)));
-    _notifLeidas.clear();localStorage.removeItem('akimel_notif_leidas');
-    document.getElementById('notifList').innerHTML='<div class="notif-empty">Sin notificaciones recientes</div>';
-    actualizarBadge([]);
-    diag.innerHTML='<span style="color:green">✅ '+snap.size+' notificaciones eliminadas</span>';
-  }catch(e){diag.innerHTML='<span style="color:red">❌ '+e.message+'</span>';}
-};
-
-function actualizarIndicadorPermiso(){
-  const wrap=document.getElementById('notifPermisoWrap');
-  if(!wrap)return;
-  const perm=('Notification' in window)?Notification.permission:'unsupported';
-  if(perm==='granted'){
-    wrap.style.cssText='background:#f0fdf4;color:#166534;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px';
-    wrap.innerHTML='<span>✅ Notificaciones del sistema: <b>ACTIVAS</b></span>';
-  }else if(perm==='denied'){
-    wrap.style.cssText='background:#fef2f2;color:#991b1b;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px';
-    wrap.innerHTML='<span>🚫 Bloqueadas. Ajustes → '+(esIOS?'la app':'el navegador')+' → Notificaciones.</span>';
-  }else if(perm==='default'){
-    wrap.style.cssText='background:#fffbeb;color:#92400e;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px';
-    wrap.innerHTML='<span>⚠️ Sin permiso — actívalas para recibir alertas</span><button onclick="pedirPermisoNotif()" style="padding:6px 14px;background:#f97316;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif;white-space:nowrap;flex-shrink:0">Activar 🔔</button>';
-  }else{
-    wrap.style.cssText='background:#f1f5f9;color:#64748b;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:8px';
-    wrap.innerHTML='<span>Notificaciones no soportadas en este navegador</span>';
-  }
-}
-
-window.pedirPermisoNotif=async function(){
-  if(!('Notification' in window))return;
-  const perm=await Notification.requestPermission();
-  actualizarIndicadorPermiso();
-  if(perm==='granted'){
-    try{new Notification('✅ Akimel activado',{body:'Recibirás alertas de nuevos arriendos',icon:'/icono-192.png'});}catch(e){}
-  }
-};
-
-async function enviarNotifNativa(n){
-  if(!('Notification' in window)||Notification.permission!=='granted')return;
-  const titulo={nuevo:'🛝 Nuevo arriendo',edicion:'✏️ Arriendo editado',eliminado:'🗑️ Arriendo eliminado'}[n.tipo]||'🔔 Akimel';
-  const{texto}=notifTexto(n);
-  if(esIOS){
-    try{new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id});}catch(e){}
-    return;
-  }
-  try{
-    const reg=await navigator.serviceWorker.ready;
-    await reg.showNotification(titulo,{body:texto,icon:'/icono-192.png',badge:'/icono-192.png',tag:n.id,renotify:true,vibrate:[200,100,200]});
-  }catch(e){
-    try{new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id});}catch(e2){}
-  }
-}
-
-async function iniciarNotifListener(){
-  if(_notifUnsubscribe)return;
-  try{
-    const{onSnapshot,collection:col,query,limit}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const q=query(col(window.db,'notificaciones'),limit(50));
-    let primeraVez=true,previos=new Set();
-    _notifUnsubscribe=onSnapshot(q,snap=>{
-      const notifs=[];
-      snap.forEach(d=>notifs.push({id:d.id,...d.data()}));
-      notifs.sort((a,b)=>(b.tsMs||0)-(a.tsMs||0));
-      if(!primeraVez){
-        snap.docChanges().forEach(change=>{
-          if(change.type==='added'){
-            const n={id:change.doc.id,...change.doc.data()};
-            if(!previos.has(n.id)){
-              previos.add(n.id);
-              crearSonidoNotif();
-              if(navigator.vibrate)navigator.vibrate([200,100,200]);
-              mostrarToastNotif(n);
-              enviarNotifNativa(n);
-            }
-          }
-        });
-      }else{snap.forEach(d=>previos.add(d.id));}
-      primeraVez=false;
-      renderNotifPanel(notifs);
-      actualizarBadge(notifs);
-    },err=>console.error('notif listener:',err.code,err.message));
-  }catch(e){console.error('notif init:',e);}
-}
-
-function fmtTiempo(tsMs){
-  if(!tsMs)return'';
-  const diff=Date.now()-tsMs,min=Math.floor(diff/60000),hrs=Math.floor(diff/3600000),dias=Math.floor(diff/86400000);
-  if(min<1)return'Ahora';if(min<60)return'Hace '+min+' min';
-  if(hrs<24)return'Hace '+hrs+'h';return'Hace '+dias+'d';
-}
-function notifTexto(n){
-  const iconos={nuevo:'➕',edicion:'✏️',eliminado:'🗑️'};
-  const icono=iconos[n.tipo]||'🔔';
-  const eq=n.equipos?n.equipos.split(',').slice(0,2).map(e=>e.trim()).join(', ')+(n.equipos.split(',').length>2?' +':''):'';
-  let texto=n.cliente||'';if(n.fecha)texto+=' · '+n.fecha;if(eq)texto+=' · '+eq;
-  return{icono,texto};
-}
-function renderNotifPanel(notifs){
-  const el=document.getElementById('notifList');
-  if(!el)return;
-  if(!notifs.length){el.innerHTML='<div class="notif-empty">Sin notificaciones recientes</div>';return;}
-  el.innerHTML=notifs.map(n=>{
-    const{icono,texto}=notifTexto(n);
-    const leida=_notifLeidas.has(n.id);
-    const lbl={nuevo:'Nuevo arriendo',edicion:'Arriendo editado',eliminado:'Arriendo eliminado'}[n.tipo]||'Notificación';
-    return`<div class="notif-item ${leida?'':'unread'}" onclick="marcarLeida('${n.id}')">
-      <div class="notif-icon">${icono}</div>
-      <div class="notif-body">
-        <div class="notif-txt">${lbl}</div>
-        <div class="notif-txt" style="font-weight:400;color:var(--text2)">${texto}</div>
-        <div class="notif-meta">${n.autor?n.autor+' · ':''}${fmtTiempo(n.tsMs)}</div>
-      </div>
-      ${leida?'':'<div class="notif-dot"></div>'}
-    </div>`;
-  }).join('');
-}
-function actualizarBadge(notifs){
-  const noLeidas=notifs.filter(n=>!_notifLeidas.has(n.id)).length;
-  const badgeTab=document.getElementById('notifBadgeTab');
-  if(badgeTab){if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}else badgeTab.style.display='none';}
-}
-function mostrarToastNotif(n){
-  const{icono,texto}=notifTexto(n);
-  const t=document.createElement('div');
-  t.style.cssText='position:fixed;top:70px;right:8px;left:8px;background:var(--blue3);color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.25);animation:slideInRight .3s ease;font-family:Sora,sans-serif;cursor:pointer';
-  t.innerHTML=`<div style="font-weight:700;margin-bottom:3px">${icono} ${{nuevo:'Nuevo arriendo',edicion:'Arriendo editado',eliminado:'Arriendo eliminado'}[n.tipo]||'Notificación'}</div><div style="font-size:11px;opacity:.85">${texto}</div>`;
-  t.onclick=()=>{t.remove();goTab('notifs');};
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),5000);
-}
-window.marcarLeida=function(id){
-  _notifLeidas.add(id);
-  localStorage.setItem('akimel_notif_leidas',JSON.stringify([..._notifLeidas]));
-  document.querySelectorAll('.notif-item').forEach(item=>{
-    if(item.getAttribute('onclick')?.includes(id)){item.classList.remove('unread');item.querySelector('.notif-dot')?.remove();}
-  });
-  const noLeidas=document.querySelectorAll('.notif-item.unread').length;
-  const badgeTab=document.getElementById('notifBadgeTab');
-  if(badgeTab){if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}else badgeTab.style.display='none';}
-};
-window.marcarTodasLeidas=function(){
-  document.querySelectorAll('.notif-item').forEach(item=>{
-    const m=item.getAttribute('onclick')?.match(/'([^']+)'/);
-    if(m)_notifLeidas.add(m[1]);
-    item.classList.remove('unread');item.querySelector('.notif-dot')?.remove();
-  });
-  localStorage.setItem('akimel_notif_leidas',JSON.stringify([..._notifLeidas]));
-  const badgeTab=document.getElementById('notifBadgeTab');
-  if(badgeTab)badgeTab.style.display='none';
-};
-const styleNotif=document.createElement('style');
-styleNotif.textContent='@keyframes slideInRight{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}';
-document.head.appendChild(styleNotif);
-
 // ═══════════════════════════════════════════════════════════════
 // PROCESAMIENTO DE CHAT DE WHATSAPP (restaurado desde versión antigua)
 // ═══════════════════════════════════════════════════════════════
@@ -4197,6 +4005,198 @@ window.procesarArchivo = async function(file){
   if(!arr.length){ addLog('⚠️ Sin arriendos', 'warn'); return; }
   await guardarArriendos(arr);
 };
+</script>
+<script>
+// ═══════════════════════════════════════════════════
+// MÓDULO NOTIFICACIONES v5 — iOS + Android
+// ═══════════════════════════════════════════════════
+let _notifUnsubscribe = null;
+let _notifLeidas = new Set(JSON.parse(localStorage.getItem('akimel_notif_leidas')||'[]'));
+const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+              (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+
+function crearSonidoNotif(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);osc.type='sine';
+    osc.frequency.setValueAtTime(880,ctx.currentTime);osc.frequency.setValueAtTime(660,ctx.currentTime+0.1);
+    gain.gain.setValueAtTime(0.3,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.4);
+  }catch(e){}
+}
+
+async function guardarNotif(tipo,datos){
+  try{
+    const{addDoc,collection:col,serverTimestamp}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const autor=window.auth?.currentUser?.email?.split('@')[0]||'Sistema';
+    await addDoc(col(window.db,'notificaciones'),{
+      tipo,cliente:datos.cliente||'',fecha:datos.fecha||'',
+      equipos:datos.equipos||datos.equipo||'',monto:datos.pendiente||datos.monto||0,
+      direccion:datos.direccion||'',autor,ts:serverTimestamp(),tsMs:Date.now(),
+    });
+  }catch(e){console.error('notif error:',e.code,e.message);}
+}
+
+window.limpiarHistorialNotifs=async function(){
+  const diag=document.getElementById('notifDiag');
+  diag.innerHTML='<span style="color:#888">Borrando...</span>';
+  try{
+    const fs=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const snap=await fs.getDocs(fs.collection(window.db,'notificaciones'));
+    await Promise.all([...snap.docs].map(d=>fs.deleteDoc(d.ref)));
+    _notifLeidas.clear();localStorage.removeItem('akimel_notif_leidas');
+    document.getElementById('notifList').innerHTML='<div class="notif-empty">Sin notificaciones recientes</div>';
+    actualizarBadge([]);
+    diag.innerHTML='<span style="color:green">✅ '+snap.size+' notificaciones eliminadas</span>';
+  }catch(e){diag.innerHTML='<span style="color:red">❌ '+e.message+'</span>';}
+};
+
+function actualizarIndicadorPermiso(){
+  const wrap=document.getElementById('notifPermisoWrap');
+  if(!wrap)return;
+  const perm=('Notification' in window)?Notification.permission:'unsupported';
+  if(perm==='granted'){
+    wrap.style.cssText='background:#f0fdf4;color:#166534;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px';
+    wrap.innerHTML='<span>✅ Notificaciones del sistema: <b>ACTIVAS</b></span>';
+  }else if(perm==='denied'){
+    wrap.style.cssText='background:#fef2f2;color:#991b1b;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px';
+    wrap.innerHTML='<span>🚫 Bloqueadas. Ajustes → '+(esIOS?'la app':'el navegador')+' → Notificaciones.</span>';
+  }else if(perm==='default'){
+    wrap.style.cssText='background:#fffbeb;color:#92400e;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px';
+    wrap.innerHTML='<span>⚠️ Sin permiso — actívalas para recibir alertas</span><button onclick="pedirPermisoNotif()" style="padding:6px 14px;background:#f97316;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:Sora,sans-serif;white-space:nowrap;flex-shrink:0">Activar 🔔</button>';
+  }else{
+    wrap.style.cssText='background:#f1f5f9;color:#64748b;margin-bottom:14px;padding:10px 12px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:8px';
+    wrap.innerHTML='<span>Notificaciones no soportadas en este navegador</span>';
+  }
+}
+
+window.pedirPermisoNotif=async function(){
+  if(!('Notification' in window))return;
+  const perm=await Notification.requestPermission();
+  actualizarIndicadorPermiso();
+  if(perm==='granted'){
+    try{new Notification('✅ Akimel activado',{body:'Recibirás alertas de nuevos arriendos',icon:'/icono-192.png'});}catch(e){}
+  }
+};
+
+async function enviarNotifNativa(n){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const titulo={nuevo:'🛝 Nuevo arriendo',edicion:'✏️ Arriendo editado',eliminado:'🗑️ Arriendo eliminado'}[n.tipo]||'🔔 Akimel';
+  const{texto}=notifTexto(n);
+  if(esIOS){
+    try{new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id});}catch(e){}
+    return;
+  }
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    await reg.showNotification(titulo,{body:texto,icon:'/icono-192.png',badge:'/icono-192.png',tag:n.id,renotify:true,vibrate:[200,100,200]});
+  }catch(e){
+    try{new Notification(titulo,{body:texto,icon:'/icono-192.png',tag:n.id});}catch(e2){}
+  }
+}
+
+async function iniciarNotifListener(){
+  if(_notifUnsubscribe)return;
+  try{
+    const{onSnapshot,collection:col,query,limit}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    const q=query(col(window.db,'notificaciones'),limit(50));
+    let primeraVez=true,previos=new Set();
+    _notifUnsubscribe=onSnapshot(q,snap=>{
+      const notifs=[];
+      snap.forEach(d=>notifs.push({id:d.id,...d.data()}));
+      notifs.sort((a,b)=>(b.tsMs||0)-(a.tsMs||0));
+      if(!primeraVez){
+        snap.docChanges().forEach(change=>{
+          if(change.type==='added'){
+            const n={id:change.doc.id,...change.doc.data()};
+            if(!previos.has(n.id)){
+              previos.add(n.id);
+              crearSonidoNotif();
+              if(navigator.vibrate)navigator.vibrate([200,100,200]);
+              mostrarToastNotif(n);
+              enviarNotifNativa(n);
+            }
+          }
+        });
+      }else{snap.forEach(d=>previos.add(d.id));}
+      primeraVez=false;
+      renderNotifPanel(notifs);
+      actualizarBadge(notifs);
+    },err=>console.error('notif listener:',err.code,err.message));
+  }catch(e){console.error('notif init:',e);}
+}
+
+function fmtTiempo(tsMs){
+  if(!tsMs)return'';
+  const diff=Date.now()-tsMs,min=Math.floor(diff/60000),hrs=Math.floor(diff/3600000),dias=Math.floor(diff/86400000);
+  if(min<1)return'Ahora';if(min<60)return'Hace '+min+' min';
+  if(hrs<24)return'Hace '+hrs+'h';return'Hace '+dias+'d';
+}
+function notifTexto(n){
+  const iconos={nuevo:'➕',edicion:'✏️',eliminado:'🗑️'};
+  const icono=iconos[n.tipo]||'🔔';
+  const eq=n.equipos?n.equipos.split(',').slice(0,2).map(e=>e.trim()).join(', ')+(n.equipos.split(',').length>2?' +':''):'';
+  let texto=n.cliente||'';if(n.fecha)texto+=' · '+n.fecha;if(eq)texto+=' · '+eq;
+  return{icono,texto};
+}
+function renderNotifPanel(notifs){
+  const el=document.getElementById('notifList');
+  if(!el)return;
+  if(!notifs.length){el.innerHTML='<div class="notif-empty">Sin notificaciones recientes</div>';return;}
+  el.innerHTML=notifs.map(n=>{
+    const{icono,texto}=notifTexto(n);
+    const leida=_notifLeidas.has(n.id);
+    const lbl={nuevo:'Nuevo arriendo',edicion:'Arriendo editado',eliminado:'Arriendo eliminado'}[n.tipo]||'Notificación';
+    return`<div class="notif-item ${leida?'':'unread'}" onclick="marcarLeida('${n.id}')">
+      <div class="notif-icon">${icono}</div>
+      <div class="notif-body">
+        <div class="notif-txt">${lbl}</div>
+        <div class="notif-txt" style="font-weight:400;color:var(--text2)">${texto}</div>
+        <div class="notif-meta">${n.autor?n.autor+' · ':''}${fmtTiempo(n.tsMs)}</div>
+      </div>
+      ${leida?'':'<div class="notif-dot"></div>'}
+    </div>`;
+  }).join('');
+}
+function actualizarBadge(notifs){
+  const noLeidas=notifs.filter(n=>!_notifLeidas.has(n.id)).length;
+  const badgeTab=document.getElementById('notifBadgeTab');
+  if(badgeTab){if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}else badgeTab.style.display='none';}
+}
+function mostrarToastNotif(n){
+  const{icono,texto}=notifTexto(n);
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;top:70px;right:8px;left:8px;background:var(--blue3);color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.25);animation:slideInRight .3s ease;font-family:Sora,sans-serif;cursor:pointer';
+  t.innerHTML=`<div style="font-weight:700;margin-bottom:3px">${icono} ${{nuevo:'Nuevo arriendo',edicion:'Arriendo editado',eliminado:'Arriendo eliminado'}[n.tipo]||'Notificación'}</div><div style="font-size:11px;opacity:.85">${texto}</div>`;
+  t.onclick=()=>{t.remove();goTab('notifs');};
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),5000);
+}
+window.marcarLeida=function(id){
+  _notifLeidas.add(id);
+  localStorage.setItem('akimel_notif_leidas',JSON.stringify([..._notifLeidas]));
+  document.querySelectorAll('.notif-item').forEach(item=>{
+    if(item.getAttribute('onclick')?.includes(id)){item.classList.remove('unread');item.querySelector('.notif-dot')?.remove();}
+  });
+  const noLeidas=document.querySelectorAll('.notif-item.unread').length;
+  const badgeTab=document.getElementById('notifBadgeTab');
+  if(badgeTab){if(noLeidas>0){badgeTab.style.display='inline';badgeTab.textContent=noLeidas>9?'9+':noLeidas;}else badgeTab.style.display='none';}
+};
+window.marcarTodasLeidas=function(){
+  document.querySelectorAll('.notif-item').forEach(item=>{
+    const m=item.getAttribute('onclick')?.match(/'([^']+)'/);
+    if(m)_notifLeidas.add(m[1]);
+    item.classList.remove('unread');item.querySelector('.notif-dot')?.remove();
+  });
+  localStorage.setItem('akimel_notif_leidas',JSON.stringify([..._notifLeidas]));
+  const badgeTab=document.getElementById('notifBadgeTab');
+  if(badgeTab)badgeTab.style.display='none';
+};
+const styleNotif=document.createElement('style');
+styleNotif.textContent='@keyframes slideInRight{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}';
+document.head.appendChild(styleNotif);
+
 
 </script>
 <script>
