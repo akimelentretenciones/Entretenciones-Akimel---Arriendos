@@ -892,7 +892,7 @@ const auth = getAuth(app);
 window.db = db;
 window.auth = auth;
 
-window.Chart.register(window.ChartDataLabels);
+try{ if(window.Chart && window.ChartDataLabels) window.Chart.register(window.ChartDataLabels); }catch(e){ console.warn("ChartDataLabels no disponible:",e); }
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
 let CAL_YEAR=new Date().getFullYear(), CAL_MONTH=new Date().getMonth(), CAL_DIA_SEL=null;
 
