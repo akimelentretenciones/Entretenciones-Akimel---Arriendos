@@ -320,7 +320,6 @@ function renderFila(a, num) {
   var comunaSub = a.comuna ? '<br><span style="color:var(--text3);font-size:11px">'+a.comuna+'</span>' : '';
   var savedPago = pg ? '<div class="saved-chip">&#10003; '+(pg==='transferencia'?'Transf.':'Efectivo')+'</div>' : '';
   var savedRetiro = hr ? '<div class="saved-chip">&#10003; '+hr+'</div>' : '';
-  var idJ = JSON.stringify(id);
   return '<tr>'
     + '<td style="color:var(--text3)">'+num+'</td>'
     + '<td style="font-weight:700;color:var(--blue3)">'+(a.cliente||'&mdash;')+'</td>'
@@ -328,15 +327,14 @@ function renderFila(a, num) {
     + '<td style="font-weight:600">'+(a.hora||'&mdash;')+'</td>'
     + '<td>'+telLink+'</td>'
     + '<td><div class="equipos-cell">'+(etags||'&mdash;')+'</div></td>'
-    + '<td style="font-family:monospace;font-weight:700;color:var(--blue)">'+clp(a.pendiente)+'</td>'
     + '<td><span class="badge '+bc+'">'+(a.estado||'Pendiente')+'</span></td>'
     + '<td><div class="pago-row">'
-    +   '<button class="pago-btn '+(pg==='transferencia'?'sel-transfer':'')+'" onclick="window.registrarPago('+idJ+',\'transferencia\')">&#127970;</button>'
-    +   '<button class="pago-btn '+(pg==='efectivo'?'sel-efectivo':'')+'" onclick="window.registrarPago('+idJ+',\'efectivo\')">&#128181;</button>'
+    +   '<button class="pago-btn '+(pg==='transferencia'?'sel-transfer':'')+'" data-id="'+id+'" data-tipo="transferencia">&#127970; Transf.</button>'
+    +   '<button class="pago-btn '+(pg==='efectivo'?'sel-efectivo':'')+'" data-id="'+id+'" data-tipo="efectivo">&#128181; Efectivo</button>'
     + '</div>'+savedPago+'</td>'
     + '<td><div class="retiro-cell">'
     +   '<input type="text" class="fi-hora" id="retiro-'+id+'" value="'+hr+'" placeholder="ej: 22:00 a 22:30">'
-    +   '<button class="btn-retiro" onclick="window.registrarRetiro('+idJ+')">&#10003;</button>'
+    +   '<button class="btn-retiro" data-id="'+id+'">&#10003;</button>'
     + '</div>'+savedRetiro+'</td>'
     + '</tr>';
 }
@@ -384,7 +382,7 @@ function renderApp(porDia, dias, totalSemana, nombre) {
         + '<div class="table-wrap" style="border-radius:0 0 var(--radius) var(--radius);box-shadow:none">'
         + '<table><thead><tr>'
         + '<th>#</th><th>Cliente</th><th>Direcci&oacute;n</th><th>Hora</th>'
-        + '<th>Tel&eacute;fono</th><th>Equipos</th><th>Monto</th><th>Estado</th>'
+        + '<th>Tel&eacute;fono</th><th>Equipos</th><th>Estado</th>'
         + '<th>Pago</th><th>Retiro &#128666;</th>'
         + '</tr></thead><tbody>';
 
@@ -398,22 +396,31 @@ function renderApp(porDia, dias, totalSemana, nombre) {
   main.innerHTML = html;
 }
 
-// ── Acciones ──
-window.registrarPago = async function(id, tipo) {
-  try {
-    await updateDoc(doc(db,'arriendos',id), {medioPago_equipo: tipo});
-    showToast((tipo==='transferencia'?'Transferencia':'Efectivo')+' registrado', 'ok');
-  } catch(e) { showToast('Error al guardar', 'err'); console.error(e); }
-};
-
-window.registrarRetiro = async function(id) {
-  var input = document.getElementById('retiro-'+id);
-  if(!input || !input.value.trim()) { showToast('Ingresa el horario de retiro', 'err'); return; }
-  try {
-    await updateDoc(doc(db,'arriendos',id), {horaRetiro: input.value.trim()});
-    showToast('Retiro '+input.value+' guardado', 'ok');
-  } catch(e) { showToast('Error al guardar', 'err'); console.error(e); }
-};
+// ── Acciones via event delegation ──
+document.getElementById('mainContent').addEventListener('click', async function(e) {
+  // Boton pago
+  var btnPago = e.target.closest('[data-tipo]');
+  if(btnPago) {
+    var id = btnPago.getAttribute('data-id');
+    var tipo = btnPago.getAttribute('data-tipo');
+    try {
+      await updateDoc(doc(db,'arriendos',id), {medioPago_equipo: tipo});
+      showToast((tipo==='transferencia'?'Transferencia':'Efectivo')+' registrado', 'ok');
+    } catch(err) { showToast('Error al guardar', 'err'); console.error(err); }
+    return;
+  }
+  // Boton retiro
+  var btnRetiro = e.target.closest('.btn-retiro');
+  if(btnRetiro) {
+    var id = btnRetiro.getAttribute('data-id');
+    var input = document.getElementById('retiro-'+id);
+    if(!input || !input.value.trim()) { showToast('Ingresa el horario de retiro', 'err'); return; }
+    try {
+      await updateDoc(doc(db,'arriendos',id), {horaRetiro: input.value.trim()});
+      showToast('Retiro '+input.value+' guardado', 'ok');
+    } catch(err) { showToast('Error al guardar', 'err'); console.error(err); }
+  }
+});
 </script>
 </body>
 </html>
