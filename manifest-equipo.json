@@ -1,0 +1,26 @@
+{
+  "name": "AKIMEL — Equipo",
+  "short_name": "AKIMEL Equipo",
+  "description": "App del equipo operativo de Entretenciones AKIMEL",
+  "start_url": "equipo.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#041e42",
+  "theme_color": "#041e42",
+  "lang": "es-CL",
+  "icons": [
+    {
+      "src": "icono-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icono-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

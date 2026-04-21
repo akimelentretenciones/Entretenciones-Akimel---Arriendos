@@ -6,7 +6,12 @@
 <title>AKIMEL — Equipo</title>
 <meta name="theme-color" content="#041e42">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AKIMEL Equipo">
+<link rel="manifest" href="manifest-equipo.json">
+<link rel="icon" href="icono-192.png">
+<link rel="apple-touch-icon" href="icono-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -450,6 +455,16 @@ window.actualizar = function() {
     showToast('Actualizado', 'ok');
   }
 };
+</script>
+<script>
+// Registro del Service Worker (necesario para instalación PWA y funcionamiento offline)
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js')
+      .then(r=>console.log('SW registrado',r.scope))
+      .catch(e=>console.log('SW no disponible'));
+  });
+}
 </script>
 </body>
 </html>

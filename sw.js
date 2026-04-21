@@ -1,12 +1,24 @@
 // ═══════════════════════════════════════════════════
-// AKIMEL — Service Worker v4
+// AKIMEL — Service Worker v7
 // ═══════════════════════════════════════════════════
-const CACHE_NAME = 'akimel-v6';
-const ASSETS = ['/índice.html', '/manifest.json', '/icono-192.png'];
+// Rutas RELATIVAS (sin "/" inicial) para funcionar en GitHub Pages
+// bajo el subdirectorio /Entretenciones-Akimel---Arriendos/
+const CACHE_NAME = 'akimel-v7';
+const ASSETS = [
+  './',
+  'index.html',
+  'equipo.html',
+  'manifest.json',
+  'manifest-equipo.json',
+  'icono-192.png',
+  'icono-512.png'
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).catch(() => {})
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(ASSETS))
+      .catch(e => console.warn('SW: algunos assets no se pudieron cachear', e))
   );
   self.skipWaiting();
 });
@@ -42,8 +54,8 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(data.titulo, {
       body: data.body,
-      icon: '/icono-192.png',
-      badge: '/icono-192.png',
+      icon: 'icono-192.png',
+      badge: 'icono-192.png',
       tag: data.tag || 'akimel',
       renotify: true,
     })
@@ -58,8 +70,8 @@ self.addEventListener('message', event => {
     const { titulo, body, tag } = event.data;
     self.registration.showNotification(titulo || '🛝 Akimel', {
       body:     body || '',
-      icon:     '/icono-192.png',
-      badge:    '/icono-192.png',
+      icon:     'icono-192.png',
+      badge:    'icono-192.png',
       tag:      tag || 'akimel-notif',
       renotify: true,
       vibrate:  [200, 100, 200],
@@ -76,7 +88,8 @@ self.addEventListener('notificationclick', event => {
         if(client.url.includes(self.location.origin) && 'focus' in client)
           return client.focus();
       }
-      if(clients.openWindow) return clients.openWindow('/');
+      // Ruta relativa al scope del SW (la carpeta del repo)
+      if(clients.openWindow) return clients.openWindow('./');
     })
   );
 });
