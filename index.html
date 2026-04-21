@@ -892,7 +892,13 @@ const auth = getAuth(app);
 window.db = db;
 window.auth = auth;
 
-Chart.register(ChartDataLabels);
+try{
+  if(typeof Chart!=='undefined' && typeof ChartDataLabels!=='undefined'){
+    Chart.register(ChartDataLabels);
+  } else {
+    console.warn('Chart o ChartDataLabels no cargaron aún; se omite register. Los gráficos seguirán funcionando sin datalabels.');
+  }
+}catch(e){ console.warn('Chart.register falló:', e); }
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
 let CAL_YEAR=new Date().getFullYear(), CAL_MONTH=new Date().getMonth(), CAL_DIA_SEL=null;
 
@@ -3891,9 +3897,10 @@ document.head.appendChild(styleNotif);
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/sw.js')
+    // Ruta relativa para que funcione tanto en raíz como en subdirectorio de GitHub Pages
+    navigator.serviceWorker.register('sw.js')
       .then(r=>console.log('SW registrado',r.scope))
-      .catch(e=>console.log('SW error:',e));
+      .catch(e=>console.log('SW no disponible (ok si no existe sw.js todavía)'));
   });
 }
 </script>
