@@ -65,8 +65,15 @@ input,select,textarea,button{font-size:16px;font-family:'Sora',sans-serif}
 .stat-v{font-weight:800;font-size:22px;color:var(--blue)}
 .stat-l{font-size:10px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
 
+/* Header de dia */
+.dia-header{padding:9px 14px;border-radius:var(--radius) var(--radius) 0 0;font-weight:700;font-size:13px}
+.dia-header.hoy{background:var(--blue);color:#fff}
+.dia-header.otro{background:var(--bg3);color:var(--blue3)}
+
 /* Tabla */
 .table-wrap{overflow-x:auto;border-radius:var(--radius);box-shadow:var(--shadow);background:#fff}
+.dia-wrap .table-wrap{border-radius:0 0 var(--radius) var(--radius);box-shadow:none;border:1px solid var(--border);border-top:none}
+.dia-wrap{margin-bottom:20px;box-shadow:var(--shadow);border-radius:var(--radius)}
 table{width:100%;border-collapse:collapse;font-size:12px}
 thead{background:var(--bg3)}
 th{padding:10px 12px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;white-space:nowrap;border-bottom:2px solid var(--border)}
@@ -83,7 +90,7 @@ tr:hover td{background:var(--bg3)}
 
 /* Pago inline */
 .pago-row{display:flex;gap:4px}
-.pago-btn{padding:5px 9px;border-radius:6px;border:1.5px solid var(--border);background:#fff;color:var(--text3);font-family:'Sora',sans-serif;font-size:14px;cursor:pointer;transition:all .2s;line-height:1}
+.pago-btn{padding:5px 9px;border-radius:6px;border:1.5px solid var(--border);background:#fff;color:var(--text3);font-size:14px;cursor:pointer;transition:all .2s;line-height:1}
 .pago-btn.sel-transfer{background:rgba(0,113,206,.1);border-color:var(--blue)}
 .pago-btn.sel-efectivo{background:rgba(95,180,70,.1);border-color:var(--green)}
 
@@ -91,9 +98,9 @@ tr:hover td{background:var(--bg3)}
 .retiro-cell{display:flex;gap:4px;align-items:center;min-width:170px}
 .fi-hora{flex:1;background:#fff;border:1.5px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;outline:none;font-size:11px;font-family:'Sora',sans-serif}
 .fi-hora:focus{border-color:var(--blue)}
-.btn-retiro{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-family:'Sora',sans-serif;font-weight:700;font-size:12px;cursor:pointer}
+.btn-retiro{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-weight:700;font-size:12px;cursor:pointer}
 
-/* Chip guardado */
+/* Chip */
 .saved-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(95,180,70,.12);border:1px solid rgba(95,180,70,.3);color:var(--green);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-top:4px}
 
 /* Empty / Loading */
@@ -127,12 +134,12 @@ tr:hover td{background:var(--bg3)}
       <input type="email" class="fi" id="loginEmail" placeholder="nombre@akimel.cl" autocomplete="email">
     </div>
     <div class="fg">
-      <label class="fl">Contraseña</label>
+      <label class="fl">Contrasena</label>
       <input type="password" class="fi" id="loginPass" placeholder="••••••••" autocomplete="current-password">
     </div>
     <button class="btn-primary" id="btnLogin" onclick="window.doLogin()">Ingresar</button>
   </div>
-  <div class="login-footer">Entretenciones AKIMEL © 2026</div>
+  <div class="login-footer">Entretenciones AKIMEL &copy; 2026</div>
 </div>
 
 <!-- APP -->
@@ -145,7 +152,7 @@ tr:hover td{background:var(--bg3)}
         <div class="hdr-fecha" id="hdrFecha"></div>
       </div>
     </div>
-    <button class="btn-logout" onclick="window.doLogout()">🚪 Salir</button>
+    <button class="btn-logout" onclick="window.doLogout()">Salir</button>
   </div>
   <div class="main" id="mainContent">
     <div class="loading"><div class="spinner"></div><div>Cargando arriendos...</div></div>
@@ -170,12 +177,7 @@ const app = initializeApp({
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const TRABAJADORES = {
-  'cristobal':'Cristóbal',
-  'leo':'Leo',
-  'cristofer':'Cristófer',
-  'martin':'Martín'
-};
+const TRABAJADORES = {'cristobal':'Cristobal','leo':'Leo','cristofer':'Cristofer','martin':'Martin'};
 const EMAIL_NOMBRE = {
   'cristobal@akimel.cl':'cristobal',
   'leo@akimel.cl':'leo',
@@ -186,39 +188,58 @@ const EMAIL_NOMBRE = {
 let currentWorkerKey = null;
 let unsubArriendos = null;
 
+// ── Utils ──
 function todayISO() {
-  const d = new Date();
-  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+  var d = new Date();
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
 }
 function todayLong() {
   return new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
 }
 function clp(n) {
-  return n ? '$' + parseInt(n).toLocaleString('es-CL') : '—';
+  return n ? '$'+parseInt(n).toLocaleString('es-CL') : '&mdash;';
 }
 function showToast(msg, type) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast show' + (type ? ' ' + type : '');
-  setTimeout(function(){ t.className = 'toast'; }, 2800);
+  t.className = 'toast show'+(type?' '+type:'');
+  setTimeout(function(){ t.className='toast'; }, 2800);
+}
+
+// Retorna fechas DD/MM/YYYY desde hoy hasta el domingo de esta semana
+function diasHastaFinDeSemana() {
+  var hoy = new Date();
+  var dow = hoy.getDay(); // 0=dom
+  var diasHastaDom = (dow === 0) ? 0 : 7 - dow;
+  var result = [];
+  for(var i = 0; i <= diasHastaDom; i++) {
+    var d = new Date(hoy);
+    d.setDate(hoy.getDate() + i);
+    result.push(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear());
+  }
+  return result;
+}
+
+function nombreDia(fechaISO) {
+  var p = fechaISO.split('/');
+  var d = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+  return ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'][d.getDay()];
 }
 
 // ── Login ──
 window.doLogin = async function() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass  = document.getElementById('loginPass').value;
-  const err   = document.getElementById('loginErr');
-  const btn   = document.getElementById('btnLogin');
+  var email = document.getElementById('loginEmail').value.trim();
+  var pass  = document.getElementById('loginPass').value;
+  var err   = document.getElementById('loginErr');
+  var btn   = document.getElementById('btnLogin');
   err.style.display = 'none';
-  btn.disabled = true;
-  btn.textContent = 'Ingresando...';
+  btn.disabled = true; btn.textContent = 'Ingresando...';
   try {
     await signInWithEmailAndPassword(auth, email, pass);
   } catch(e) {
-    err.textContent = '⚠️ Correo o contraseña incorrectos';
+    err.textContent = 'Correo o contrasena incorrectos';
     err.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = 'Ingresar';
+    btn.disabled = false; btn.textContent = 'Ingresar';
   }
 };
 
@@ -231,12 +252,12 @@ window.doLogout = async function() {
   await signOut(auth);
 };
 
-// ── Auth state ──
+// ── Auth ──
 onAuthStateChanged(auth, function(user) {
   if(user) {
-    const emailLower = user.email.toLowerCase();
+    var emailLower = user.email.toLowerCase();
     currentWorkerKey = EMAIL_NOMBRE[emailLower] || emailLower.split('@')[0];
-    const nombre = TRABAJADORES[currentWorkerKey] || currentWorkerKey;
+    var nombre = TRABAJADORES[currentWorkerKey] || currentWorkerKey;
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('appWrap').classList.add('active');
     document.getElementById('hdrName').textContent = nombre;
@@ -253,108 +274,125 @@ onAuthStateChanged(auth, function(user) {
   }
 });
 
-// ── Cargar arriendos ──
+// ── Cargar arriendos (semana) ──
 function cargarArriendos(workerKey, nombre) {
-  const hoy = todayISO();
   if(unsubArriendos) unsubArriendos();
-  unsubArriendos = onSnapshot(collection(db, 'arriendos'), function(snap) {
-    const todos = [];
-    snap.forEach(function(d) { todos.push(Object.assign({id: d.id}, d.data())); });
+  unsubArriendos = onSnapshot(collection(db,'arriendos'), function(snap) {
+    var todos = [];
+    snap.forEach(function(d){ todos.push(Object.assign({id:d.id}, d.data())); });
 
-    // DEBUG — ver en consola qué llega
-    const asignados = todos.filter(function(a) {
-      return (a.trabajadorAsignado || '').toLowerCase() === workerKey.toLowerCase();
-    });
-    console.log('workerKey:', workerKey, '| hoy:', hoy, '| total:', todos.length, '| asignados a mi:', asignados.length);
-    asignados.forEach(function(a) { console.log('  fecha:', JSON.stringify(a.fecha), '| cliente:', a.cliente); });
+    var dias = diasHastaFinDeSemana();
 
-    const misTareas = asignados.filter(function(a) {
-      return a.fecha === hoy && a.estado !== 'Cancelado';
+    // Filtrar asignados a este trabajador en los dias de esta semana
+    var asignados = todos.filter(function(a) {
+      return (a.trabajadorAsignado||'').toLowerCase() === workerKey.toLowerCase()
+        && dias.indexOf(a.fecha) !== -1
+        && a.estado !== 'Cancelado';
     });
-    renderApp(misTareas, nombre);
+
+    // Agrupar por fecha
+    var porDia = {};
+    dias.forEach(function(f){ porDia[f] = []; });
+    asignados.forEach(function(a){
+      if(porDia[a.fecha]) porDia[a.fecha].push(a);
+    });
+
+    renderApp(porDia, dias, asignados.length, nombre);
   }, function(err) {
     console.error('Error:', err);
     document.getElementById('mainContent').innerHTML =
-      '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-txt">Error al cargar datos.<br>Verifica tu conexión.</div></div>';
+      '<div class="empty"><div class="empty-icon">&#9888;</div><div class="empty-txt">Error al cargar datos.<br>Verifica tu conexion.</div></div>';
   });
 }
 
-// ── Render ──
-function renderApp(arriendos, nombre) {
-  const main = document.getElementById('mainContent');
-  const total = arriendos.length;
-  const conPago = arriendos.filter(function(a){ return a.medioPago_equipo; }).length;
-  const conRetiro = arriendos.filter(function(a){ return a.horaRetiro; }).length;
+// ── Render fila ──
+function renderFila(a, num) {
+  var id = a.id;
+  var bc = a.estado==='Pagado' ? 'badge-ok' : a.estado==='Cancelado' ? 'badge-canc' : 'badge-pend';
+  var pg = a.medioPago_equipo || '';
+  var hr = a.horaRetiro || '';
+  var etags = (a.equipos||'').split(',')
+    .map(function(e){return e.trim();}).filter(function(e){return e.length>0;})
+    .map(function(e){return '<div class="equipo-tag">'+e+'</div>';}).join('');
+  var telLink = a.telefono
+    ? '<a href="tel:'+a.telefono+'" style="color:var(--blue);font-weight:700;text-decoration:none">'+a.telefono+'</a>'
+    : '&mdash;';
+  var comunaSub = a.comuna ? '<br><span style="color:var(--text3);font-size:11px">'+a.comuna+'</span>' : '';
+  var savedPago = pg ? '<div class="saved-chip">&#10003; '+(pg==='transferencia'?'Transf.':'Efectivo')+'</div>' : '';
+  var savedRetiro = hr ? '<div class="saved-chip">&#10003; '+hr+'</div>' : '';
+  var idJ = JSON.stringify(id);
+  return '<tr>'
+    + '<td style="color:var(--text3)">'+num+'</td>'
+    + '<td style="font-weight:700;color:var(--blue3)">'+(a.cliente||'&mdash;')+'</td>'
+    + '<td style="font-size:12px">'+(a.direccion||'&mdash;')+comunaSub+'</td>'
+    + '<td style="font-weight:600">'+(a.hora||'&mdash;')+'</td>'
+    + '<td>'+telLink+'</td>'
+    + '<td><div class="equipos-cell">'+(etags||'&mdash;')+'</div></td>'
+    + '<td style="font-family:monospace;font-weight:700;color:var(--blue)">'+clp(a.pendiente)+'</td>'
+    + '<td><span class="badge '+bc+'">'+(a.estado||'Pendiente')+'</span></td>'
+    + '<td><div class="pago-row">'
+    +   '<button class="pago-btn '+(pg==='transferencia'?'sel-transfer':'')+'" onclick="window.registrarPago('+idJ+',\'transferencia\')">&#127970;</button>'
+    +   '<button class="pago-btn '+(pg==='efectivo'?'sel-efectivo':'')+'" onclick="window.registrarPago('+idJ+',\'efectivo\')">&#128181;</button>'
+    + '</div>'+savedPago+'</td>'
+    + '<td><div class="retiro-cell">'
+    +   '<input type="text" class="fi-hora" id="retiro-'+id+'" value="'+hr+'" placeholder="ej: 22:00 a 22:30">'
+    +   '<button class="btn-retiro" onclick="window.registrarRetiro('+idJ+')">&#10003;</button>'
+    + '</div>'+savedRetiro+'</td>'
+    + '</tr>';
+}
 
-  let html = '<div class="worker-badge">'
-    + '<div class="worker-avatar">' + nombre.charAt(0) + '</div>'
-    + '<div><div class="worker-info-name">Hola, ' + nombre + ' 👋</div>'
-    + '<div class="worker-info-sub">Tus arriendos de hoy &middot; ' + todayISO() + '</div></div>'
+// ── Render semanal ──
+function renderApp(porDia, dias, totalSemana, nombre) {
+  var main = document.getElementById('mainContent');
+  var hoy = todayISO();
+  var conPago = 0, conRetiro = 0;
+  dias.forEach(function(f){
+    (porDia[f]||[]).forEach(function(a){
+      if(a.medioPago_equipo) conPago++;
+      if(a.horaRetiro) conRetiro++;
+    });
+  });
+
+  var html = '<div class="worker-badge">'
+    + '<div class="worker-avatar">'+nombre.charAt(0)+'</div>'
+    + '<div><div class="worker-info-name">Hola, '+nombre+' &#128075;</div>'
+    + '<div class="worker-info-sub">Semana: '+dias[0]+' al '+dias[dias.length-1]+'</div></div>'
     + '</div>'
     + '<div class="stats">'
-    + '<div class="stat"><div class="stat-v">' + total + '</div><div class="stat-l">Arriendos</div></div>'
-    + '<div class="stat"><div class="stat-v">' + conPago + '</div><div class="stat-l">Con pago</div></div>'
-    + '<div class="stat"><div class="stat-v">' + conRetiro + '</div><div class="stat-l">Retiro ok</div></div>'
+    + '<div class="stat"><div class="stat-v">'+totalSemana+'</div><div class="stat-l">Esta semana</div></div>'
+    + '<div class="stat"><div class="stat-v">'+conPago+'</div><div class="stat-l">Con pago</div></div>'
+    + '<div class="stat"><div class="stat-v">'+conRetiro+'</div><div class="stat-l">Retiro ok</div></div>'
     + '</div>';
 
-  if(total === 0) {
-    html += '<div class="empty"><div class="empty-icon">📭</div>'
-      + '<div class="empty-txt">No tienes arriendos asignados para hoy.<br>Consulta con el administrador.</div></div>';
+  if(totalSemana === 0) {
+    html += '<div class="empty"><div class="empty-icon">&#128205;</div>'
+      + '<div class="empty-txt">No tienes arriendos asignados esta semana.<br>Consulta con el administrador.</div></div>';
   } else {
-    html += '<div class="table-wrap"><table><thead><tr>'
-      + '<th>#</th><th>Cliente</th><th>Dirección</th><th>Hora</th>'
-      + '<th>Teléfono</th><th>Equipos</th><th>Monto</th><th>Estado</th>'
-      + '<th>💳 Pago</th><th>🚚 Retiro</th>'
-      + '</tr></thead><tbody>';
+    for(var d = 0; d < dias.length; d++) {
+      var fecha = dias[d];
+      var arr = porDia[fecha] || [];
+      if(arr.length === 0) continue;
+      var esHoy = (fecha === hoy);
+      var nomDia = nombreDia(fecha);
+      var labelDia = (esHoy ? nomDia+' (Hoy)' : nomDia) + ' &mdash; ' + fecha;
+      var clsDia = esHoy ? 'dia-header hoy' : 'dia-header otro';
 
-    for(let i = 0; i < arriendos.length; i++) {
-      const a = arriendos[i];
-      const id = a.id;
-      const bc = a.estado === 'Pagado' ? 'badge-ok' : a.estado === 'Cancelado' ? 'badge-canc' : 'badge-pend';
-      const pg = a.medioPago_equipo || '';
-      const hr = a.horaRetiro || '';
-      const etags = (a.equipos || '').split(',')
-        .map(function(e){ return e.trim(); })
-        .filter(function(e){ return e.length > 0; })
-        .map(function(e){ return '<div class="equipo-tag">' + e + '</div>'; })
-        .join('');
-      const telLink = a.telefono
-        ? '<a href="tel:' + a.telefono + '" style="color:var(--blue);font-weight:700;text-decoration:none">' + a.telefono + '</a>'
-        : '—';
-      const comunaSub = a.comuna
-        ? '<br><span style="color:var(--text3);font-size:11px">' + a.comuna + '</span>'
-        : '';
-      const savedPago = pg
-        ? '<div class="saved-chip">✓ ' + (pg === 'transferencia' ? 'Transf.' : 'Efectivo') + '</div>'
-        : '';
-      const savedRetiro = hr
-        ? '<div class="saved-chip">✓ ' + hr + '</div>'
-        : '';
+      html += '<div class="dia-wrap">'
+        + '<div class="'+clsDia+'">'+labelDia
+        + ' <span style="font-size:11px;opacity:.75;font-weight:400">('+arr.length+' arriendo'+(arr.length!==1?'s':'')+')</span>'
+        + '</div>'
+        + '<div class="table-wrap" style="border-radius:0 0 var(--radius) var(--radius);box-shadow:none">'
+        + '<table><thead><tr>'
+        + '<th>#</th><th>Cliente</th><th>Direcci&oacute;n</th><th>Hora</th>'
+        + '<th>Tel&eacute;fono</th><th>Equipos</th><th>Monto</th><th>Estado</th>'
+        + '<th>Pago</th><th>Retiro &#128666;</th>'
+        + '</tr></thead><tbody>';
 
-      html += '<tr>'
-        + '<td style="color:var(--text3)">' + (i+1) + '</td>'
-        + '<td style="font-weight:700;color:var(--blue3)">' + (a.cliente || '—') + '</td>'
-        + '<td style="font-size:12px">' + (a.direccion || '—') + comunaSub + '</td>'
-        + '<td style="font-weight:600">' + (a.hora || '—') + '</td>'
-        + '<td>' + telLink + '</td>'
-        + '<td><div class="equipos-cell">' + (etags || '—') + '</div></td>'
-        + '<td style="font-family:monospace;font-weight:700;color:var(--blue)">' + clp(a.pendiente) + '</td>'
-        + '<td><span class="badge ' + bc + '">' + (a.estado || 'Pendiente') + '</span></td>'
-        + '<td>'
-        +   '<div class="pago-row">'
-        +     '<button class="pago-btn ' + (pg === 'transferencia' ? 'sel-transfer' : '') + '" onclick="window.registrarPago(' + JSON.stringify(id) + ',\'transferencia\')">🏦</button>'
-        +     '<button class="pago-btn ' + (pg === 'efectivo' ? 'sel-efectivo' : '') + '" onclick="window.registrarPago(' + JSON.stringify(id) + ',\'efectivo\')">💵</button>'
-        +   '</div>' + savedPago
-        + '</td>'
-        + '<td>'
-        +   '<div class="retiro-cell">'
-        +     '<input type="text" class="fi-hora" id="retiro-' + id + '" value="' + hr + '" placeholder="ej: 22:00 a 22:30">'
-        +     '<button class="btn-retiro" onclick="window.registrarRetiro(' + JSON.stringify(id) + ')">✓</button>'
-        +   '</div>' + savedRetiro
-        + '</td>'
-        + '</tr>';
+      for(var i = 0; i < arr.length; i++) {
+        html += renderFila(arr[i], i+1);
+      }
+      html += '</tbody></table></div></div>';
     }
-    html += '</tbody></table></div>';
   }
 
   main.innerHTML = html;
@@ -363,27 +401,18 @@ function renderApp(arriendos, nombre) {
 // ── Acciones ──
 window.registrarPago = async function(id, tipo) {
   try {
-    await updateDoc(doc(db, 'arriendos', id), { medioPago_equipo: tipo });
-    showToast('✓ ' + (tipo === 'transferencia' ? 'Transferencia' : 'Efectivo') + ' registrado', 'ok');
-  } catch(e) {
-    showToast('Error al guardar', 'err');
-    console.error(e);
-  }
+    await updateDoc(doc(db,'arriendos',id), {medioPago_equipo: tipo});
+    showToast((tipo==='transferencia'?'Transferencia':'Efectivo')+' registrado', 'ok');
+  } catch(e) { showToast('Error al guardar', 'err'); console.error(e); }
 };
 
 window.registrarRetiro = async function(id) {
-  const input = document.getElementById('retiro-' + id);
-  if(!input || !input.value.trim()) {
-    showToast('Ingresa el horario de retiro', 'err');
-    return;
-  }
+  var input = document.getElementById('retiro-'+id);
+  if(!input || !input.value.trim()) { showToast('Ingresa el horario de retiro', 'err'); return; }
   try {
-    await updateDoc(doc(db, 'arriendos', id), { horaRetiro: input.value.trim() });
-    showToast('✓ Retiro ' + input.value + ' guardado', 'ok');
-  } catch(e) {
-    showToast('Error al guardar', 'err');
-    console.error(e);
-  }
+    await updateDoc(doc(db,'arriendos',id), {horaRetiro: input.value.trim()});
+    showToast('Retiro '+input.value+' guardado', 'ok');
+  } catch(e) { showToast('Error al guardar', 'err'); console.error(e); }
 };
 </script>
 </body>
