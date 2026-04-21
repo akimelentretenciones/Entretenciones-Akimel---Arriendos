@@ -152,7 +152,7 @@ tr:hover td{background:var(--bg3)}
         <div class="hdr-fecha" id="hdrFecha"></div>
       </div>
     </div>
-    <button class="btn-logout" onclick="window.doLogout()">Salir</button>
+    <div style="display:flex;gap:8px;align-items:center"><button onclick="window.actualizar()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:rgba(255,255,255,.8);padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer" title="Actualizar">🔄</button><button class="btn-logout" onclick="window.doLogout()">Salir</button></div>
   </div>
   <div class="main" id="mainContent">
     <div class="loading"><div class="spinner"></div><div>Cargando arriendos...</div></div>
@@ -441,6 +441,15 @@ document.getElementById('mainContent').addEventListener('click', async function(
     } catch(err) { showToast('Error al guardar', 'err'); console.error(err); }
   }
 });
+window.actualizar = function() {
+  if(currentWorkerKey) {
+    var nombre = TRABAJADORES[currentWorkerKey] || currentWorkerKey;
+    document.getElementById('mainContent').innerHTML =
+      '<div class="loading"><div class="spinner"></div><div>Actualizando...</div></div>';
+    cargarArriendos(currentWorkerKey, nombre);
+    showToast('Actualizado', 'ok');
+  }
+};
 </script>
 </body>
 </html>
