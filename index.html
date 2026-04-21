@@ -892,7 +892,7 @@ const auth = getAuth(app);
 window.db = db;
 window.auth = auth;
 
-try{ if(window.Chart && window.ChartDataLabels) window.Chart.register(window.ChartDataLabels); }catch(e){ console.warn("ChartDataLabels no disponible:",e); }
+Chart.register(ChartDataLabels);
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
 let CAL_YEAR=new Date().getFullYear(), CAL_MONTH=new Date().getMonth(), CAL_DIA_SEL=null;
 
@@ -2364,7 +2364,7 @@ async function renderDashboard(){
 
   // ── Monto por Comuna (horizontal) ──
   const topComs=Object.entries(comunas).sort((a,b)=>b[1].monto-a[1].monto).slice(0,10);
-  CHARTS.comunas=new window.Chart(document.getElementById('cComunas'),{type:'bar',
+  CHARTS.comunas=new Chart(document.getElementById('cComunas'),{type:'bar',
     data:{labels:topComs.map(c=>c[0]),datasets:[{data:topComs.map(c=>c[1].monto),backgroundColor:'#0071ce',borderRadius:4}]},
     options:{...bO,indexAxis:'y',plugins:{...bO.plugins,
       datalabels:{display:true,anchor:'end',align:'right',font:{size:8,weight:'600'},color:'#041e42',formatter:v=>fmtM(v)}},
@@ -2377,7 +2377,7 @@ async function renderDashboard(){
   const aniosEnDatos=Object.keys(diasPorAnio).sort();
 
   // ── Monto por día (barras por año, solo años en datos filtrados) ──
-  CHARTS.dias=new window.Chart(document.getElementById('cDias'),{type:'bar',
+  CHARTS.dias=new Chart(document.getElementById('cDias'),{type:'bar',
     data:{labels:DIAS_ORD,datasets:aniosEnDatos.map((anio,i)=>({
       label:anio,
       data:DIAS_ORD.map(d=>diasPorAnio[anio]?.[d]||0),
@@ -2392,7 +2392,7 @@ async function renderDashboard(){
   // ── Monto por Mes y Año ──
   const aniosEnMes=Object.keys(mesesPorAnio).sort();
   const mesOrd=Array.from({length:12},(_,i)=>(i+1).toString().padStart(2,'0'));
-  CHARTS.mensual=new window.Chart(document.getElementById('cMensual'),{type:'bar',
+  CHARTS.mensual=new Chart(document.getElementById('cMensual'),{type:'bar',
     data:{labels:mesOrd.map(m=>MESES_N[parseInt(m)]),datasets:aniosEnMes.map((anio,i)=>({
       label:anio,
       data:mesOrd.map(m=>mesesPorAnio[anio]?.[m]||0),
@@ -2404,7 +2404,7 @@ async function renderDashboard(){
 
   // ── Monto por Año ──
   const aniosDisp=Object.keys(montosPorAnio).sort();
-  CHARTS.anio=new window.Chart(document.getElementById('cAnio'),{type:'bar',
+  CHARTS.anio=new Chart(document.getElementById('cAnio'),{type:'bar',
     data:{labels:aniosDisp,datasets:[{data:aniosDisp.map(a=>montosPorAnio[a]),backgroundColor:'#0071ce',borderRadius:6}]},
     options:{...bO,plugins:{legend:{display:false},
       datalabels:{display:true,anchor:'end',align:'top',font:{size:11,weight:'700'},color:'#041e42',
@@ -2412,7 +2412,7 @@ async function renderDashboard(){
 
   // ── Top Equipos ──
   const topEqs=Object.entries(eqC).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  CHARTS.equipos=new window.Chart(document.getElementById('cEquipos'),{type:'bar',
+  CHARTS.equipos=new Chart(document.getElementById('cEquipos'),{type:'bar',
     data:{labels:topEqs.map(e=>e[0]),datasets:[{data:topEqs.map(e=>e[1]),backgroundColor:PALETA,borderRadius:4}]},
     options:{...bO,indexAxis:'y',plugins:{legend:{display:false},
       datalabels:{display:true,anchor:'end',align:'right',font:{size:9,weight:'600'},color:'#041e42',formatter:v=>v}},
@@ -3267,7 +3267,7 @@ async function _renderCostosChartEn(canvasId, rangoSelectId, onClickFn, nFijo){
 
   canvas.style.opacity = '1';
 
-  const chart = new window.Chart(canvas, {
+  const chart = new Chart(canvas, {
     type:'bar',
     data:{ labels, datasets:[
       { label:'Bencina',  data:dataBencina,  backgroundColor:'rgba(255,194,32,0.85)', borderRadius:0, stack:'barra', order:2 },
@@ -3471,7 +3471,7 @@ window.renderCostosChartDash = async function(){
     esEstimado.push(!!d._estimado);
   });
 
-  _chartCostosDash = new window.Chart(canvas, {
+  _chartCostosDash = new Chart(canvas, {
     type:'bar',
     data:{ labels, datasets:[
       { label:'Bencina',  data:dataBencina,  backgroundColor:'rgba(255,194,32,0.85)', borderRadius:0, stack:'barra', order:2 },
