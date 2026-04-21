@@ -1896,7 +1896,7 @@ window.generarCatalogoPDF = async function(){
       await navigator.share({
         files:[file],
         title:'Catálogo Akimel',
-        text:`Te enviamos los juegos que nos quedan disponibles en el catálogo, fecha ${fechaTexto}:\n\n${listaJuegos}`
+        text:`🎉 ¡Hola! Estos son los juegos disponibles que nos van quedando para la fecha ${fechaTexto}:\n\n${listaJuegos}\n\n¡Reserva el tuyo antes de que se agoten! 😊`
       });
     }catch(e){
       if(e.name!=='AbortError'){ doc.save(filename); toast('PDF descargado','ok'); }
