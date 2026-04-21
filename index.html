@@ -3733,7 +3733,8 @@ function parsearChat(texto){
     let fecha = '';
     const anioM = bloque.match(/(202[0-9])/);
     const anio = anioM ? anioM[1] : anioGrupo;
-    const ft = bloque.match(/(\d{1,2})\s*(?:de\s*)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i);
+    // Formato con mes en palabras: "25 de abril", "25 abril", "25-abril-2026", "25/abril", "25 abril 2026"
+    const ft = bloque.match(/(\d{1,2})\s*(?:de\s*)?[\s\-\/\.]?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s*(?:de\s*)?[\s\-\/\.]?\s*(\d{2,4}))?/i);
     const fn = bloque.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
 
     // Fecha sin año (dd/mm o dd-mm)
@@ -3755,7 +3756,10 @@ function parsearChat(texto){
       if(y.length === 2) y = '20'+y;
       fecha = d.padStart(2,'0') + '/' + m.padStart(2,'0') + '/' + y;
     } else if(ft){
-      fecha = ft[1].padStart(2,'0') + '/' + (MESES[ft[2].toLowerCase()] || '01') + '/' + anioGrupo;
+      // ft[3] = año opcional; si no viene, caer en anioGrupo
+      let yr = ft[3] || anioGrupo;
+      if(yr.length === 2) yr = '20'+yr;
+      fecha = ft[1].padStart(2,'0') + '/' + (MESES[ft[2].toLowerCase()] || '01') + '/' + yr;
     } else if(fsin){
       const d = parseInt(fsin[1]);
       const m = parseInt(fsin[2]);
