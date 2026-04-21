@@ -567,7 +567,7 @@ select:focus{border-color:var(--blue)}
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Estado</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th title="Trabajador asignado">🙋</th><th title="Retiro">Retiro 🚚</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Estado</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th title="Trabajador asignado">🙋</th><th title="Pago registrado por el equipo">💬 Equipo</th><th title="Retiro">Retiro 🚚</th><th></th></tr></thead>
       <tbody id="tablaBody"><tr><td colspan="16" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
     </table>
   </div>
@@ -2143,6 +2143,17 @@ function renderTabla(){
         <option value="cristofer" ${a.trabajadorAsignado==='cristofer'?'selected':''}>Cristófer</option>
         <option value="martin" ${a.trabajadorAsignado==='martin'?'selected':''}>Martín</option>
       </select>
+    </td>
+    <td style="text-align:center;font-size:11px;font-weight:600">
+      ${(()=>{
+        const m=a.medioPago_equipo;
+        if(!m) return '<span style="color:var(--text3)">—</span>';
+        const isTransf = m==='transferencia';
+        const color = isTransf?'var(--blue)':'var(--green)';
+        const bg = isTransf?'rgba(0,113,206,.1)':'rgba(95,180,70,.12)';
+        const lbl = isTransf?'🏦 Transf.':'💵 Efectivo';
+        return '<span style="background:'+bg+';color:'+color+';border-radius:12px;padding:2px 8px">'+lbl+'</span>';
+      })()}
     </td>
     <td style="text-align:center">
       <input type="text" value="${a.horaRetiro||''}"
