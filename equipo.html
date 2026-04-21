@@ -335,6 +335,7 @@ function renderFila(a, num) {
     + '<td><div class="retiro-cell">'
     +   '<input type="text" class="fi-hora" id="retiro-'+id+'" value="'+hr+'" placeholder="ej: 22:00 a 22:30">'
     +   '<button class="btn-retiro" data-id="'+id+'">&#10003;</button>'
+    +   (hr ? '<button class="btn-borrar-retiro" data-id="'+id+'" title="Borrar retiro" style="background:rgba(222,28,36,.1);color:var(--red);border:none;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;margin-left:2px">&#10005;</button>' : '')
     + '</div>'+savedRetiro+'</td>'
     + '</tr>';
 }
@@ -398,18 +399,25 @@ function renderApp(porDia, dias, totalSemana, nombre) {
 
 // ── Acciones via event delegation ──
 document.getElementById('mainContent').addEventListener('click', async function(e) {
-  // Boton pago
+  // Boton pago — si ya estaba seleccionado, deseleccionar; si no, seleccionar
   var btnPago = e.target.closest('[data-tipo]');
   if(btnPago) {
     var id = btnPago.getAttribute('data-id');
     var tipo = btnPago.getAttribute('data-tipo');
+    // Leer valor actual desde el boton activo
+    var yaSeleccionado = btnPago.classList.contains('sel-transfer') || btnPago.classList.contains('sel-efectivo');
+    var nuevoValor = yaSeleccionado ? '' : tipo;
     try {
-      await updateDoc(doc(db,'arriendos',id), {medioPago_equipo: tipo});
-      showToast((tipo==='transferencia'?'Transferencia':'Efectivo')+' registrado', 'ok');
+      await updateDoc(doc(db,'arriendos',id), {medioPago_equipo: nuevoValor});
+      if(nuevoValor) {
+        showToast((tipo==='transferencia'?'Transferencia':'Efectivo')+' registrado', 'ok');
+      } else {
+        showToast('Pago eliminado', 'ok');
+      }
     } catch(err) { showToast('Error al guardar', 'err'); console.error(err); }
     return;
   }
-  // Boton retiro
+  // Boton guardar retiro
   var btnRetiro = e.target.closest('.btn-retiro');
   if(btnRetiro) {
     var id = btnRetiro.getAttribute('data-id');
@@ -418,6 +426,18 @@ document.getElementById('mainContent').addEventListener('click', async function(
     try {
       await updateDoc(doc(db,'arriendos',id), {horaRetiro: input.value.trim()});
       showToast('Retiro '+input.value+' guardado', 'ok');
+    } catch(err) { showToast('Error al guardar', 'err'); console.error(err); }
+    return;
+  }
+  // Boton borrar retiro
+  var btnBorrar = e.target.closest('.btn-borrar-retiro');
+  if(btnBorrar) {
+    var id = btnBorrar.getAttribute('data-id');
+    var input = document.getElementById('retiro-'+id);
+    try {
+      await updateDoc(doc(db,'arriendos',id), {horaRetiro: ''});
+      if(input) input.value = '';
+      showToast('Hora de retiro eliminada', 'ok');
     } catch(err) { showToast('Error al guardar', 'err'); console.error(err); }
   }
 });
