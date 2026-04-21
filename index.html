@@ -1388,16 +1388,394 @@ function estandarizar(equipos){
     }
     if(!found){
       for(const k of keysOrdenados){
-        // Solo match si el keyword es palabra completa (no parte de otra)
-        try{
-      const listaJuegos = paginasFinal.map(p => `• ${p}`).join('\n');
-      const fechaTexto = `${String(CAL_DIA_SEL).padStart(2,'0')}/${mes}/${año}`;
-      const mensaje = `🎉 ¡Hola! Estos son los juegos disponibles que nos van quedando para la fecha ${fechaTexto}:\n\n${listaJuegos}\n\n¡Reserva el tuyo antes de que se agoten! 😊`;
-      await navigator.share({ files:[file], title:'Catálogo Akimel' });
-      await new Promise(r => setTimeout(r, 800));
-      if(navigator.canShare && navigator.canShare({ text: mensaje })){
-        await navigator.share({ text: mensaje });
+        const re=new RegExp('(?:^|\\s)'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|$)','i');
+        if(re.test(pl)){found=MAPEO[k];break;}
       }
+    }
+    if(found&&!res.includes(found)) res.push(found);
+    else if(!found&&p) res.push(p);
+  }
+  return res.join(', ');
+}
+
+
+// ===== CALCULAR USADOS =====
+function calcularUsados(fechaStr){
+  // fechaStr = "DD/MM/YYYY"
+  const arriendosDia = ARRIENDOS.filter(a =>
+    a.fecha === fechaStr && a.estado !== 'Cancelado'
+  );
+  const usados = {};
+  for(const a of arriendosDia){
+    const equiposNorm = estandarizar(a.equipos || '');
+    if(!equiposNorm) continue;
+    for(const nombre of equiposNorm.split(', ')){
+      const n = nombre.trim();
+      if(n) usados[n] = (usados[n] || 0) + 1;
+    }
+  }
+  return { usados, arriendosDia };
+}
+
+// ===== MOSTRAR INVENTARIO DIA =====
+window.mostrarInventarioDia = function(dia){
+  CAL_DIA_SEL = dia;
+  const mesStr  = String(CAL_MONTH+1).padStart(2,'0');
+  const anioStr = String(CAL_YEAR);
+  const fechaStr= String(dia).padStart(2,'0')+'/'+mesStr+'/'+anioStr;
+
+  const dt = new Date(CAL_YEAR, CAL_MONTH, dia);
+  const diaNom = DIAS_ORD[dt.getDay()===0?6:dt.getDay()-1];
+  const mesNom = MESES_FULL[CAL_MONTH];
+
+  document.getElementById('invPanelTitle').textContent = diaNom+' '+dia+' de '+mesNom;
+  document.getElementById('invPanelSub').textContent   = anioStr;
+
+  const { usados, arriendosDia } = calcularUsados(fechaStr);
+
+  // Determinar qué páginas del catálogo incluir (juegos con al menos 1 libre)
+  const paginasLibres = [];
+  for(const item of INVENTARIO){
+    const ocu  = usados[item.nombre] || 0;
+    const disp = item.total - ocu;
+    if(disp > 0) paginasLibres.push(item.nombre);
+  }
+
+  // Mostrar/ocultar botón catálogo
+  const btn = document.getElementById('btnCompartirCatalogo');
+  if(btn){
+    btn.style.display = paginasLibres.length > 0 ? 'flex' : 'none';
+    btn.setAttribute('data-paginas', JSON.stringify(paginasLibres));
+    btn.setAttribute('data-fecha',   fechaStr);
+    btn.setAttribute('data-dianom',  diaNom);
+  }
+
+  // Render grid categorías
+  const cats = [
+    {cat:'Inflable',    icon:'🏰', color:'var(--blue)'},
+    {cat:'Electrónico', icon:'🎮', color:'var(--green)'},
+    {cat:'Interior',    icon:'🏓', color:'var(--orange)'},
+  ];
+  let html = '';
+  for(const {cat,icon,color} of cats){
+    const items = INVENTARIO.filter(i => i.cat === cat);
+    html += `<div class="inv-cat-title" style="color:${color}">${icon} ${cat.toUpperCase()}</div><div class="inv-cat-grid">`;
+    for(const item of items){
+      const ocu  = usados[item.nombre] || 0;
+      const disp = Math.max(0, item.total - ocu);
+      const pct  = item.total > 0 ? disp/item.total : 0;
+      let cls, badge;
+      if(pct >= 1)      { cls='disponible'; badge = item.total===1 ? 'Libre' : disp+'/'+item.total+' libres'; }
+      else if(pct > 0)  { cls='parcial';    badge = disp+'/'+item.total+' libre'+(disp!==1?'s':''); }
+      else              { cls='ocupado';    badge = 'Lleno'; }
+      const quien = ocu > 0
+        ? arriendosDia.filter(a => estandarizar(a.equipos||'').includes(item.nombre))
+                       .map(a => a.cliente.split(' ')[0]).join(', ')
+        : '';
+      html += `<div class="disp-item ${cls}">
+        <div class="disp-dot ${pct>=1?'green':pct>0?'yellow':'red'}"></div>
+        <div class="disp-info">
+          <div class="disp-nombre">${item.nombre}</div>
+          ${quien ? `<div class="disp-sub">${quien}</div>` : ''}
+        </div>
+        <div class="disp-badge ${pct>=1?'green':pct>0?'yellow':'red'}">${badge}</div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+  document.getElementById('invCategorias').innerHTML = html;
+
+  // Lista arriendos del día
+  let arrHtml = '';
+  if(arriendosDia.length){
+    arrHtml = `<div style="margin-top:14px;background:#fff;border-radius:12px;padding:14px;box-shadow:var(--shadow)">
+      <div style="font-size:11px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📋 Arriendos del día</div>`;
+    for(const a of arriendosDia){
+      arrHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <div>
+          <span style="font-weight:700;color:var(--blue3)">${a.cliente}</span>
+          <span style="color:var(--text3);margin-left:8px">${a.hora||'—'}</span>
+        </div>
+        <div style="text-align:right">
+          <div style="color:var(--text2)">${a.equipos||'—'}</div>
+        </div>
+      </div>`;
+    }
+    arrHtml += '</div>';
+  }
+  document.getElementById('invArriendosDia').innerHTML = arrHtml;
+
+  // Remarcar día seleccionado en el calendario
+  document.querySelectorAll('.cal-dia').forEach(el => el.classList.remove('sel'));
+  const elDia = document.querySelector(`.cal-dia[data-dia="${dia}"]`);
+  if(elDia) elDia.classList.add('sel');
+};
+
+// ===== GENERAR CATÁLOGO PDF =====
+window.generarCatalogoPDF = async function(){
+  const btn = document.getElementById('btnCompartirCatalogo');
+  if(!btn) return;
+
+  const paginasLibres = JSON.parse(btn.getAttribute('data-paginas') || '[]');
+  const fechaStr      = btn.getAttribute('data-fecha') || '';
+  const diaNom        = btn.getAttribute('data-dianom') || '';
+
+  if(!paginasLibres.length){ toast('No hay juegos disponibles','err'); return; }
+
+  // Parsear fecha DD/MM/YYYY
+  const [dd, mm, yyyy] = fechaStr.split('/');
+  const fechaTexto = `${dd}/${mm}/${yyyy}`;
+
+  // Mensaje de texto
+  const listaJuegos = paginasLibres.map(p => `• ${p}`).join('\n');
+  const mensaje = `🎉 ¡Hola! Estos son los juegos disponibles que nos van quedando para la fecha ${fechaTexto}:\n\n${listaJuegos}\n\n¡Reserva el tuyo antes de que se agoten! 😊`;
+
+  // Construir PDF con jsPDF usando las imágenes base64 de CATALOGO_PAGINAS_B64
+  btn.innerHTML = '⏳ Generando...';
+  btn.style.pointerEvents = 'none';
+
+  try{
+    const { jsPDF } = window.jspdf;
+    const W = 210, H = 297; // A4 mm
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+
+    let primeraPagina = true;
+    for(const nombre of paginasLibres){
+      const item = INVENTARIO.find(i => i.nombre === nombre);
+      if(!item) continue;
+      const imgData = CATALOGO_PAGINAS_B64 && CATALOGO_PAGINAS_B64[nombre];
+      if(!imgData) continue;
+      if(!primeraPagina) doc.addPage();
+      doc.addImage(imgData, 'JPEG', 0, 0, W, H, undefined, 'FAST');
+      primeraPagina = false;
+    }
+
+    if(primeraPagina){
+      toast('Sin imágenes del catálogo disponibles','err');
+      btn.innerHTML = '📄 Catálogo disponible';
+      btn.style.pointerEvents = 'auto';
+      return;
+    }
+
+    const filename = `Akimel_${diaNom}_${dd}-${mm}-${yyyy}.pdf`;
+    const pdfBlob  = doc.output('blob');
+    const file     = new File([pdfBlob], filename, {type:'application/pdf'});
+
+    btn.innerHTML = '📄 Catálogo disponible';
+    btn.style.pointerEvents = 'auto';
+
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        // Compartir PDF con el mensaje de disponibles en el texto
+        await navigator.share({
+          files: [file],
+          title: 'Catálogo Akimel',
+          text:  mensaje
+        });
+      }catch(e){
+        if(e.name !== 'AbortError'){ doc.save(filename); toast('PDF descargado','ok'); }
+      }
+    } else {
+      doc.save(filename);
+      toast('PDF descargado — adjúntalo en WhatsApp','ok');
+    }
+  }catch(err){
+    console.error('generarCatalogoPDF:', err);
+    toast('Error al generar PDF: '+err.message,'err');
+    btn.innerHTML = '📄 Catálogo disponible';
+    btn.style.pointerEvents = 'auto';
+  }
+};
+
+
+// ===== CALCULAR USADOS =====
+function calcularUsados(fechaStr){
+  // Construye mapa nombre→cantidad usada para una fecha dada
+  const arriendosDia = ARRIENDOS.filter(a=>
+    a.fecha===fechaStr && a.estado!=='Cancelado'
+  );
+  const usados={};
+  for(const a of arriendosDia){
+    const equiposNorm = estandarizar(a.equipos||'');
+    if(!equiposNorm) continue;
+    for(const eq of equiposNorm.split(',').map(s=>s.trim()).filter(Boolean)){
+      usados[eq]=(usados[eq]||0)+1;
+    }
+  }
+  return {usados, arriendosDia};
+}
+
+// ===== MOSTRAR INVENTARIO DÍA (panel lateral calendario) =====
+function mostrarInventarioDia(dia){
+  CAL_DIA_SEL=dia;
+  const mesStr=String(CAL_MONTH+1).padStart(2,'0');
+  const anioStr=String(CAL_YEAR);
+  const fechaStr=String(dia).padStart(2,'0')+'/'+mesStr+'/'+anioStr;
+
+  const dt=new Date(CAL_YEAR,CAL_MONTH,dia);
+  const diaNom=DIAS_ORD[dt.getDay()===0?6:dt.getDay()-1];
+  const mesNom=MESES_FULL[CAL_MONTH];
+
+  document.getElementById('invPanelTitle').textContent=diaNom+' '+dia+' de '+mesNom;
+  document.getElementById('invPanelSub').textContent='Disponibilidad del día';
+
+  const{usados,arriendosDia}=calcularUsados(fechaStr);
+
+  // Construir páginas del PDF: juegos con al menos 1 libre
+  const paginasLibres=[];
+  for(const item of INVENTARIO){
+    const ocu=usados[item.nombre]||0;
+    const libre=Math.max(0,item.total-ocu);
+    if(libre>0) paginasLibres.push(item.nombre);
+  }
+
+  // Guardar globalmente para generarCatalogoPDF
+  window._paginasLibresDia=paginasLibres;
+  window._fechaDiaSel=fechaStr;
+  window._diaSelNom=diaNom;
+
+  // Mostrar/ocultar botón catálogo
+  const btn=document.getElementById('btnCompartirCatalogo');
+  if(paginasLibres.length>0){
+    btn.style.display='flex';
+    btn.innerHTML='📄 Catálogo disponible';
+    btn.style.pointerEvents='auto';
+  } else {
+    btn.style.display='none';
+  }
+
+  // Grid de inventario por categoría
+  const cats=[
+    {cat:'Inflable',   icon:'🏰',color:'var(--blue)'},
+    {cat:'Electrónico',icon:'🎮',color:'var(--green)'},
+    {cat:'Interior',   icon:'🏓',color:'var(--orange,#f97316)'},
+  ];
+  let html='';
+  for(const{cat,icon,color} of cats){
+    const items=INVENTARIO.filter(i=>i.cat===cat);
+    html+=`<div class="inv-cat-title" style="color:${color}">${icon} ${cat}</div><div class="disp-grid">`;
+    for(const item of items){
+      const ocu=usados[item.nombre]||0;
+      const disp=Math.max(0,item.total-ocu);
+      const pct=item.total>0?disp/item.total:0;
+      let dcls,badge;
+      if(pct>=1){dcls='green';badge=item.total===1?'Libre':disp+'/'+item.total+' libres';}
+      else if(pct>0){dcls='red';badge=disp+'/'+item.total+' libre'+(disp!==1?'s':'');}
+      else{dcls='red';badge='Lleno';}
+      const quien=ocu>0?arriendosDia.filter(a=>{
+        const n=estandarizar(a.equipos||'');
+        return n&&n.includes(item.nombre);
+      }).map(a=>a.cliente.split(' ')[0]).join(', '):'';
+      html+=`<div class="disp-item ${pct>=1?'disponible':pct>0?'parcial':'ocupado'}">
+        <div class="disp-dot ${dcls}"></div>
+        <div class="disp-info">
+          <div class="disp-nombre">${item.nombre}</div>
+          ${quien?`<div class="disp-sub">${quien}</div>`:''}
+        </div>
+        <div class="disp-badge ${dcls}">${badge}</div>
+      </div>`;
+    }
+    html+='</div>';
+  }
+  document.getElementById('invCategorias').innerHTML=html;
+
+  // Lista arriendos del día
+  let arrHtml='';
+  if(arriendosDia.length){
+    arrHtml=`<div style="background:var(--card-bg,#fff);border-radius:12px;padding:16px;box-shadow:var(--shadow);margin-top:12px">
+      <div style="font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">📋 Arriendos del día</div>`;
+    for(const a of arriendosDia){
+      arrHtml+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <div>
+          <span style="font-weight:700;color:var(--blue3)">${a.cliente}</span>
+          <span style="color:var(--text3);margin-left:8px">${a.hora||'—'}</span>
+        </div>
+        <div style="text-align:right">
+          <div style="color:var(--text2)">${a.equipos||'—'}</div>
+          <div style="font-weight:700;color:var(--blue)">${clp(a.pendiente||0)}</div>
+        </div>
+      </div>`;
+    }
+    arrHtml+='</div>';
+  }
+  document.getElementById('invArriendosDia').innerHTML=arrHtml;
+
+  // Remarcar día seleccionado en el grid
+  renderCalendario();
+}
+
+// ===== GENERAR PDF CATÁLOGO =====
+window.generarCatalogoPDF=async function(){
+  const paginasLibres=window._paginasLibresDia||[];
+  const fechaStr=window._fechaDiaSel||'';
+  const diaSelNom=window._diaSelNom||'';
+
+  if(!paginasLibres.length){
+    toast('No hay juegos disponibles para ese día','err');
+    return;
+  }
+
+  const btn=document.getElementById('btnCompartirCatalogo');
+  if(btn){ btn.innerHTML='⏳ Generando...'; btn.style.pointerEvents='none'; }
+
+  // Parsear fecha para nombre archivo y mensaje
+  let dia='',mes='',año='',diaNomArchivo='';
+  if(fechaStr){
+    const p=fechaStr.split('/');
+    dia=p[0]||''; mes=p[1]||''; año=p[2]||'';
+  }
+  const diasNom=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  if(dia&&mes&&año){
+    const d=new Date(parseInt(año),parseInt(mes)-1,parseInt(dia));
+    diaNomArchivo=diasNom[d.getDay()]||diaSelNom||'Dia';
+  }
+
+  // Usar jsPDF para armar el PDF con las imágenes del catálogo
+  const { jsPDF } = window.jspdf || {};
+  if(!jsPDF){
+    toast('Error: librería PDF no cargada','err');
+    if(btn){ btn.innerHTML='📄 Catálogo disponible'; btn.style.pointerEvents='auto'; }
+    return;
+  }
+
+  const W=210, H=297; // A4 mm
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+
+  // Mapa nombre → número de página en CATALOGO_PAGINAS_B64
+  let paginasAgregadas=0;
+  for(const nombre of paginasLibres){
+    const item=INVENTARIO.find(i=>i.nombre===nombre);
+    if(!item) continue;
+    const imgData=window.CATALOGO_PAGINAS_B64&&window.CATALOGO_PAGINAS_B64[nombre];
+    if(!imgData) continue;
+    if(paginasAgregadas>0) doc.addPage();
+    doc.addImage(imgData,'JPEG',0,0,W,H,undefined,'FAST');
+    paginasAgregadas++;
+  }
+
+  if(paginasAgregadas===0){
+    toast('No hay imágenes del catálogo cargadas','err');
+    if(btn){ btn.innerHTML='📄 Catálogo disponible'; btn.style.pointerEvents='auto'; }
+    return;
+  }
+
+  const filename=`Akimel_${diaNomArchivo}_${dia}-${mes}-${año}.pdf`;
+  const pdfBlob=doc.output('blob');
+  const file=new File([pdfBlob],filename,{type:'application/pdf'});
+
+  if(btn){ btn.innerHTML='📄 Catálogo disponible'; btn.style.pointerEvents='auto'; }
+
+  const listaJuegos=paginasLibres.map(p=>`• ${p}`).join('\n');
+  const fechaTexto=`${dia}/${mes}/${año}`;
+  const mensaje=`🎉 ¡Hola! Estos son los juegos disponibles que nos van quedando para la fecha ${fechaTexto}:\n\n${listaJuegos}\n\n¡Reserva el tuyo antes de que se agoten! 😊`;
+
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({
+        files:[file],
+        title:'Catálogo Akimel',
+        text:mensaje
+      });
     }catch(e){
       if(e.name!=='AbortError'){ doc.save(filename); toast('PDF descargado','ok'); }
     }
