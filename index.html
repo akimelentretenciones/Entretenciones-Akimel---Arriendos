@@ -389,6 +389,7 @@ select:focus{border-color:var(--blue)}
   <div class="nav-tab active" onclick="goTab('dashboard')" id="tab-dashboard">📊 Dashboard</div>
   <div class="nav-tab" onclick="goTab('calendario')" id="tab-calendario">📅 Disponibilidad</div>
   <div class="nav-tab" onclick="goTab('arriendos')" id="tab-arriendos">📋 Arriendos</div>
+  <div class="nav-tab" onclick="goTab('semana')" id="tab-semana">🗓️ Trabajo Semana</div>
   <div class="nav-tab" onclick="goTab('subir')" id="tab-subir">➕ Agregar Chat</div>
   <div class="nav-tab" onclick="goTab('costos')" id="tab-costos">💰 Costos</div>
   <div class="nav-tab" onclick="goTab('notifs')" id="tab-notifs">🔔 Alertas<span id="notifBadgeTab" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:800;margin-left:5px"></span></div>
@@ -580,6 +581,22 @@ select:focus{border-color:var(--blue)}
       <button class="btn btn-ghost btn-sm" onclick="paginaSiguiente()">Sig →</button>
     </div>
   </div>
+</div>
+
+<!-- TRABAJO SEMANA -->
+<div class="section" id="sec-semana">
+  <div style="background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.04));border-left:4px solid var(--orange);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div style="font-size:22px">🗓️</div>
+    <div style="flex:1;min-width:180px">
+      <div style="font-size:14px;font-weight:800;color:var(--blue3)">Trabajo de la Semana</div>
+      <div style="font-size:11px;color:var(--text3)" id="semanaSubtitulo">—</div>
+    </div>
+    <div style="display:flex;gap:6px;font-size:11px;flex-wrap:wrap">
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px"><span style="color:var(--text3)">Arriendos:</span> <b id="semanaCountArr" style="color:var(--blue3)">0</b></div>
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px"><span style="color:var(--text3)">Total:</span> <b id="semanaTotalMonto" style="color:var(--green)">$0</b></div>
+    </div>
+  </div>
+  <div id="semanaContenedor"><!-- Aquí se monta la tabla de arriendos filtrada --></div>
 </div>
 
 <!-- AGREGAR CHAT -->
@@ -1950,6 +1967,11 @@ function renderTabla(){
     const hayConfirm = DATOS.some(a => esSemanaActual(a) && a.estado !== 'Cancelado');
     banner.style.display = hayConfirm ? 'flex' : 'none';
   }
+  // Si estamos en la vista Trabajo Semana, refrescar los KPIs del banner superior
+  const secSemana = document.getElementById('sec-semana');
+  if(secSemana && secSemana.classList.contains('active') && typeof actualizarResumenSemana==='function'){
+    actualizarResumenSemana();
+  }
 }
 window.paginaAnterior=()=>{if(PAGINA>1){PAGINA--;renderTabla();}};
 window.paginaSiguiente=()=>{if(PAGINA<Math.ceil(FILTRADOS.length/POR_PAGINA)){PAGINA++;renderTabla();}};
@@ -2501,6 +2523,11 @@ window.setModoDisp=function(modo){
 };
 
 window.goTab=function(tab){
+  // Si estábamos en "semana" y salimos, devolver la tabla a sec-arriendos
+  const secSemanaActiva = document.getElementById('sec-semana').classList.contains('active');
+  if(secSemanaActiva && tab!=='semana'){
+    devolverTablaArriendos();
+  }
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('sec-'+tab).classList.add('active');
@@ -2514,7 +2541,71 @@ window.goTab=function(tab){
   }
   if(tab==='costos') renderCostos();
   if(tab==='notifs') actualizarIndicadorPermiso();
+  if(tab==='semana') activarTrabajoSemana();
 };
+
+// ===== TRABAJO SEMANA =====
+// Mueve la tabla de arriendos (con todos sus filtros y paginación) al contenedor
+// de la vista "Trabajo Semana" y aplica automáticamente el filtro de semana actual.
+function activarTrabajoSemana(){
+  const origen = document.getElementById('sec-arriendos');
+  const destino = document.getElementById('semanaContenedor');
+  if(!origen || !destino) return;
+  // Mover todos los hijos sólo si aún no están movidos
+  if(destino.children.length === 0){
+    while(origen.firstChild){ destino.appendChild(origen.firstChild); }
+  }
+  // Aplicar filtro de semana actual
+  if(typeof filtrarSemanaActual==='function'){
+    filtrarSemanaActual();
+  }
+  // Actualizar subtítulo con rango de la semana + KPIs
+  actualizarResumenSemana();
+}
+
+// Devuelve la tabla desde sec-semana a sec-arriendos (para que siga funcionando
+// la pestaña Arriendos tal cual estaba).
+function devolverTablaArriendos(){
+  const origen = document.getElementById('semanaContenedor');
+  const destino = document.getElementById('sec-arriendos');
+  if(!origen || !destino) return;
+  while(origen.firstChild){ destino.appendChild(origen.firstChild); }
+  // Quitar el filtro de semana actual al salir para que la vista Arriendos
+  // vuelva a mostrar todo (y no quede "atrapada" en la semana actual).
+  const selSem = document.getElementById('filtroSemana');
+  const filtroAnio = document.getElementById('filtroAnio');
+  const filtroMes = document.getElementById('filtroMes');
+  const btnSem = document.getElementById('btnSemanaActual');
+  if(selSem) selSem.value='';
+  if(filtroAnio) filtroAnio.value='';
+  if(filtroMes) filtroMes.value='';
+  const fechaLabel = document.getElementById('filtroFechaLabel');
+  if(fechaLabel) fechaLabel.textContent='📅 Todas las fechas';
+  if(typeof seleccionFecha!=='undefined' && seleccionFecha && seleccionFecha.clear) seleccionFecha.clear();
+  if(btnSem) btnSem.className='btn btn-ghost btn-sm';
+  if(typeof filtrar==='function') filtrar();
+}
+
+// Calcula el rango lunes-domingo de la semana actual y actualiza el banner.
+function actualizarResumenSemana(){
+  const hoy = new Date();
+  // ISO week: lunes como primer día
+  const diaSem = (hoy.getDay()+6)%7; // 0=lunes, 6=domingo
+  const lunes = new Date(hoy); lunes.setDate(hoy.getDate()-diaSem); lunes.setHours(0,0,0,0);
+  const domingo = new Date(lunes); domingo.setDate(lunes.getDate()+6); domingo.setHours(23,59,59,999);
+  const fmt = d => String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+  const numSem = (typeof isoWeek==='function') ? isoWeek(hoy) : '';
+  const sub = document.getElementById('semanaSubtitulo');
+  if(sub) sub.textContent = 'Semana '+numSem+' · '+fmt(lunes)+' al '+fmt(domingo)+'/'+hoy.getFullYear();
+  // KPIs: usar FILTRADOS (ya los aplicó filtrarSemanaActual)
+  const arr = (typeof FILTRADOS!=='undefined' && FILTRADOS) ? FILTRADOS : [];
+  const count = arr.length;
+  const total = arr.reduce((s,a)=>s+(a.pendiente||0),0);
+  const elCount = document.getElementById('semanaCountArr');
+  const elTotal = document.getElementById('semanaTotalMonto');
+  if(elCount) elCount.textContent = count;
+  if(elTotal) elTotal.textContent = (typeof clp==='function') ? clp(total) : ('$'+total);
+}
 
 // ===== DISPONIBILIDAD RÁPIDA =====
 function fechaHoy(){
