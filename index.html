@@ -1847,21 +1847,20 @@ window.filtrar=function(){
   let semana=document.getElementById('filtroSemana').value;
   let dia=document.getElementById('filtroDia').value||'';
   // ── Candado: en la vista "Trabajo Semana" el filtro siempre es la semana/año actuales
+  // (pero el usuario SÍ puede filtrar por día específico dentro de la semana)
   if(MODO_TRABAJO_SEMANA){
     const hoy = new Date();
     semana = String(isoWeek(hoy));
     anio = String(hoy.getFullYear());
     mes = '';
-    dia = '';
+    // dia NO se fuerza — se respeta lo que el usuario seleccionó
     // Sincronizar el DOM por si algo lo hubiera cambiado
     const selSem = document.getElementById('filtroSemana');
     const filtroAnio = document.getElementById('filtroAnio');
     const filtroMes = document.getElementById('filtroMes');
-    const filtroDia = document.getElementById('filtroDia');
     if(selSem && selSem.value!==semana) selSem.value = semana;
     if(filtroAnio && filtroAnio.value!==anio) filtroAnio.value = anio;
     if(filtroMes && filtroMes.value!=='') filtroMes.value = '';
-    if(filtroDia && filtroDia.value!=='') filtroDia.value = '';
     if(seleccionFecha && seleccionFecha.size>0) seleccionFecha.clear();
   }
   // El botón solo se activa explícitamente al hacer clic — nunca auto-detectar
@@ -2020,6 +2019,7 @@ function renderTabla(){
   const secSemana = document.getElementById('sec-semana');
   if(secSemana && secSemana.classList.contains('active') && typeof actualizarResumenSemana==='function'){
     actualizarResumenSemana();
+    if(typeof actualizarOpcionesDiaSemana==='function') actualizarOpcionesDiaSemana();
     insertarSeparadoresDia();
   }
 }
@@ -2634,6 +2634,56 @@ window.goTab=function(tab){
 // La bandera MODO_TRABAJO_SEMANA está declarada arriba (con las demás variables globales).
 // Cuando es true, el filtro está forzado a la semana actual y cualquier llamada a
 // filtrar() vuelve a imponer la semana/año actuales.
+
+// Reconstruye las opciones del select #filtroDia para que SOLO muestre los días
+// con arriendos reales en la semana actual. Si no hay arriendos ese día, la opción
+// no aparece en el dropdown.
+function actualizarOpcionesDiaSemana(){
+  const select = document.getElementById('filtroDia');
+  if(!select) return;
+  const hoy = new Date();
+  const anioActual = hoy.getFullYear();
+  const semanaActual = (typeof isoWeek==='function') ? isoWeek(hoy) : null;
+  if(!semanaActual) return;
+  // Orden canónico de días
+  const ordenDias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  // Normalización: algunos registros pueden venir sin tilde
+  const normalizar = d => {
+    if(!d) return '';
+    const map = {'Miercoles':'Miércoles','Sabado':'Sábado'};
+    return map[d] || d;
+  };
+  // Recolectar días únicos con arriendos en la semana actual
+  const diasPresentes = new Set();
+  (ARRIENDOS||[]).forEach(a=>{
+    if(!a.fecha) return;
+    const p = a.fecha.split('/');
+    if(p.length<3) return;
+    if(String(p[2])!==String(anioActual)) return;
+    const dt = (typeof parseFechaArr==='function') ? parseFechaArr(a.fecha) : null;
+    if(!dt) return;
+    if(isoWeek(dt)!==semanaActual) return;
+    const d = normalizar(a.dia);
+    if(d) diasPresentes.add(d);
+  });
+  // Preservar selección actual
+  const seleccionPrevia = select.value;
+  // Reconstruir opciones: siempre "Todos los días" + solo los días con arriendos
+  let html = '<option value="">Todos los días</option>';
+  ordenDias.forEach(d=>{
+    if(diasPresentes.has(d)){
+      html += `<option value="${d}">${d}</option>`;
+    }
+  });
+  select.innerHTML = html;
+  // Restaurar selección si el día sigue existiendo; si no, volver a "Todos"
+  if(seleccionPrevia && diasPresentes.has(seleccionPrevia)){
+    select.value = seleccionPrevia;
+  } else {
+    select.value = '';
+  }
+}
+
 // Mueve la tabla de arriendos (con todos sus filtros y paginación) al contenedor
 // de la vista "Trabajo Semana" y aplica automáticamente el filtro de semana actual.
 function activarTrabajoSemana(){
@@ -2646,6 +2696,8 @@ function activarTrabajoSemana(){
   }
   // Activar el modo bloqueado ANTES de filtrar
   MODO_TRABAJO_SEMANA = true;
+  // Poblar el select de día con SOLO los días que tienen arriendos esta semana
+  actualizarOpcionesDiaSemana();
   // Forzar valores de filtros a la semana actual
   forzarFiltroSemanaActual();
   // Actualizar subtítulo con rango de la semana + KPIs
