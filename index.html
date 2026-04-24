@@ -357,6 +357,26 @@ select:focus{border-color:var(--blue)}
 #semanaContenedor .table-header > div:first-child > span:first-child{
   color:var(--orange) !important;
 }
+
+/* ===== Vista Arriendos: ocultar columnas que sólo se usan en Trabajo Semana =====
+   Se ocultan: ✓ Pagado (14), Pago (15), 🙋 Trabajador (17), 💬 Equipo (18), Retiro (19)
+   También ocultamos el botón "Marcar pasados como pagados" */
+#sec-arriendos table thead th:nth-child(14),
+#sec-arriendos table thead th:nth-child(15),
+#sec-arriendos table thead th:nth-child(17),
+#sec-arriendos table thead th:nth-child(18),
+#sec-arriendos table thead th:nth-child(19),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(14),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(15),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(17),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(18),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(19){
+  display:none !important;
+}
+/* Ocultar el botón "Marcar pasados como pagados" sólo en la vista Arriendos */
+#sec-arriendos .table-header button[onclick*="marcarPasadosPagados"]{
+  display:none !important;
+}
 </style>
 </head>
 <body>
