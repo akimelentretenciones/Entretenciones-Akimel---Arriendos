@@ -373,8 +373,8 @@ select:focus{border-color:var(--blue)}
 #sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(19){
   display:none !important;
 }
-/* Ocultar el botón "Marcar pasados como pagados" sólo en la vista Arriendos */
-#sec-arriendos .table-header button[onclick*="marcarPasadosPagados"]{
+/* Ocultar el botón "Marcar pasados como pagados" en todas las vistas */
+.table-header button[onclick*="marcarPasadosPagados"]{
   display:none !important;
 }
 </style>
@@ -972,8 +972,8 @@ const INVENTARIO = [
   {num:16,nombre:'Moto',                    cat:'Electrónico', total:2, kw:'moto verde,moto,moto 2'},
   {num:17,nombre:'Arcade',                  cat:'Electrónico', total:1, kw:'arcade,maquina arcade,máquina arcade,maquinas arcade'},
   {num:18,nombre:'Disparadores',            cat:'Electrónico', total:3, kw:'disparador,disparador 2,disparador 3'},
-  {num:21,nombre:'Taca Taca',               cat:'Interior',    total:3, kw:'tacataca,taca taca,taka taka,tacataca 2,tacataca 3'},
-  {num:24,nombre:'Mesa de Hockey',          cat:'Interior',    total:2, kw:'hockey,mesa hockey,mesa de hockey,jockey,hokey,mesa jockey,air hockey,hockey 2'},
+  {num:21,nombre:'Taca Taca',               cat:'Interior',    total:4, kw:'tacataca,taca taca,taka taka,tacataca 2,tacataca 3,tacataca 4'},
+  {num:24,nombre:'Mesa de Hockey',          cat:'Interior',    total:4, kw:'hockey,mesa hockey,mesa de hockey,jockey,hokey,mesa jockey,air hockey,hockey 2,hockey 3,hockey 4'},
 ];
 
 const MAPEO={};
