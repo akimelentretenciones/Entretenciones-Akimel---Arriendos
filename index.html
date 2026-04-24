@@ -444,6 +444,9 @@ select:focus{border-color:var(--blue)}
     <select id="dashFiltroSemana" onchange="onDashFiltroChange()" style="font-size:12px">
       <option value="">Todas las semanas</option>
     </select>
+    <select id="dashFiltroDia" onchange="onDashFiltroChange()" style="font-size:12px">
+      <option value="">Todos los días</option>
+    </select>
     <button class="btn btn-primary btn-sm" id="btnDashSemana" onclick="setDashSemanaActual()">📅 Esta semana</button>
     <button class="btn btn-ghost btn-sm" onclick="limpiarDashFiltros()">✕ Limpiar</button>
     <!-- compat hidden -->
@@ -2190,6 +2193,31 @@ function poblarSelectoresDash(){
   [...sems].map(Number).sort((a,b)=>a-b).forEach(s=>{
     semSel.innerHTML+=`<option value="${s}"${String(s)===semAct?' selected':''}>Semana ${s}</option>`;
   });
+  // Días: poblar según año/mes/semana seleccionados (solo días que tienen arriendos)
+  const diaSel=document.getElementById('dashFiltroDia');
+  if(diaSel){
+    const mesFiltro=(document.getElementById('dashFiltroMes')?.value||'').trim();
+    const semFiltro=semSel.value;
+    const diaAct=diaSel.value;
+    const diasSet=new Set();
+    ARRIENDOS.forEach(a=>{
+      if(!a.fecha) return;
+      const p=a.fecha.split('/');
+      if(p.length<3||p[2].length!==4) return;
+      if(anioFiltro&&p[2]!==anioFiltro) return;
+      if(mesFiltro&&p[1]!==mesFiltro) return;
+      const dt=parseFechaArr(a.fecha);
+      if(!dt) return;
+      if(semFiltro&&String(isoWeek(dt))!==semFiltro) return;
+      const dn=dt.getDay()===0?7:dt.getDay(); // 1=Lun … 7=Dom
+      diasSet.add(dn);
+    });
+    const NOMBRES_DIA={1:'Lunes',2:'Martes',3:'Miércoles',4:'Jueves',5:'Viernes',6:'Sábado',7:'Domingo'};
+    diaSel.innerHTML='<option value="">Todos los días</option>';
+    [...diasSet].sort((a,b)=>a-b).forEach(d=>{
+      diaSel.innerHTML+=`<option value="${d}"${String(d)===diaAct?' selected':''}>${NOMBRES_DIA[d]}</option>`;
+    });
+  }
 }
 
 window.onDashFiltroChange=function(){
@@ -2208,6 +2236,9 @@ window.setDashSemanaActual=function(){
   document.getElementById('dashFiltroMes').value='';
   poblarSelectoresDash();
   document.getElementById('dashFiltroSemana').value=String(s);
+  poblarSelectoresDash();
+  const dSel=document.getElementById('dashFiltroDia');
+  if(dSel) dSel.value='';
   const btn=document.getElementById('btnDashSemana');
   if(btn) btn.className='btn btn-primary btn-sm';
   renderDashboard();
@@ -2220,6 +2251,9 @@ window.limpiarDashFiltros=function(){
   document.getElementById('dashFiltroMes').value='';
   poblarSelectoresDash();
   document.getElementById('dashFiltroSemana').value='';
+  const dSel=document.getElementById('dashFiltroDia');
+  if(dSel) dSel.value='';
+  poblarSelectoresDash();
   const btn=document.getElementById('btnDashSemana');
   if(btn) btn.className='btn btn-ghost btn-sm';
   renderDashboard();
@@ -2241,6 +2275,7 @@ async function renderDashboard(){
   const anioFiltro=(document.getElementById('dashFiltroAnio')?.value||'').trim();
   const mesFiltro=(document.getElementById('dashFiltroMes')?.value||'').trim();
   const semDash=(document.getElementById('dashFiltroSemana')?.value||'').trim();
+  const diaFiltro=(document.getElementById('dashFiltroDia')?.value||'').trim();
   let arr=ARRIENDOS.filter(a=>{
     if(!a.fecha) return false;
     const p=a.fecha.split('/');
@@ -2250,6 +2285,12 @@ async function renderDashboard(){
     if(semDash){
       const dt=parseFechaArr(a.fecha);
       if(!dt||String(isoWeek(dt))!==semDash) return false;
+    }
+    if(diaFiltro){
+      const dt=parseFechaArr(a.fecha);
+      if(!dt) return false;
+      const diaSem=dt.getDay()===0?7:dt.getDay(); // 1=Lun ... 7=Dom
+      if(String(diaSem)!==diaFiltro) return false;
     }
     return true;
   });
@@ -3519,6 +3560,7 @@ window.renderCostosChartDash = async function(){
   const anioFiltro = (document.getElementById('dashFiltroAnio')?.value||'').trim();
   const mesFiltro  = (document.getElementById('dashFiltroMes')?.value||'').trim();
   const semFiltro  = (document.getElementById('dashFiltroSemana')?.value||'').trim();
+  const diaFiltro  = (document.getElementById('dashFiltroDia')?.value||'').trim();
 
   const canvas = document.getElementById('cCostosHistoricoDash');
   if(!canvas) return;
@@ -3547,6 +3589,10 @@ window.renderCostosChartDash = async function(){
     if(!dt) return;
     const sem  = isoWeek(dt);
     if(semFiltro && String(sem) !== semFiltro) return;
+    if(diaFiltro){
+      const diaSem=dt.getDay()===0?7:dt.getDay();
+      if(String(diaSem)!==diaFiltro) return;
+    }
     const anio = dt.getFullYear();
     const key  = anio + '-W' + String(sem).padStart(2,'0');
     addSemana(key, dt);
