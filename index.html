@@ -350,8 +350,7 @@ select:focus{border-color:var(--blue)}
 /* ===== Vista Trabajo Semana: ocultar filtros de período ya que siempre muestra la semana actual ===== */
 #semanaContenedor #filtroFechaWrap,
 #semanaContenedor #btnSemanaActual,
-#semanaContenedor #filtroSemana,
-#semanaContenedor #filtroDia{
+#semanaContenedor #filtroSemana{
   display:none !important;
 }
 /* Cambiar el título "Arriendos" → "Trabajo de la Semana" dentro de esta vista */
@@ -605,6 +604,7 @@ select:focus{border-color:var(--blue)}
     </div>
     <div style="display:flex;gap:6px;font-size:11px;flex-wrap:wrap">
       <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px"><span style="color:var(--text3)">Arriendos:</span> <b id="semanaCountArr" style="color:var(--blue3)">0</b></div>
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px" title="Comunas distintas atendidas esta semana"><span style="color:var(--text3)">Comunas:</span> <b id="semanaCountComunas" style="color:var(--orange)">0</b></div>
       <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px"><span style="color:var(--text3)">Total:</span> <b id="semanaTotalMonto" style="color:var(--green)">$0</b></div>
     </div>
   </div>
@@ -1892,6 +1892,24 @@ window.filtrar=function(){
     if(estado&&a.estado!==estado) return false;
     return true;
   });
+  // En la vista "Trabajo Semana", ordenar por día (Lun→Dom) y luego agrupar por comuna
+  if(MODO_TRABAJO_SEMANA){
+    const ordenDia = {'Lunes':1,'Martes':2,'Miércoles':3,'Miercoles':3,'Jueves':4,'Viernes':5,'Sábado':6,'Sabado':6,'Domingo':7};
+    FILTRADOS.sort((a,b)=>{
+      // 1) Por día de la semana
+      const da = ordenDia[a.dia] || 99;
+      const db = ordenDia[b.dia] || 99;
+      if(da!==db) return da-db;
+      // 2) Por comuna (alfabético, case-insensitive)
+      const ca = (a.comuna||'').trim().toLowerCase();
+      const cb = (b.comuna||'').trim().toLowerCase();
+      if(ca!==cb) return ca.localeCompare(cb);
+      // 3) Desempate por hora para mantener orden lógico dentro del mismo día/comuna
+      const ha = (a.hora||'').padStart(5,'0');
+      const hb = (b.hora||'').padStart(5,'0');
+      return ha.localeCompare(hb);
+    });
+  }
   PAGINA=1;renderTabla();
 };
 
@@ -2002,7 +2020,44 @@ function renderTabla(){
   const secSemana = document.getElementById('sec-semana');
   if(secSemana && secSemana.classList.contains('active') && typeof actualizarResumenSemana==='function'){
     actualizarResumenSemana();
+    insertarSeparadoresDia();
   }
+}
+
+// Inserta filas separadoras entre grupos de días distintos en la vista Trabajo Semana.
+// Sólo afecta al DOM de la tabla; no altera los datos en FILTRADOS.
+function insertarSeparadoresDia(){
+  const tbody = document.getElementById('tablaBody');
+  if(!tbody) return;
+  const filas = Array.from(tbody.querySelectorAll('tr')).filter(tr=>{
+    // Sólo filas de datos (descartar la fila TOTAL final y posibles "sin resultados")
+    const td = tr.querySelector('td');
+    if(!td) return false;
+    // Descartar la fila del total (tiene colspan=11)
+    if(td.getAttribute('colspan')) return false;
+    return true;
+  });
+  if(!filas.length) return;
+  // La columna "Día" es la 6ª (índice 5), la columna "Comuna" es la 4ª (índice 3)
+  let diaAnterior = null;
+  const insertar = [];
+  filas.forEach((tr)=>{
+    const celdas = tr.querySelectorAll('td');
+    if(celdas.length<6) return;
+    const dia = (celdas[5].textContent||'').trim();
+    if(dia && dia!=='—' && dia!==diaAnterior){
+      insertar.push({tr, dia});
+      diaAnterior = dia;
+    }
+  });
+  // Insertar las filas separadoras (de abajo hacia arriba para no afectar los índices)
+  const cantCols = (filas[0]?.querySelectorAll('td').length) || 20;
+  insertar.reverse().forEach(({tr,dia})=>{
+    const sep = document.createElement('tr');
+    sep.className = 'sep-dia-semana';
+    sep.innerHTML = `<td colspan="${cantCols}" style="background:linear-gradient(90deg,rgba(249,115,22,.14),rgba(249,115,22,.02));color:var(--blue3);font-weight:800;font-size:11px;padding:6px 14px;text-transform:uppercase;letter-spacing:.8px;border-top:2px solid rgba(249,115,22,.3)">🗓️ ${dia}</td>`;
+    tr.parentNode.insertBefore(sep, tr);
+  });
 }
 window.paginaAnterior=()=>{if(PAGINA>1){PAGINA--;renderTabla();}};
 window.paginaSiguiente=()=>{if(PAGINA<Math.ceil(FILTRADOS.length/POR_PAGINA)){PAGINA++;renderTabla();}};
@@ -2661,10 +2716,18 @@ function actualizarResumenSemana(){
   const arr = (typeof FILTRADOS!=='undefined' && FILTRADOS) ? FILTRADOS : [];
   const count = arr.length;
   const total = arr.reduce((s,a)=>s+(a.pendiente||0),0);
+  // Contar comunas distintas (normalizadas: trim + lowercase para evitar duplicados por mayúsculas/espacios)
+  const comunasSet = new Set();
+  arr.forEach(a=>{
+    const c = (a.comuna||'').trim().toLowerCase();
+    if(c) comunasSet.add(c);
+  });
   const elCount = document.getElementById('semanaCountArr');
   const elTotal = document.getElementById('semanaTotalMonto');
+  const elComunas = document.getElementById('semanaCountComunas');
   if(elCount) elCount.textContent = count;
   if(elTotal) elTotal.textContent = (typeof clp==='function') ? clp(total) : ('$'+total);
+  if(elComunas) elComunas.textContent = comunasSet.size;
 }
 
 // ===== DISPONIBILIDAD RÁPIDA =====
