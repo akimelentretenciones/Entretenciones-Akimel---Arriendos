@@ -346,6 +346,18 @@ select:focus{border-color:var(--blue)}
   .cal-day{min-height:48px;padding:3px}
   .cal-weekday{font-size:7px}
 }
+
+/* ===== Vista Trabajo Semana: ocultar filtros de período ya que siempre muestra la semana actual ===== */
+#semanaContenedor #filtroFechaWrap,
+#semanaContenedor #btnSemanaActual,
+#semanaContenedor #filtroSemana,
+#semanaContenedor #filtroDia{
+  display:none !important;
+}
+/* Cambiar el título "Arriendos" → "Trabajo de la Semana" dentro de esta vista */
+#semanaContenedor .table-header > div:first-child > span:first-child{
+  color:var(--orange) !important;
+}
 </style>
 </head>
 <body>
@@ -920,6 +932,7 @@ try{
 }catch(e){ console.warn('Chart.register falló:', e); }
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
 let CAL_YEAR=new Date().getFullYear(), CAL_MONTH=new Date().getMonth(), CAL_DIA_SEL=null;
+let MODO_TRABAJO_SEMANA=false;
 
 // Inventario completo con cantidades
 const INVENTARIO = [
@@ -1828,11 +1841,29 @@ window.filtrarSemanaActual=function(){
 
 window.filtrar=function(){
   const q=document.getElementById('searchInput').value.toLowerCase();
-  const anio=document.getElementById('filtroAnio').value||'';
-  const mes=document.getElementById('filtroMes').value||'';
+  let anio=document.getElementById('filtroAnio').value||'';
+  let mes=document.getElementById('filtroMes').value||'';
   const estado=document.getElementById('filtroEstado').value;
-  const semana=document.getElementById('filtroSemana').value;
-  const dia=document.getElementById('filtroDia').value||'';
+  let semana=document.getElementById('filtroSemana').value;
+  let dia=document.getElementById('filtroDia').value||'';
+  // ── Candado: en la vista "Trabajo Semana" el filtro siempre es la semana/año actuales
+  if(MODO_TRABAJO_SEMANA){
+    const hoy = new Date();
+    semana = String(isoWeek(hoy));
+    anio = String(hoy.getFullYear());
+    mes = '';
+    dia = '';
+    // Sincronizar el DOM por si algo lo hubiera cambiado
+    const selSem = document.getElementById('filtroSemana');
+    const filtroAnio = document.getElementById('filtroAnio');
+    const filtroMes = document.getElementById('filtroMes');
+    const filtroDia = document.getElementById('filtroDia');
+    if(selSem && selSem.value!==semana) selSem.value = semana;
+    if(filtroAnio && filtroAnio.value!==anio) filtroAnio.value = anio;
+    if(filtroMes && filtroMes.value!=='') filtroMes.value = '';
+    if(filtroDia && filtroDia.value!=='') filtroDia.value = '';
+    if(seleccionFecha && seleccionFecha.size>0) seleccionFecha.clear();
+  }
   // El botón solo se activa explícitamente al hacer clic — nunca auto-detectar
   // (se maneja en filtrarSemanaActual y limpiarFiltroFecha)
   FILTRADOS=ARRIENDOS.filter(a=>{
@@ -2545,6 +2576,9 @@ window.goTab=function(tab){
 };
 
 // ===== TRABAJO SEMANA =====
+// La bandera MODO_TRABAJO_SEMANA está declarada arriba (con las demás variables globales).
+// Cuando es true, el filtro está forzado a la semana actual y cualquier llamada a
+// filtrar() vuelve a imponer la semana/año actuales.
 // Mueve la tabla de arriendos (con todos sus filtros y paginación) al contenedor
 // de la vista "Trabajo Semana" y aplica automáticamente el filtro de semana actual.
 function activarTrabajoSemana(){
@@ -2555,17 +2589,43 @@ function activarTrabajoSemana(){
   if(destino.children.length === 0){
     while(origen.firstChild){ destino.appendChild(origen.firstChild); }
   }
-  // Aplicar filtro de semana actual
-  if(typeof filtrarSemanaActual==='function'){
-    filtrarSemanaActual();
-  }
+  // Activar el modo bloqueado ANTES de filtrar
+  MODO_TRABAJO_SEMANA = true;
+  // Forzar valores de filtros a la semana actual
+  forzarFiltroSemanaActual();
   // Actualizar subtítulo con rango de la semana + KPIs
   actualizarResumenSemana();
+}
+
+// Fuerza los valores de los inputs de filtro a la semana actual y ejecuta filtrar().
+function forzarFiltroSemanaActual(){
+  const hoy = new Date();
+  const semanaActual = (typeof isoWeek==='function') ? String(isoWeek(hoy)) : '';
+  const anioActual = String(hoy.getFullYear());
+  const selSem = document.getElementById('filtroSemana');
+  const filtroAnio = document.getElementById('filtroAnio');
+  const filtroMes = document.getElementById('filtroMes');
+  const filtroDia = document.getElementById('filtroDia');
+  const filtroEstado = document.getElementById('filtroEstado');
+  const search = document.getElementById('searchInput');
+  const btnSem = document.getElementById('btnSemanaActual');
+  const fechaLabel = document.getElementById('filtroFechaLabel');
+  if(typeof seleccionFecha!=='undefined' && seleccionFecha && seleccionFecha.clear) seleccionFecha.clear();
+  if(selSem) selSem.value = semanaActual;
+  if(filtroAnio) filtroAnio.value = anioActual;
+  if(filtroMes) filtroMes.value = '';
+  if(filtroDia) filtroDia.value = '';
+  if(filtroEstado) filtroEstado.value = '';
+  if(fechaLabel) fechaLabel.textContent = '📅 '+anioActual;
+  if(btnSem) btnSem.className = 'btn btn-primary btn-sm';
+  if(typeof filtrar==='function') filtrar();
 }
 
 // Devuelve la tabla desde sec-semana a sec-arriendos (para que siga funcionando
 // la pestaña Arriendos tal cual estaba).
 function devolverTablaArriendos(){
+  // Desactivar el modo bloqueado PRIMERO para que filtrar() ya no reimponga la semana
+  MODO_TRABAJO_SEMANA = false;
   const origen = document.getElementById('semanaContenedor');
   const destino = document.getElementById('sec-arriendos');
   if(!origen || !destino) return;
