@@ -598,6 +598,14 @@ select:focus{border-color:var(--blue)}
         <option value="Sábado">Sábado</option>
         <option value="Domingo">Domingo</option>
       </select>
+      <select id="filtroTrabajador" onchange="filtrar()" style="min-width:140px" title="Filtrar por trabajador asignado">
+        <option value="">🙋 Todos los trabajadores</option>
+        <option value="cristobal" style="color:#0071ce">Cristóbal</option>
+        <option value="leo" style="color:#5fb446">Leo</option>
+        <option value="cristofer" style="color:#fa6400">Cristófer</option>
+        <option value="martin" style="color:#a855f7">Martín</option>
+        <option value="__sin">— Sin asignar</option>
+      </select>
       <input type="hidden" id="filtroEstado" value="">
       <button class="btn btn-ghost btn-sm" onclick="exportarCSV()" title="Exportar CSV" style="white-space:nowrap">⬇ CSV</button>
     </div>
@@ -954,6 +962,14 @@ try{
   }
 }catch(e){ console.warn('Chart.register falló:', e); }
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
+
+// Colores y datos por trabajador (usado en dropdown 🙋 y filtro de la tabla)
+const TRABAJADORES_COLOR = {
+  cristobal: {nombre:'Cristóbal', color:'#0071ce', bg:'rgba(0,113,206,.12)'},   // azul
+  leo:       {nombre:'Leo',       color:'#5fb446', bg:'rgba(95,180,70,.14)'},   // verde
+  cristofer: {nombre:'Cristófer', color:'#fa6400', bg:'rgba(250,100,0,.12)'},   // naranjo
+  martin:    {nombre:'Martín',    color:'#a855f7', bg:'rgba(168,85,247,.12)'},  // morado
+};
 let CAL_YEAR=new Date().getFullYear(), CAL_MONTH=new Date().getMonth(), CAL_DIA_SEL=null;
 let MODO_TRABAJO_SEMANA=false;
 
@@ -1319,6 +1335,7 @@ async function cargarArriendos(){
   const _anio     = document.getElementById('filtroAnio')?.value||'';
   const _mes      = document.getElementById('filtroMes')?.value||'';
   const _dia      = document.getElementById('filtroDia')?.value||'';
+  const _trab     = document.getElementById('filtroTrabajador')?.value||'';
   const _selFecha = new Set(seleccionFecha);
   const _pagina   = PAGINA;
 
@@ -1326,6 +1343,18 @@ async function cargarArriendos(){
     const snap=await getDocs(collection(db,'arriendos'));
     ARRIENDOS=[];
     snap.forEach(d=>ARRIENDOS.push({id:d.id,...d.data()}));
+    // Sincronización bidireccional medioPago ↔ medioPago_equipo
+    // Si el equipo registró pago (medioPago_equipo) y el medioPago principal está vacío, copiarlo
+    // Si el medioPago principal está y medioPago_equipo no, copiarlo al revés
+    ARRIENDOS.forEach(a=>{
+      const mp = a.medioPago||'';
+      const me = a.medioPago_equipo||'';
+      if(me && !mp){
+        a.medioPago = me==='transferencia'?'Transferencia':me==='efectivo'?'Efectivo':'';
+      } else if(mp && !me){
+        a.medioPago_equipo = mp==='Transferencia'?'transferencia':mp==='Efectivo'?'efectivo':'';
+      }
+    });
     ARRIENDOS.sort((a,b)=>{
       const fa=a.fecha?a.fecha.split('/').reverse().join(''):'';
       const fb=b.fecha?b.fecha.split('/').reverse().join(''):'';
@@ -1342,6 +1371,7 @@ async function cargarArriendos(){
   if(document.getElementById('filtroAnio'))  document.getElementById('filtroAnio').value=_anio;
   if(document.getElementById('filtroMes'))   document.getElementById('filtroMes').value=_mes;
   if(document.getElementById('filtroDia'))   document.getElementById('filtroDia').value=_dia;
+  if(document.getElementById('filtroTrabajador')) document.getElementById('filtroTrabajador').value=_trab;
   seleccionFecha.clear(); _selFecha.forEach(v=>seleccionFecha.add(v));
   PAGINA=_pagina;
 
@@ -1843,6 +1873,7 @@ window.filtrar=function(){
   const estado=document.getElementById('filtroEstado').value;
   let semana=document.getElementById('filtroSemana').value;
   let dia=document.getElementById('filtroDia').value||'';
+  const trabajador=document.getElementById('filtroTrabajador')?.value||'';
   // ── Candado: en la vista "Trabajo Semana" el filtro siempre es la semana/año actuales
   // (pero el usuario SÍ puede filtrar por día específico dentro de la semana)
   if(MODO_TRABAJO_SEMANA){
@@ -1886,6 +1917,11 @@ window.filtrar=function(){
       if(!dt||String(isoWeek(dt))!==semana) return false;
     }
     if(estado&&a.estado!==estado) return false;
+    if(trabajador){
+      const t = a.trabajadorAsignado||'';
+      if(trabajador==='__sin' && t) return false;
+      if(trabajador!=='__sin' && t!==trabajador) return false;
+    }
     return true;
   });
   // En la vista "Trabajo Semana", ordenar por día (Lun→Dom) y luego agrupar por comuna
@@ -1967,25 +2003,37 @@ function renderTabla(){
         onmouseenter="this.style.background='rgba(37,211,102,.25)'" onmouseleave="this.style.background='rgba(37,211,102,.12)'">📋</button>
     </td>
     <td style="text-align:center">
-      <select onchange="asignarTrabajador('${a.id}',this.value)"
-        title="Asignar trabajador"
-        style="font-size:10px;padding:3px 6px;border-radius:6px;border:1.5px solid ${a.trabajadorAsignado?'var(--orange)':'var(--border)'};background:${a.trabajadorAsignado?'rgba(249,115,22,.1)':'#fff'};color:${a.trabajadorAsignado?'var(--orange)':'var(--text3)'};font-family:'Sora',sans-serif;cursor:pointer;font-weight:${a.trabajadorAsignado?'700':'400'};max-width:90px">
-        <option value="" ${!a.trabajadorAsignado?'selected':''}>— Sin asignar</option>
-        <option value="cristobal" ${a.trabajadorAsignado==='cristobal'?'selected':''}>Cristóbal</option>
-        <option value="leo" ${a.trabajadorAsignado==='leo'?'selected':''}>Leo</option>
-        <option value="cristofer" ${a.trabajadorAsignado==='cristofer'?'selected':''}>Cristófer</option>
-        <option value="martin" ${a.trabajadorAsignado==='martin'?'selected':''}>Martín</option>
-      </select>
+      ${(()=>{
+        const t = a.trabajadorAsignado||'';
+        const info = TRABAJADORES_COLOR[t];
+        const color = info ? info.color : 'var(--text3)';
+        const bg = info ? info.bg : '#fff';
+        const border = info ? info.color : 'var(--border)';
+        return `<select onchange="asignarTrabajador('${a.id}',this.value)"
+          title="Asignar trabajador"
+          style="font-size:10px;padding:3px 6px;border-radius:6px;border:1.5px solid ${border};background:${bg};color:${color};font-family:'Sora',sans-serif;cursor:pointer;font-weight:${t?'700':'400'};max-width:100px">
+          <option value="" ${!t?'selected':''}>— Sin asignar</option>
+          <option value="cristobal" ${t==='cristobal'?'selected':''}>Cristóbal</option>
+          <option value="leo" ${t==='leo'?'selected':''}>Leo</option>
+          <option value="cristofer" ${t==='cristofer'?'selected':''}>Cristófer</option>
+          <option value="martin" ${t==='martin'?'selected':''}>Martín</option>
+        </select>`;
+      })()}
     </td>
     <td style="text-align:center;font-size:11px;font-weight:600">
       ${(()=>{
-        const m=a.medioPago_equipo;
-        if(!m) return '<span style="color:var(--text3)">—</span>';
+        const m=a.medioPago_equipo||'';
         const isTransf = m==='transferencia';
-        const color = isTransf?'var(--blue)':'var(--green)';
-        const bg = isTransf?'rgba(0,113,206,.1)':'rgba(95,180,70,.12)';
-        const lbl = isTransf?'🏦 Transf.':'💵 Efectivo';
-        return '<span style="background:'+bg+';color:'+color+';border-radius:12px;padding:2px 8px">'+lbl+'</span>';
+        const isEfec   = m==='efectivo';
+        const color = isTransf?'var(--blue)':isEfec?'var(--green)':'var(--text3)';
+        const bg = isTransf?'rgba(0,113,206,.1)':isEfec?'rgba(95,180,70,.12)':'#fff';
+        const border = isTransf?'var(--blue)':isEfec?'var(--green)':'var(--border)';
+        return `<select onchange="cambiarMediopagoEquipo('${a.id}',this.value)"
+          style="font-size:10px;padding:3px 6px;border-radius:12px;border:1.5px solid ${border};background:${bg};color:${color};font-family:'Sora',sans-serif;cursor:pointer;font-weight:700">
+          <option value="" ${!m?'selected':''}>—</option>
+          <option value="transferencia" ${isTransf?'selected':''}>🏦 Transf.</option>
+          <option value="efectivo" ${isEfec?'selected':''}>💵 Efectivo</option>
+        </select>`;
       })()}
     </td>
     <td style="text-align:center">
@@ -2113,9 +2161,28 @@ window.cambiarMediopago=async function(id,valor){
   const a=ARRIENDOS.find(x=>x.id===id);
   if(!a) return;
   a.medioPago=valor;
+  // Sincronizar con medioPago_equipo (la columna 💬 Equipo usa minúsculas)
+  const equipoVal = valor==='Transferencia'?'transferencia':valor==='Efectivo'?'efectivo':'';
+  a.medioPago_equipo = equipoVal;
   try{
     const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    await updateDoc(docFn(db,'arriendos',id),{medioPago:valor});
+    await updateDoc(docFn(db,'arriendos',id),{medioPago:valor,medioPago_equipo:equipoVal});
+    renderTabla();
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+window.cambiarMediopagoEquipo=async function(id,valor){
+  // valor llega en minúsculas: '', 'transferencia', 'efectivo'
+  const a=ARRIENDOS.find(x=>x.id===id);
+  if(!a) return;
+  a.medioPago_equipo=valor;
+  // Sincronizar con medioPago (la columna PAGO usa formato con mayúscula)
+  const pagoVal = valor==='transferencia'?'Transferencia':valor==='efectivo'?'Efectivo':'';
+  a.medioPago = pagoVal;
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',id),{medioPago_equipo:valor,medioPago:pagoVal});
+    renderTabla();
   }catch(e){toast('Error: '+e.message,'err');}
 };
 
