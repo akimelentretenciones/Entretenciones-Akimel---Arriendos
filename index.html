@@ -612,7 +612,7 @@ select:focus{border-color:var(--blue)}
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Estado</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar arriendo" style="white-space:nowrap">📋 Copiar arriendo</th><th title="Trabajador asignado">🙋</th><th title="Pago registrado por el equipo">💬 Equipo</th><th title="Retiro">Retiro 🚚</th><th title="Abrir en Waze">🗺️ Waze</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Estado</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th title="Trabajador asignado">🙋</th><th title="Pago registrado por el equipo">💬 Equipo</th><th title="Retiro">Retiro 🚚</th><th title="Abrir en Waze">🗺️ Waze</th><th></th></tr></thead>
       <tbody id="tablaBody"><tr><td colspan="22" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
     </table>
   </div>
@@ -2147,14 +2147,12 @@ window.copiarParaWA=function(a){
   const ubicacion=[dir,comuna].filter(Boolean).join(', ');
   const equipos=(a.equipos||'').split(',').map(e=>e.trim()).filter(Boolean).join(', ');
   const telefono=a.telefono||'';
-  const pendiente=a.pendiente?clp(a.pendiente):'';
   const lineas=[
     `📋 *${a.cliente||'—'}*`,
     `📅 ${[dia+' '+fecha,hora].filter(Boolean).join(' · ')}`,
     ubicacion?`📍 ${ubicacion}`:'',
     equipos?`🎮 ${equipos}`:'',
     telefono?`📞 ${telefono}`:'',
-    pendiente?`💰 Pendiente: ${pendiente}`:'',
   ].filter(Boolean).join('\n');
   navigator.clipboard.writeText(lineas).then(()=>toast('✓ Copiado para WhatsApp','ok')).catch(()=>toast('Error al copiar','err'));
 };
@@ -2242,6 +2240,7 @@ window.eliminarArriendo=async function(id){
 window.setYear=function(y,btn){document.querySelectorAll('.year-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');AÑO_DASH=y;renderDashboard();};
 
 // Poblar selectores de año y semana con valores reales de los datos
+let _dashYearInicializado = false;
 function poblarSelectoresDash(){
   const anioSel=document.getElementById('dashFiltroAnio');
   const semSel=document.getElementById('dashFiltroSemana');
@@ -2252,11 +2251,21 @@ function poblarSelectoresDash(){
     const p=a.fecha.split('/');
     if(p.length>=3&&p[2].length===4) anios.add(p[2]);
   });
-  const anioAct=anioSel.value;
+  let anioAct=anioSel.value;
+  // ── Predeterminado: la primera vez que se cargan datos, aplicar el año actual ──
+  if(!_dashYearInicializado && ARRIENDOS.length>0){
+    const anioActualStr = String(new Date().getFullYear());
+    if(anios.has(anioActualStr)){
+      anioAct = anioActualStr;
+    }
+    _dashYearInicializado = true;
+  }
   anioSel.innerHTML='<option value="">Todos los años</option>';
   [...anios].sort().forEach(a=>{
     anioSel.innerHTML+=`<option value="${a}"${a===anioAct?' selected':''}>${a}</option>`;
   });
+  // Asegurar que el .value refleje el año seleccionado (algunos navegadores no leen 'selected' bien tras innerHTML +=)
+  anioSel.value = anioAct || '';
   // Semanas: poblar según año seleccionado (semanas reales con arriendos)
   const anioFiltro=anioSel.value;
   const semAct=semSel.value;
