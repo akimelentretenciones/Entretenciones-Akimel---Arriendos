@@ -529,10 +529,10 @@ select:focus{border-color:var(--blue)}
           <div class="inv-panel-sub" id="invPanelSub">Haz clic en cualquier día con arriendos</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <button id="btnCompartirCatalogoCompleto" onclick="generarCatalogoCompletoPDF()" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(0,113,206,.35)">
+          <button id="btnCompartirCatalogoCompleto" onclick="generarCatalogoCompletoPDF()" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 14px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(0,113,206,.35)">
             📚 Catálogo completo
           </button>
-          <button id="btnCompartirCatalogo" onclick="generarCatalogoPDF()" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:#25d366;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(37,211,102,.35)">
+          <button id="btnCompartirCatalogo" onclick="generarCatalogoPDF()" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 14px;background:#25d366;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(37,211,102,.35)">
             📄 Catálogo disponible
           </button>
         </div>
@@ -1590,7 +1590,7 @@ window.mostrarInventarioDia = function(dia){
   // Mostrar/ocultar botón catálogo
   const btn = document.getElementById('btnCompartirCatalogo');
   if(btn){
-    btn.style.display = paginasLibres.length > 0 ? 'flex' : 'none';
+    btn.style.display = paginasLibres.length > 0 ? 'inline-flex' : 'none';
     btn.setAttribute('data-paginas', JSON.stringify(paginasLibres));
     btn.setAttribute('data-fecha',   fechaStr);
     btn.setAttribute('data-dianom',  diaNom);
@@ -1599,7 +1599,7 @@ window.mostrarInventarioDia = function(dia){
   // Mostrar/ocultar botón catálogo completo (siempre visible si hay arriendos ese día)
   const btnCompleto = document.getElementById('btnCompartirCatalogoCompleto');
   if(btnCompleto){
-    btnCompleto.style.display = arriendosDia.length > 0 ? 'flex' : 'none';
+    btnCompleto.style.display = arriendosDia.length > 0 ? 'inline-flex' : 'none';
     btnCompleto.setAttribute('data-fecha',   fechaStr);
     btnCompleto.setAttribute('data-dianom',  diaNom);
   }
