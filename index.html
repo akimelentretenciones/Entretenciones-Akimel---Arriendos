@@ -1625,7 +1625,11 @@ window.mostrarInventarioDia = function(dia){
       else              { cls='ocupado';    badge = 'Lleno'; }
       const quien = ocu > 0
         ? arriendosDia.filter(a => estandarizar(a.equipos||'').includes(item.nombre))
-                       .map(a => a.cliente.split(' ')[0]).join(', ')
+                       .flatMap(a => {
+                         const equiposNorm = estandarizar(a.equipos||'');
+                         const count = equiposNorm.split(', ').filter(e => e === item.nombre).length;
+                         return Array(count).fill(a.cliente.split(' ')[0]);
+                       }).join(', ')
         : '';
       html += `<div class="disp-item ${cls}">
         <div class="disp-dot ${pct>=1?'green':pct>0?'yellow':'red'}"></div>
@@ -3104,7 +3108,11 @@ window.renderDisponibilidad=function(){
       else if(pct>0.5){cls='parcial';dcls='red';badge=disp+'/'+item.total+' libres';}
       else if(pct>0){cls='casi';dcls='red';badge=disp+'/'+item.total+' libre';}
       else{cls='ocupado';dcls='red';badge='Ocupado';}
-      const quien=ocu>0?arriendosDia.filter(a=>a.equipos&&a.equipos.includes(item.nombre)).map(a=>a.cliente.split(' ')[0]).join(', '):'';
+      const quien=ocu>0?arriendosDia.filter(a=>a.equipos&&a.equipos.includes(item.nombre)).flatMap(a=>{
+                         const equiposNorm=estandarizar(a.equipos||'');
+                         const count=equiposNorm.split(', ').filter(e=>e===item.nombre).length;
+                         return Array(count).fill(a.cliente.split(' ')[0]);
+                       }).join(', '):'';
       html+=`<div class="disp-item ${cls}">
         <div class="disp-dot ${dcls}"></div>
         <div class="disp-info">
