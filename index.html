@@ -528,9 +528,14 @@ select:focus{border-color:var(--blue)}
           <div class="inv-panel-title" id="invPanelTitle">Selecciona un día</div>
           <div class="inv-panel-sub" id="invPanelSub">Haz clic en cualquier día con arriendos</div>
         </div>
-        <button id="btnCompartirCatalogo" onclick="generarCatalogoPDF()" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:#25d366;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(37,211,102,.35)">
-          📄 Catálogo disponible
-        </button>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button id="btnCompartirCatalogoCompleto" onclick="generarCatalogoCompletoPDF()" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(0,113,206,.35)">
+            📚 Catálogo completo
+          </button>
+          <button id="btnCompartirCatalogo" onclick="generarCatalogoPDF()" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:#25d366;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(37,211,102,.35)">
+            📄 Catálogo disponible
+          </button>
+        </div>
       </div>
       <div class="inv-categorias" id="invCategorias"></div>
       <div id="invArriendosDia"></div>
@@ -993,6 +998,7 @@ const INVENTARIO = [
   {num:18,nombre:'Disparadores',            cat:'Electrónico', total:3, kw:'disparador,disparador 2,disparador 3'},
   {num:21,nombre:'Taca Taca',               cat:'Interior',    total:4, kw:'tacataca,taca taca,taka taka,tacataca 2,tacataca 3,tacataca 4'},
   {num:24,nombre:'Mesa de Hockey',          cat:'Interior',    total:4, kw:'hockey,mesa hockey,mesa de hockey,jockey,hokey,mesa jockey,air hockey,hockey 2,hockey 3,hockey 4'},
+  {num:25,nombre:'Generador',               cat:'Adicionales',  total:1, kw:'generador,generadores,gen'},
 ];
 
 const MAPEO={};
@@ -1532,8 +1538,8 @@ function estandarizar(equipos){
         if(re.test(pl)){found=MAPEO[k];break;}
       }
     }
-    if(found&&!res.includes(found)) res.push(found);
-    else if(!found&&p) res.push(p);
+    if(found) res.push(found);
+    else if(p) res.push(p);
   }
   return res.join(', ');
 }
@@ -1590,11 +1596,20 @@ window.mostrarInventarioDia = function(dia){
     btn.setAttribute('data-dianom',  diaNom);
   }
 
+  // Mostrar/ocultar botón catálogo completo (siempre visible si hay arriendos ese día)
+  const btnCompleto = document.getElementById('btnCompartirCatalogoCompleto');
+  if(btnCompleto){
+    btnCompleto.style.display = arriendosDia.length > 0 ? 'flex' : 'none';
+    btnCompleto.setAttribute('data-fecha',   fechaStr);
+    btnCompleto.setAttribute('data-dianom',  diaNom);
+  }
+
   // Render grid categorías
   const cats = [
     {cat:'Inflable',    icon:'🏰', color:'var(--blue)'},
     {cat:'Electrónico', icon:'🎮', color:'var(--green)'},
     {cat:'Interior',    icon:'🏓', color:'var(--orange)'},
+    {cat:'Adicionales', icon:'⚙️', color:'var(--orange)'},
   ];
   let html = '';
   for(const {cat,icon,color} of cats){
@@ -1735,7 +1750,84 @@ window.generarCatalogoPDF = async function(){
 
 
 
-// ===== CALENDARIO =====
+// ===== CATÁLOGO COMPLETO =====
+window.generarCatalogoCompletoPDF = async function(){
+  const btn = document.getElementById('btnCompartirCatalogoCompleto');
+  if(!btn) return;
+
+  const fechaStr      = btn.getAttribute('data-fecha') || '';
+  const diaNom        = btn.getAttribute('data-dianom') || '';
+
+  // Parsear fecha DD/MM/YYYY
+  const [dd, mm, yyyy] = fechaStr.split('/');
+  const fechaTexto = `${dd}/${mm}/${yyyy}`;
+
+  // Mensaje de texto — catálogo completo
+  const todoJuegos = INVENTARIO.map(i => `• ${i.nombre}`).join('\n');
+  const mensaje = `📚 ¡Hola! Aquí está nuestro catálogo completo de juegos disponibles para la fecha ${fechaTexto}:\n\n${todoJuegos}\n\n¡Contáctanos para reservar! 😊`;
+
+  // Construir PDF con jsPDF usando todas las imágenes
+  btn.innerHTML = '⏳ Generando...';
+  btn.style.pointerEvents = 'none';
+
+  try{
+    const { jsPDF } = window.jspdf;
+    const W = 210, H = 297; // A4 mm
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+
+    // Agregar todas las páginas del catálogo (un item = una página)
+    const paginasYaAgregadas = new Set();
+    let primeraPagina = true;
+    for(const item of INVENTARIO){
+      const idxPagina = (typeof CATALOGO_JUEGO_A_PAGINA !== 'undefined') ? CATALOGO_JUEGO_A_PAGINA[item.nombre] : null;
+      if(idxPagina === undefined || idxPagina === null) continue;
+      if(paginasYaAgregadas.has(idxPagina)) continue; // ya la agregamos
+      const imgData = CATALOGO_PAGINAS_B64 && CATALOGO_PAGINAS_B64[item.nombre];
+      if(!imgData) continue;
+      if(!primeraPagina) doc.addPage();
+      doc.addImage(imgData, 'JPEG', 0, 0, W, H, undefined, 'FAST');
+      paginasYaAgregadas.add(idxPagina);
+      primeraPagina = false;
+    }
+
+    if(primeraPagina){
+      toast('Sin imágenes del catálogo disponibles','err');
+      btn.innerHTML = '📚 Catálogo completo';
+      btn.style.pointerEvents = 'auto';
+      return;
+    }
+
+    const filename = `Akimel_Catalogo_Completo_${diaNom}_${dd}-${mm}-${yyyy}.pdf`;
+    const pdfBlob  = doc.output('blob');
+    const file     = new File([pdfBlob], filename, {type:'application/pdf'});
+
+    btn.innerHTML = '📚 Catálogo completo';
+    btn.style.pointerEvents = 'auto';
+
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        // Compartir PDF con el mensaje en el texto
+        await navigator.share({
+          files: [file],
+          title: 'Catálogo Akimel Completo',
+          text:  mensaje
+        });
+      }catch(e){
+        if(e.name !== 'AbortError'){ doc.save(filename); toast('PDF descargado','ok'); }
+      }
+    } else {
+      doc.save(filename);
+      toast('PDF descargado — adjúntalo en WhatsApp','ok');
+    }
+  }catch(err){
+    console.error('generarCatalogoCompletoPDF:', err);
+    toast('Error al generar PDF: '+err.message,'err');
+    btn.innerHTML = '📚 Catálogo completo';
+    btn.style.pointerEvents = 'auto';
+  }
+};
+
+
 function renderCalendario(){
   document.getElementById('calTitulo').textContent=MESES_FULL[CAL_MONTH]+' '+CAL_YEAR;
   const grid=document.getElementById('calGrid');
