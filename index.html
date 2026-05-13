@@ -1856,7 +1856,7 @@ function renderCalendario(){
     const arriendosDia=arriendosMes.filter(a=>a.fecha===fechaStr);
     if(arriendosDia.length===0) continue;
     const{usados}=calcularUsados(fechaStr);
-    const resumen={Inflable:{disp:0,total:0},Electrónico:{disp:0,total:0},Interior:{disp:0,total:0}};
+    const resumen={Inflable:{disp:0,total:0},Electrónico:{disp:0,total:0},Interior:{disp:0,total:0},Adicionales:{disp:0,total:0}};
     for(const item of INVENTARIO){
       const ocu=usados[item.nombre]||0;
       const disp=Math.max(0,item.total-ocu);
@@ -1880,7 +1880,7 @@ function renderCalendario(){
     const isSel=CAL_DIA_SEL===d;
 
     // Dots de inventario por categoría
-    const cats=[['Inflable','🏰'],['Electrónico','🎮'],['Interior','🏓']];
+    const cats=[['Inflable','🏰'],['Electrónico','🎮'],['Interior','🏓'],['Adicionales','⚙️']];
     let dotsHtml='<div style="display:flex;flex-direction:column;gap:2px;margin-top:6px">';
     for(const[cat,icon] of cats){
       const r=resumen[cat];
