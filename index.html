@@ -4799,6 +4799,13 @@ document.head.appendChild(styleNotif);
 
 </script>
 <script>
+// Auto-refresh cada 20 segundos para mantener sincronización con equipo.html
+setInterval(function() {
+  if(document.hidden === false && ARRIENDOS.length > 0) {
+    cargarArriendos();
+  }
+}, 20000);
+
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     // Ruta relativa para que funcione tanto en raíz como en subdirectorio de GitHub Pages

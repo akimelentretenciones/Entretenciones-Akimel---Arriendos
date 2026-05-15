@@ -284,35 +284,37 @@ onAuthStateChanged(auth, function(user) {
 // ── Cargar arriendos (semana) ──
 function cargarArriendos(workerKey, nombre) {
   if(unsubArriendos) unsubArriendos();
-  unsubArriendos = onSnapshot(collection(db,'arriendos'), function(snap) {
-    var todos = [];
-    snap.forEach(function(d){ todos.push(Object.assign({id:d.id}, d.data())); });
+  
+  // Usar getDocs en lugar de onSnapshot para evitar conflictos
+  (async function() {
+    try {
+      const { getDocs, collection: col } = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+      const snap = await getDocs(col(db, 'arriendos'));
+      var todos = [];
+      snap.forEach(function(d){ todos.push(Object.assign({id:d.id}, d.data())); });
 
-    var dias = diasHastaFinDeSemana();
+      var dias = diasHastaFinDeSemana();
 
-    // Filtrar asignados a este trabajador en los dias de esta semana
-    var asignados = todos.filter(function(a) {
-      return (a.trabajadorAsignado||'').toLowerCase() === workerKey.toLowerCase()
-        && dias.indexOf(a.fecha) !== -1;
-    });
+      // Filtrar asignados a este trabajador en los dias de esta semana
+      var asignados = todos.filter(function(a) {
+        return (a.trabajadorAsignado||'').toLowerCase() === workerKey.toLowerCase()
+          && dias.indexOf(a.fecha) !== -1;
+      });
 
-    // Agrupar por fecha
-    var porDia = {};
-    dias.forEach(function(f){ porDia[f] = []; });
-    asignados.forEach(function(a){
-      if(porDia[a.fecha]) porDia[a.fecha].push(a);
-    });
+      // Agrupar por fecha
+      var porDia = {};
+      dias.forEach(function(f){ porDia[f] = []; });
+      asignados.forEach(function(a){
+        if(porDia[a.fecha]) porDia[a.fecha].push(a);
+      });
 
-    // Debounce: evitar re-renders excesivos (esperar 300ms)
-    clearTimeout(_renderTimeout);
-    _renderTimeout = setTimeout(function() {
       renderApp(porDia, dias, asignados.length, nombre);
-    }, 300);
-  }, function(err) {
-    console.error('Error:', err);
-    document.getElementById('mainContent').innerHTML =
-      '<div class="empty"><div class="empty-icon">&#9888;</div><div class="empty-txt">Error al cargar datos.<br>Verifica tu conexion.</div></div>';
-  });
+    } catch(err) {
+      console.error('Error:', err);
+      document.getElementById('mainContent').innerHTML =
+        '<div class="empty"><div class="empty-icon">&#9888;</div><div class="empty-txt">Error al cargar datos.<br>Verifica tu conexion.</div></div>';
+    }
+  })();
 }
 
 // ── Render fila ──
@@ -482,6 +484,11 @@ window.cambiarInstalacion = async function(id, valor) {
     const { updateDoc, doc: docFn } = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db, 'arriendos', id), { estadoInstalacion: valor });
     console.log('✅ Instalación actualizada a:', valor);
+    
+    // Recargar datos después de actualizar (con pequeño delay para que Firebase sincronice)
+    setTimeout(function() {
+      cargarArriendos(currentWorkerKey, document.querySelector('.worker-info-name')?.textContent || '');
+    }, 300);
   } catch(e) {
     console.error('Error actualizando instalación:', e);
     alert('Error: ' + e.message);
@@ -489,6 +496,14 @@ window.cambiarInstalacion = async function(id, valor) {
 };
 </script>
 <script>
+// Auto-refresh cada 15 segundos para mantener datos sincronizados
+setInterval(function() {
+  if(currentWorkerKey && document.hidden === false) {
+    var nombre = TRABAJADORES[currentWorkerKey] || currentWorkerKey;
+    cargarArriendos(currentWorkerKey, nombre);
+  }
+}, 15000);
+
 // Registro del Service Worker (necesario para instalación PWA y funcionamiento offline)
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
