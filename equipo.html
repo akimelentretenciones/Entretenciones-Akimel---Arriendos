@@ -292,7 +292,7 @@ function cargarArriendos(workerKey, nombre) {
     var asignados = todos.filter(function(a) {
       return (a.trabajadorAsignado||'').toLowerCase() === workerKey.toLowerCase()
         && dias.indexOf(a.fecha) !== -1
-        && a.estado !== 'Cancelado';
+        && a.estado !== 'Retirado';
     });
 
     // Agrupar por fecha
@@ -313,7 +313,7 @@ function cargarArriendos(workerKey, nombre) {
 // ── Render fila ──
 function renderFila(a, num) {
   var id = a.id;
-  var bc = a.estado==='Pagado' ? 'badge-ok' : a.estado==='Cancelado' ? 'badge-canc' : 'badge-pend';
+  var bc = a.estado==='Instalado' ? 'badge-ok' : a.estado==='Retirado' ? 'badge-canc' : 'badge-pend';
   var pg = a.medioPago_equipo || '';
   var hr = a.horaRetiro || '';
   var etags = (a.equipos||'').split(',')

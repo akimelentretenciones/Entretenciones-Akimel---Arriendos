@@ -82,7 +82,8 @@ td:first-child{color:var(--text);font-weight:600}
 tr:hover td{background:var(--bg3)}
 .badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700}
 .badge-pend{background:rgba(0,113,206,.1);color:var(--blue)}
-.badge-cancel{background:rgba(222,28,36,.1);color:var(--red)}
+.badge-install{background:rgba(95,180,70,.1);color:var(--green)}
+.badge-retir{background:rgba(222,28,36,.1);color:var(--red)}
 .pagination{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12px;color:var(--text3)}
 
 /* CALENDAR */
@@ -913,7 +914,8 @@ select:focus{border-color:var(--blue)}
         <label class="edit-label">Estado</label>
         <select class="edit-input" id="editEstado">
           <option value="Pendiente">Pendiente</option>
-          <option value="Cancelado">Cancelado</option>
+          <option value="Instalado">Instalado</option>
+          <option value="Retirado">Retirado</option>
         </select>
       </div>
       <div class="edit-field" style="grid-column:1/-1">
@@ -2078,7 +2080,7 @@ function renderTabla(){
     })()}</td>
     <td style="min-width:140px;max-width:200px">${(a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean).map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(0,113,206,0.06);white-space:nowrap">${e}</div>`).join('')}</td>
     <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue)">${a.pendiente?clp(a.pendiente):'—'}</td>
-    <td><span class="badge badge-${a.estado==='Cancelado'?'cancel':'pend'}">${a.estado||'—'}</span></td>
+    <td><span class="badge badge-${a.estado==='Instalado'?'install':a.estado==='Retirado'?'retir':'pend'}">${a.estado||'Pendiente'}</span></td>
     <td style="text-align:center">
       <button onclick="togglePago('${a.id}')" title="${a.pagado?'Pagado':'Sin pagar'}"
         style="width:28px;height:28px;border-radius:50%;border:2px solid ${a.pagado?'var(--green)':'var(--border)'};background:${a.pagado?'var(--green)':'transparent'};cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center">
