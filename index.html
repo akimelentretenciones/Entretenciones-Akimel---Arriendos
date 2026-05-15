@@ -1366,6 +1366,53 @@ async function cargarArriendos(){
       const fb=b.fecha?b.fecha.split('/').reverse().join(''):'';
       return fb.localeCompare(fa);
     });
+    
+    // ═══════════════════════════════════════════════════
+    // MIGRACIÓN: Rellenar horas faltantes en registros
+    // ═══════════════════════════════════════════════════
+    const registrosSinHora = ARRIENDOS.filter(a => !a.hora || a.hora.trim() === '');
+    if(registrosSinHora.length > 0) {
+      console.log(`🔄 Migrando ${registrosSinHora.length} registros sin hora...`);
+      const {updateDoc:ud, doc:docFn, writeBatch:wb} = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+      const batch = wb(db);
+      let migracionesEnviadas = 0;
+      
+      for(const a of registrosSinHora) {
+        // Intenta extraer hora desde otros campos o buscar patrones
+        let horaExtraida = '';
+        
+        // Si hay datos extras en otros campos, intentar parsear
+        const clienteTexto = (a.cliente || '').toLowerCase();
+        const dirTexto = (a.direccion || '').toLowerCase();
+        const equiposTexto = (a.equipos || '').toLowerCase();
+        const textoCompleto = `${clienteTexto} ${dirTexto} ${equiposTexto}`;
+        
+        // Intentar detectar patrones de hora
+        const hm = textoCompleto.match(/(\d{1,2}):(\d{2})/);
+        if(hm) {
+          horaExtraida = hm[1].padStart(2,'0') + ':' + hm[2];
+        }
+        
+        // Si se encontró hora, actualizar el registro
+        if(horaExtraida) {
+          a.hora = horaExtraida;
+          batch.update(docFn(db, 'arriendos', a.id), {hora: horaExtraida});
+          migracionesEnviadas++;
+          console.log(`✅ ${a.cliente}: agregada hora ${horaExtraida}`);
+        }
+      }
+      
+      if(migracionesEnviadas > 0) {
+        try {
+          await batch.commit();
+          console.log(`✅ Migración completada: ${migracionesEnviadas} horas agregadas`);
+          toast(`✅ Migración: ${migracionesEnviadas} registros actualizados con hora`, 'ok');
+        } catch(e) {
+          console.warn('Error en migración:', e.message);
+        }
+      }
+    }
+    
     FILTRADOS=[...ARRIENDOS];
     document.getElementById('totalCount').textContent=`(${ARRIENDOS.length} registros)`;
   }catch(e){toast('Error cargando datos: '+e.message,'err');return;}
