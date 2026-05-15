@@ -4273,29 +4273,64 @@ function parsearChat(texto){
     if(hm) {
       hora = hm[1]+':'+hm[2];
     } else {
-      // Segundo: formatos PM "2pm", "2 pm", "2 p.m."
-      hm = bloque.match(/(\d{1,2})(?::(\d{2}))?\s*(?:p\.?m\.?|pm)(?!\w)/i);
+      // Segundo: "a las 15.OO hrs" (con punto y letra O)
+      hm = bloque.match(/a\s*las\s*(\d{1,2})[:.][O0]{2}\s*hrs?/i);
       if(hm) {
-        let h = parseInt(hm[1]);
-        if(h < 12) h += 12;
-        const m = hm[2] || '00';
-        hora = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+        const h = parseInt(hm[1]);
+        hora = String(h).padStart(2,'0') + ':00';
       } else {
-        // Tercero: formatos AM "9am", "9 a.m."
-        hm = bloque.match(/(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|am)(?!\w)/i);
+        // Tercero: "Hora de evento: 3:00" o "Hora de evento 3:00" (HH:MM después de etiqueta)
+        hm = bloque.match(/hora\s*de\s*evento[:\s]+(\d{1,2}):(\d{2})/i);
         if(hm) {
-          const h = parseInt(hm[1]);
-          const m = hm[2] || '00';
-          hora = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+          hora = String(hm[1]).padStart(2,'0') + ':' + String(hm[2]).padStart(2,'0');
         } else {
-          // Cuarto: patrones originales HH:MM o número con hrs
-          hm = bloque.match(/hora[^:]*:\s*(?:a las\s*)?(\d{1,2})[:\.](\d{2})/i)
-                  || bloque.match(/(?:a las\s*)(\d{1,2})[:\.](\d{2})/i)
-                  || bloque.match(/(\d{1,2})[:\.](\d{2})\s*(?:hrs?|horas?)/i)
-                  || bloque.match(/(?:^|\n)\s*(\d{1,2})\s+hrs?\s*(?:\n|$)/im)
-                  || bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*(?:\n|$)/m)
-                  || bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*$/m);
-          if(hm) hora = hm[2] ? hm[1]+':'+hm[2] : hm[1]+':00';
+          // Cuarto: "Hora de evento: 15" o "Hora de evento 15" (solo número después de etiqueta)
+          hm = bloque.match(/hora\s*de\s*evento[:\s]+(\d{1,2})(?!\d)/i);
+          if(hm) {
+            const h = parseInt(hm[1]);
+            hora = String(h).padStart(2,'0') + ':00';
+          } else {
+            // Quinto: "15 horas", "3 horas", "15h", "3h"
+            hm = bloque.match(/(\d{1,2})\s+horas?(?!\s*(?:de\s*evento|evento))/i) 
+                 || bloque.match(/(\d{1,2})\s+h(?!ora|ijo)/i)
+                 || bloque.match(/(\d{1,2})h(?!ora)/i);
+            if(hm) {
+              const h = parseInt(hm[1]);
+              hora = String(h).padStart(2,'0') + ':00';
+            } else {
+              // Sexto: formatos PM "2pm", "2 pm", "2 p.m."
+              hm = bloque.match(/(\d{1,2})(?::(\d{2}))?\s*(?:p\.?m\.?|pm)(?!\w)/i);
+              if(hm) {
+                let h = parseInt(hm[1]);
+                if(h < 12) h += 12;
+                const m = hm[2] || '00';
+                hora = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+              } else {
+                // Séptimo: formatos AM "9am", "9 a.m."
+                hm = bloque.match(/(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|am)(?!\w)/i);
+                if(hm) {
+                  const h = parseInt(hm[1]);
+                  const m = hm[2] || '00';
+                  hora = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+                } else {
+                  // Octavo: HH:MM simple "14:00"
+                  hm = bloque.match(/(\d{1,2}):(\d{2})/);
+                  if(hm) {
+                    hora = hm[1]+':'+hm[2];
+                  } else {
+                    // Noveno: patrones con hrs al final
+                    hm = bloque.match(/hora[^:]*:\s*(?:a las\s*)?(\d{1,2})[:\.](\d{2})/i)
+                            || bloque.match(/(?:a las\s*)(\d{1,2})[:\.](\d{2})/i)
+                            || bloque.match(/(\d{1,2})[:\.](\d{2})\s*(?:hrs?|horas?)/i)
+                            || bloque.match(/(?:^|\n)\s*(\d{1,2})\s+hrs?\s*(?:\n|$)/im)
+                            || bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*(?:\n|$)/m)
+                            || bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*$/m);
+                    if(hm) hora = hm[2] ? hm[1]+':'+hm[2] : hm[1]+':00';
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
