@@ -484,11 +484,7 @@ window.cambiarInstalacion = async function(id, valor) {
     const { updateDoc, doc: docFn } = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db, 'arriendos', id), { estadoInstalacion: valor });
     console.log('✅ Instalación actualizada a:', valor);
-    
-    // Recargar datos después de actualizar (con pequeño delay para que Firebase sincronice)
-    setTimeout(function() {
-      cargarArriendos(currentWorkerKey, document.querySelector('.worker-info-name')?.textContent || '');
-    }, 300);
+    // NO recargamos - la columna se actualiza localmente
   } catch(e) {
     console.error('Error actualizando instalación:', e);
     alert('Error: ' + e.message);
@@ -496,14 +492,6 @@ window.cambiarInstalacion = async function(id, valor) {
 };
 </script>
 <script>
-// Auto-refresh cada 15 segundos para mantener datos sincronizados
-setInterval(function() {
-  if(currentWorkerKey && document.hidden === false) {
-    var nombre = TRABAJADORES[currentWorkerKey] || currentWorkerKey;
-    cargarArriendos(currentWorkerKey, nombre);
-  }
-}, 15000);
-
 // Registro del Service Worker (necesario para instalación PWA y funcionamiento offline)
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{

@@ -1135,6 +1135,33 @@ onAuthStateChanged(auth, user => {
   }
 });
 
+// ===== LISTENER SOLO PARA ESTADOINSTALACION =====
+let _unsubInstalacion = null;
+onAuthStateChanged(auth, user => {
+  if(user && !_unsubInstalacion) {
+    _unsubInstalacion = onSnapshot(collection(db, 'arriendos'), (snap) => {
+      snap.docChanges().forEach((change) => {
+        const id = change.doc.id;
+        const data = change.doc.data();
+        
+        // Solo actualizar la columna de estadoInstalacion
+        if(data.estadoInstalacion) {
+          const a = ARRIENDOS.find(x => x.id === id);
+          if(a) {
+            a.estadoInstalacion = data.estadoInstalacion;
+            
+            // Actualizar solo el select en la tabla sin recargar todo
+            const select = document.getElementById(`instalacion-${id}`);
+            if(select) {
+              select.value = data.estadoInstalacion;
+            }
+          }
+        }
+      });
+    });
+  }
+});
+
 window.loginUser=async function(){
   const email=document.getElementById('loginEmail').value.trim();
   const pass=document.getElementById('loginPass').value;
@@ -4799,13 +4826,6 @@ document.head.appendChild(styleNotif);
 
 </script>
 <script>
-// Auto-refresh cada 20 segundos para mantener sincronización con equipo.html
-setInterval(function() {
-  if(document.hidden === false && ARRIENDOS.length > 0) {
-    cargarArriendos();
-  }
-}, 20000);
-
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     // Ruta relativa para que funcione tanto en raíz como en subdirectorio de GitHub Pages
