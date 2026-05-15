@@ -2192,26 +2192,32 @@ function renderTabla(){
     insertarSeparadoresDia();
   }
   
-  // Iniciar listener para estadoInstalacion (SOLO esta columna)
-  iniciarListenerInstalacion();
-}
-
-let _unsubInstalacion = null;
-function iniciarListenerInstalacion() {
-  if(_unsubInstalacion) return; // Ya está activo
-  
-  _unsubInstalacion = onSnapshot(collection(db, 'arriendos'), (snap) => {
-    snap.forEach((doc) => {
-      const id = doc.id;
-      const estadoInst = doc.data().estadoInstalacion;
-      
-      // Buscar el select en la tabla y actualizarlo
-      const select = document.getElementById(`instalacion-${id}`);
-      if(select && estadoInst) {
-        select.value = estadoInst;
+  // Verificar cambios en estadoInstalacion cada 10 segundos (sin recargar la tabla completa)
+  if(!window._verificandoInstalacion) {
+    window._verificandoInstalacion = true;
+    setInterval(async function() {
+      if(ARRIENDOS.length === 0) return;
+      try {
+        const snap = await getDocs(collection(db, 'arriendos'));
+        snap.forEach((doc) => {
+          const id = doc.id;
+          const estadoInst = doc.data().estadoInstalacion;
+          const a = ARRIENDOS.find(x => x.id === id);
+          
+          if(a && estadoInst && a.estadoInstalacion !== estadoInst) {
+            // Cambió estadoInstalacion, actualizar
+            a.estadoInstalacion = estadoInst;
+            const select = document.getElementById(`instalacion-${id}`);
+            if(select) {
+              select.value = estadoInst;
+            }
+          }
+        });
+      } catch(e) {
+        console.error('Error verificando cambios:', e);
       }
-    });
-  });
+    }, 10000);
+  }
 }
 
 // Inserta filas separadoras entre grupos de días distintos en la vista Trabajo Semana.
