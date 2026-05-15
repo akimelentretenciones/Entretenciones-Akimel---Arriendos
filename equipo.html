@@ -192,6 +192,7 @@ const EMAIL_NOMBRE = {
 
 let currentWorkerKey = null;
 let unsubArriendos = null;
+let updatingEstado = false; // Bandera para evitar re-render durante actualización
 
 // ── Utils ──
 function todayISO() {
@@ -471,17 +472,18 @@ window.actualizar = function() {
 
 window.cambiarEstadoEquipo = async function(id, valor) {
   try {
+    updatingEstado = true;
     const { updateDoc, doc: docFn } = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db, 'arriendos', id), { estado: valor });
     console.log('✅ Estado actualizado a:', valor);
     
-    // Esperar un poco para que Firebase sincronice, luego recargar
-    setTimeout(function() {
-      cargarArriendos(currentWorkerKey, document.querySelector('.worker-info-name')?.textContent || '');
-    }, 500);
+    // El onSnapshot re-cargará automáticamente los datos
+    // No hace falta hacer setTimeout ni cargarArriendos manual
   } catch(e) {
     console.error('Error actualizando estado:', e);
     alert('Error: ' + e.message);
+  } finally {
+    updatingEstado = false;
   }
 };
 </script>
