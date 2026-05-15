@@ -2080,7 +2080,14 @@ function renderTabla(){
     })()}</td>
     <td style="min-width:140px;max-width:200px">${(a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean).map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(0,113,206,0.06);white-space:nowrap">${e}</div>`).join('')}</td>
     <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue)">${a.pendiente?clp(a.pendiente):'—'}</td>
-    <td><span class="badge badge-${a.estado==='Instalado'?'install':a.estado==='Retirado'?'retir':'pend'}">${a.estado||'Pendiente'}</span></td>
+    <td>
+      <select onchange="cambiarEstado('${a.id}',this.value)" 
+        style="font-size:10px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-family:'Sora',sans-serif;cursor:pointer;font-weight:600">
+        <option value="Pendiente" ${a.estado==='Pendiente'?'selected':''}>Pendiente</option>
+        <option value="Instalado" ${a.estado==='Instalado'?'selected':''}>Instalado</option>
+        <option value="Retirado" ${a.estado==='Retirado'?'selected':''}>Retirado</option>
+      </select>
+    </td>
     <td style="text-align:center">
       <button onclick="togglePago('${a.id}')" title="${a.pagado?'Pagado':'Sin pagar'}"
         style="width:28px;height:28px;border-radius:50%;border:2px solid ${a.pagado?'var(--green)':'var(--border)'};background:${a.pagado?'var(--green)':'transparent'};cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center">
@@ -2291,6 +2298,17 @@ window.cambiarMediopagoEquipo=async function(id,valor){
   try{
     const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db,'arriendos',id),{medioPago_equipo:valor,medioPago:pagoVal});
+    renderTabla();
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+window.cambiarEstado=async function(id,valor){
+  const a=ARRIENDOS.find(x=>x.id===id);
+  if(!a) return;
+  a.estado=valor;
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',id),{estado:valor});
     renderTabla();
   }catch(e){toast('Error: '+e.message,'err');}
 };
