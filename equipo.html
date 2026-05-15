@@ -341,7 +341,11 @@ function renderFila(a, num) {
     + '<td style="font-weight:600">'+(a.hora||'&mdash;')+'</td>'
     + '<td>'+telLink+'</td>'
     + '<td><div class="equipos-cell">'+(etags||'&mdash;')+'</div></td>'
-    + '<td><span class="badge '+bc+'">'+(a.estado||'Pendiente')+'</span></td>'
+    + '<td><select class="fi" id="estado-'+id+'" onchange="cambiarEstadoEquipo(\''+id+'\',this.value)" style="font-size:10px;padding:4px 8px;font-weight:600;cursor:pointer">'
+    +   '<option value="Pendiente" '+(a.estado==='Pendiente'?'selected':'')+'">Pendiente</option>'
+    +   '<option value="Instalado" '+(a.estado==='Instalado'?'selected':'')+'">Instalado</option>'
+    +   '<option value="Retirado" '+(a.estado==='Retirado'?'selected':'')+'">Retirado</option>'
+    + '</select></td>'
     + '<td><div class="pago-row">'
     +   '<button class="pago-btn '+(pg==='transferencia'?'sel-transfer':'')+'" data-id="'+id+'" data-tipo="transferencia">&#127970; Transf.</button>'
     +   '<button class="pago-btn '+(pg==='efectivo'?'sel-efectivo':'')+'" data-id="'+id+'" data-tipo="efectivo">&#128181; Efectivo</button>'
@@ -463,6 +467,18 @@ window.actualizar = function() {
       '<div class="loading"><div class="spinner"></div><div>Actualizando...</div></div>';
     cargarArriendos(currentWorkerKey, nombre);
     showToast('Actualizado', 'ok');
+  }
+};
+
+window.cambiarEstadoEquipo = async function(id, valor) {
+  try {
+    const { updateDoc, doc: docFn } = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db, 'arriendos', id), { estado: valor });
+    console.log('✅ Estado actualizado:', valor);
+    renderLista(); // Recarga la tabla
+  } catch(e) {
+    console.error('Error actualizando estado:', e);
+    alert('Error: ' + e.message);
   }
 };
 </script>
