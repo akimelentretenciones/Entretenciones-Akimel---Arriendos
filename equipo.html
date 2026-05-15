@@ -291,8 +291,7 @@ function cargarArriendos(workerKey, nombre) {
     // Filtrar asignados a este trabajador en los dias de esta semana
     var asignados = todos.filter(function(a) {
       return (a.trabajadorAsignado||'').toLowerCase() === workerKey.toLowerCase()
-        && dias.indexOf(a.fecha) !== -1
-        && a.estado !== 'Retirado';
+        && dias.indexOf(a.fecha) !== -1;
     });
 
     // Agrupar por fecha
@@ -474,9 +473,12 @@ window.cambiarEstadoEquipo = async function(id, valor) {
   try {
     const { updateDoc, doc: docFn } = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db, 'arriendos', id), { estado: valor });
-    console.log('✅ Estado actualizado:', valor);
-    // Recargar datos del trabajador actual
-    cargarArriendos(currentWorkerKey, document.querySelector('.worker-info-name')?.textContent || '');
+    console.log('✅ Estado actualizado a:', valor);
+    
+    // Esperar un poco para que Firebase sincronice, luego recargar
+    setTimeout(function() {
+      cargarArriendos(currentWorkerKey, document.querySelector('.worker-info-name')?.textContent || '');
+    }, 500);
   } catch(e) {
     console.error('Error actualizando estado:', e);
     alert('Error: ' + e.message);
