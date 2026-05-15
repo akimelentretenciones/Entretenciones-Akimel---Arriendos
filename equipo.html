@@ -339,6 +339,7 @@ function renderFila(a, num) {
       + 'style="display:inline-flex;align-items:center;gap:4px;background:rgba(51,204,255,.15);color:#0d8bb8;border:1.5px solid rgba(51,204,255,.5);border-radius:6px;padding:6px 10px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">'
       + '&#128506;&#65039; Ir</a>';
   }
+  var bc = a.estado==='Instalado' ? 'badge-ok' : a.estado==='Retirado' ? 'badge-canc' : 'badge-pend';
   return '<tr>'
     + '<td style="color:var(--text3)">'+num+'</td>'
     + '<td style="font-weight:700;color:var(--blue3)">'+(a.cliente||'&mdash;')+'</td>'
@@ -346,10 +347,11 @@ function renderFila(a, num) {
     + '<td style="font-weight:600">'+(a.hora||'&mdash;')+'</td>'
     + '<td>'+telLink+'</td>'
     + '<td><div class="equipos-cell">'+(etags||'&mdash;')+'</div></td>'
-    + '<td><select class="fi" id="estado-'+id+'" onchange="cambiarEstadoEquipo(\''+id+'\',this.value)" style="font-size:10px;padding:4px 8px;font-weight:600;cursor:pointer">'
-    +   '<option value="Pendiente" '+(a.estado==='Pendiente'?'selected':'')+'">Pendiente</option>'
-    +   '<option value="Instalado" '+(a.estado==='Instalado'?'selected':'')+'">Instalado</option>'
-    +   '<option value="Retirado" '+(a.estado==='Retirado'?'selected':'')+'">Retirado</option>'
+    + '<td><span class="badge '+bc+'">'+(a.estado||'Pendiente')+'</span></td>'
+    + '<td><select class="fi" id="instalacion-'+id+'" onchange="cambiarInstalacion(\''+id+'\',this.value)" style="font-size:10px;padding:4px 8px;font-weight:600;cursor:pointer">'
+    +   '<option value="No instalado" '+(a.estadoInstalacion==='No instalado'?'selected':'')+'">No instalado</option>'
+    +   '<option value="Instalado" '+(a.estadoInstalacion==='Instalado'?'selected':'')+'">Instalado</option>'
+    +   '<option value="Retirado" '+(a.estadoInstalacion==='Retirado'?'selected':'')+'">Retirado</option>'
     + '</select></td>'
     + '<td><div class="pago-row">'
     +   '<button class="pago-btn '+(pg==='transferencia'?'sel-transfer':'')+'" data-id="'+id+'" data-tipo="transferencia">&#127970; Transf.</button>'
@@ -407,7 +409,7 @@ function renderApp(porDia, dias, totalSemana, nombre) {
         + '<div class="table-wrap" style="border-radius:0 0 var(--radius) var(--radius);box-shadow:none">'
         + '<table><thead><tr>'
         + '<th>#</th><th>Cliente</th><th>Direcci&oacute;n</th><th>Hora</th>'
-        + '<th>Tel&eacute;fono</th><th>Equipos</th><th>Estado</th>'
+        + '<th>Tel&eacute;fono</th><th>Equipos</th><th>Estado</th><th>Instalaci&oacute;n</th>'
         + '<th>Pago</th><th>Retiro &#128666;</th><th title="Abrir en Waze">&#128506;&#65039; Waze</th>'
         + '</tr></thead><tbody>';
 
@@ -475,14 +477,13 @@ window.actualizar = function() {
   }
 };
 
-window.cambiarEstadoEquipo = async function(id, valor) {
+window.cambiarInstalacion = async function(id, valor) {
   try {
     const { updateDoc, doc: docFn } = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    await updateDoc(docFn(db, 'arriendos', id), { estado: valor });
-    console.log('✅ Estado actualizado a:', valor);
-    // El onSnapshot activo actualizará la UI automáticamente
+    await updateDoc(docFn(db, 'arriendos', id), { estadoInstalacion: valor });
+    console.log('✅ Instalación actualizada a:', valor);
   } catch(e) {
-    console.error('Error actualizando estado:', e);
+    console.error('Error actualizando instalación:', e);
     alert('Error: ' + e.message);
   }
 };
