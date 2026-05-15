@@ -192,6 +192,7 @@ const EMAIL_NOMBRE = {
 
 let currentWorkerKey = null;
 let unsubArriendos = null;
+let _renderTimeout = null; // Para debounce de renders
 let updatingEstado = false; // Bandera para evitar re-render durante actualización
 
 // ── Utils ──
@@ -302,7 +303,11 @@ function cargarArriendos(workerKey, nombre) {
       if(porDia[a.fecha]) porDia[a.fecha].push(a);
     });
 
-    renderApp(porDia, dias, asignados.length, nombre);
+    // Debounce: evitar re-renders excesivos (esperar 300ms)
+    clearTimeout(_renderTimeout);
+    _renderTimeout = setTimeout(function() {
+      renderApp(porDia, dias, asignados.length, nombre);
+    }, 300);
   }, function(err) {
     console.error('Error:', err);
     document.getElementById('mainContent').innerHTML =

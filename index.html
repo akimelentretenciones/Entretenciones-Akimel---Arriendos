@@ -969,7 +969,6 @@ try{
   }
 }catch(e){ console.warn('Chart.register falló:', e); }
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
-let _unsubArriendos = null; // Listener de tiempo real para arriendos
 
 // Colores y datos por trabajador (usado en dropdown 🙋 y filtro de la tabla)
 const TRABAJADORES_COLOR = {
@@ -1122,7 +1121,7 @@ onAuthStateChanged(auth, user => {
     document.getElementById('connText').textContent='Conectado';
     const emailEl=document.getElementById('userEmail');
     if(emailEl) emailEl.textContent=user.email.split('@')[0];
-    iniciarListenerArriendos();
+    cargarArriendos();
     iniciarNotifListener();
     // Resetear botones de semana al cargar
     setTimeout(()=>{
@@ -1397,76 +1396,6 @@ async function cargarArriendos(){
         mostrarInventarioDia(hoy.getDate());
     }
   }catch(e){console.error('calendario:',e.message,e.stack);}
-}
-
-// ===== LISTENER TIEMPO REAL (onSnapshot) =====
-function iniciarListenerArriendos() {
-  if(_unsubArriendos) _unsubArriendos();
-  
-  _unsubArriendos = onSnapshot(collection(db, 'arriendos'), (snap) => {
-    // Guardar filtros actuales
-    const _q = document.getElementById('searchInput')?.value || '';
-    const _estado = document.getElementById('filtroEstado')?.value || '';
-    const _semana = document.getElementById('filtroSemana')?.value || '';
-    const _anio = document.getElementById('filtroAnio')?.value || '';
-    const _mes = document.getElementById('filtroMes')?.value || '';
-    const _dia = document.getElementById('filtroDia')?.value || '';
-    const _trab = document.getElementById('filtroTrabajador')?.value || '';
-    const _selFecha = new Set(seleccionFecha);
-    const _pagina = PAGINA;
-    
-    // Actualizar ARRIENDOS desde Firebase
-    ARRIENDOS = [];
-    snap.forEach(d => ARRIENDOS.push({ id: d.id, ...d.data() }));
-    
-    // Sincronización bidireccional medioPago ↔ medioPago_equipo
-    ARRIENDOS.forEach(a => {
-      const mp = a.medioPago || '';
-      const me = a.medioPago_equipo || '';
-      if(me && !mp) {
-        a.medioPago = me === 'transferencia' ? 'Transferencia' : me === 'efectivo' ? 'Efectivo' : '';
-      } else if(mp && !me) {
-        a.medioPago_equipo = mp === 'Transferencia' ? 'transferencia' : mp === 'Efectivo' ? 'efectivo' : '';
-      }
-    });
-    
-    ARRIENDOS.sort((a, b) => {
-      const fa = a.fecha ? a.fecha.split('/').reverse().join('') : '';
-      const fb = b.fecha ? b.fecha.split('/').reverse().join('') : '';
-      return fb.localeCompare(fa);
-    });
-    
-    FILTRADOS = [...ARRIENDOS];
-    document.getElementById('totalCount').textContent = `(${ARRIENDOS.length} registros)`;
-    
-    // Restaurar filtros
-    if(document.getElementById('searchInput')) document.getElementById('searchInput').value = _q;
-    if(document.getElementById('filtroEstado')) document.getElementById('filtroEstado').value = _estado;
-    if(document.getElementById('filtroSemana')) document.getElementById('filtroSemana').value = _semana;
-    if(document.getElementById('filtroAnio')) document.getElementById('filtroAnio').value = _anio;
-    if(document.getElementById('filtroMes')) document.getElementById('filtroMes').value = _mes;
-    if(document.getElementById('filtroDia')) document.getElementById('filtroDia').value = _dia;
-    if(document.getElementById('filtroTrabajador')) document.getElementById('filtroTrabajador').value = _trab;
-    seleccionFecha.clear();
-    _selFecha.forEach(v => seleccionFecha.add(v));
-    PAGINA = _pagina;
-    
-    // Render
-    try { poblarSelectoresDash(); } catch(e) { console.error('poblar:', e); }
-    try { filtrar(); } catch(e) { console.error('tabla:', e); }
-    renderDashboard().catch(e => console.error('dashboard:', e));
-    try {
-      renderCalendario();
-      if(CAL_DIA_SEL) mostrarInventarioDia(CAL_DIA_SEL);
-      else {
-        const hoy = new Date();
-        if(CAL_YEAR === hoy.getFullYear() && CAL_MONTH === hoy.getMonth())
-          mostrarInventarioDia(hoy.getDate());
-      }
-    } catch(e) { console.error('calendario:', e.message, e.stack); }
-  }, (err) => {
-    console.error('Error en listener de arriendos:', err);
-  });
 }
 
 // ===== PARSER =====
