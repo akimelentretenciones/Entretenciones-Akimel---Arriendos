@@ -4268,13 +4268,20 @@ function parsearChat(texto){
 
     // HORA
     let hora = '';
-    const hm = bloque.match(/hora[^:]*:\s*(?:a las\s*)?(\d{1,2})[:\.](\d{2})/i)
-            || bloque.match(/(?:a las\s*)(\d{1,2})[:\.](\d{2})/i)
-            || bloque.match(/(\d{1,2})[:\.](\d{2})\s*(?:hrs?|horas?|am|pm)/i)
-            || bloque.match(/(?:^|\n)\s*(\d{1,2})\s+hrs?\s*(?:\n|$)/im)
-            || bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*(?:\n|$)/m)
-            || bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*$/m);
-    if(hm) hora = hm[2] ? hm[1]+':'+hm[2] : hm[1]+':00';
+    // Primero intentar capturar rangos: "09:00 a 15:30 hrs" → extrae 09:00
+    const hmRange = bloque.match(/(\d{1,2})[:\.](\d{2})\s*(?:a|–|-)\s*\d{1,2}[:\.]?\d{2}\s*(?:hrs?|horas?)?/i);
+    if(hmRange) {
+      hora = hmRange[1]+':'+hmRange[2];
+    } else {
+      // Fallback a patrones originales
+      const hm = bloque.match(/hora[^:]*:\s*(?:a las\s*)?(\d{1,2})[:\.](\d{2})/i)
+              || bloque.match(/(?:a las\s*)(\d{1,2})[:\.](\d{2})/i)
+              || bloque.match(/(\d{1,2})[:\.](\d{2})\s*(?:hrs?|horas?|am|pm)/i)
+              || bloque.match(/(?:^|\n)\s*(\d{1,2})\s+hrs?\s*(?:\n|$)/im)
+              || bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*(?:\n|$)/m)
+              || bloque.match(/(?:^|\n)\s*(\d{1,2}):(\d{2})\s*$/m);
+      if(hm) hora = hm[2] ? hm[1]+':'+hm[2] : hm[1]+':00';
+    }
 
     // TELÉFONO
     let tel = '';
