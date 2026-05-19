@@ -9,8 +9,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="AKIMEL Clientes">
-<link rel="icon" href="icono-192.png">
-<link rel="apple-touch-icon" href="icono-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -443,15 +441,6 @@ window.filtrarPorSemana = function() {
 function obtenerFechasDelAno(year, month) {
   const inicio = new Date(year, month - 1, 1);
   const fin = new Date(year, month, 0);
-  return {inicio, fin};
-}
-
-function obtenerFechasSemanaActual() {
-  const hoy = new Date();
-  const dia = hoy.getDay();
-  const primero = hoy.getDate() - dia + (dia === 0 ? -6 : 1);
-  const inicio = new Date(hoy.setDate(primero));
-  const fin = new Date(hoy.setDate(inicio.getDate() + 6));
   return {inicio, fin};
 }
 
