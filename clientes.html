@@ -390,14 +390,35 @@ async function doLogin() {
   const err = document.getElementById('loginErr');
   const btn = document.getElementById('btnLogin');
   
+  if(!email || !pass) {
+    err.textContent = 'Por favor completa email y contraseña';
+    err.style.display = 'block';
+    return;
+  }
+  
   err.style.display = 'none';
   btn.disabled = true;
   btn.textContent = 'Ingresando...';
   
   try {
-    await auth.signInWithEmailAndPassword(email, pass);
+    const userCredential = await auth.signInWithEmailAndPassword(email, pass);
+    console.log('Login exitoso:', userCredential.user.email);
   } catch(e) {
-    err.textContent = 'Email o contraseña incorrectos';
+    console.error('Error de login:', e.code, e.message);
+    
+    // Mensajes más específicos según el error
+    if(e.code === 'auth/invalid-email') {
+      err.textContent = 'El email no es válido';
+    } else if(e.code === 'auth/user-not-found') {
+      err.textContent = 'Este usuario no existe. Verifica el email en Firebase.';
+    } else if(e.code === 'auth/wrong-password') {
+      err.textContent = 'Contraseña incorrecta';
+    } else if(e.code === 'auth/invalid-credential') {
+      err.textContent = 'Email o contraseña incorrectos';
+    } else {
+      err.textContent = 'Error: ' + e.message;
+    }
+    
     err.style.display = 'block';
     btn.disabled = false;
     btn.textContent = 'Ingresar';
