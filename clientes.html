@@ -443,24 +443,6 @@ function obtenerFechasDelAno(year, month) {
   const fin = new Date(year, month, 0);
   return {inicio, fin};
 }
-
-function filtrarArriendos() {
-  if(filtroSemana) {
-    const {inicio, fin} = obtenerFechasSemanaActual();
-    return arriendos.filter(a => {
-      if(!a.fecha) return false;
-      const [d, m, y] = a.fecha.split('/');
-      const fecha = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-      return fecha >= inicio && fecha <= fin;
-    });
-  } else {
-    return arriendos.filter(a => {
-      if(!a.fecha) return false;
-      const [d, m, y] = a.fecha.split('/');
-      return parseInt(y) === filtroAno && parseInt(m) === filtroMes;
-    });
-  }
-}
 </script>
 </body>
 </html>
