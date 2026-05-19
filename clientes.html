@@ -41,7 +41,6 @@ input,select,textarea,button{font-size:16px;font-family:'Sora',sans-serif}
 .btn-primary:active{opacity:.85}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .login-err{background:rgba(222,28,36,.08);border:1px solid rgba(222,28,36,.25);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
-.login-footer{margin-top:16px;font-size:11px;color:rgba(255,255,255,.4);text-align:center}
 
 /* APP */
 .app{display:none;flex-direction:column;min-height:100vh}
@@ -59,15 +58,6 @@ input,select,textarea,button{font-size:16px;font-family:'Sora',sans-serif}
 /* Main */
 .main{flex:1;padding:16px;padding-bottom:48px;max-width:1400px;margin:0 auto;width:100%}
 
-/* Nav Tabs */
-.nav-tabs{display:flex;gap:12px;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto}
-.nav-tab{padding:10px 14px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
-.nav-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
-
-/* Sections */
-.section{display:none}
-.section.active{display:block}
-
 /* Worker badge */
 .worker-badge{background:linear-gradient(135deg,var(--blue),var(--blue3));border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)}
 .worker-avatar{width:44px;height:44px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,.3)}
@@ -80,52 +70,28 @@ input,select,textarea,button{font-size:16px;font-family:'Sora',sans-serif}
 .stat-v{font-weight:800;font-size:22px;color:var(--blue)}
 .stat-l{font-size:10px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
 
-/* Header de dia */
-.dia-header{padding:9px 14px;border-radius:var(--radius) var(--radius) 0 0;font-weight:700;font-size:13px}
-.dia-header.hoy{background:var(--blue);color:#fff}
-.dia-header.otro{background:var(--bg3);color:var(--blue3)}
-
 /* Tabla */
-.table-wrap{overflow-x:auto;border-radius:var(--radius);box-shadow:var(--shadow);background:#fff}
-.dia-wrap .table-wrap{border-radius:0 0 var(--radius) var(--radius);box-shadow:none;border:1px solid var(--border);border-top:none}
-.dia-wrap{margin-bottom:20px;box-shadow:var(--shadow);border-radius:var(--radius)}
+.table-wrap{overflow-x:auto;border-radius:var(--radius);box-shadow:var(--shadow);background:#fff;margin-bottom:20px}
 table{width:100%;border-collapse:collapse;font-size:12px}
 thead{background:var(--bg3)}
 th{padding:10px 12px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;white-space:nowrap;border-bottom:2px solid var(--border)}
 td{padding:10px 12px;border-top:1px solid var(--border);color:var(--text2);vertical-align:middle}
 tr:hover td{background:var(--bg3)}
-.equipos-cell{display:flex;flex-wrap:wrap;gap:3px;min-width:130px}
-.equipo-tag{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:2px 7px;font-size:10px;color:var(--text2);font-weight:600;white-space:nowrap}
 
 /* Badge */
 .badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700}
 .badge-pend{background:rgba(0,113,206,.1);color:var(--blue)}
 .badge-ok{background:rgba(95,180,70,.12);color:var(--green)}
-.badge-canc{background:rgba(222,28,36,.1);color:var(--red)}
 .badge-wa{background:rgba(37,211,102,.1);color:var(--wa)}
 
-/* Pago inline */
-.pago-row{display:flex;gap:4px}
-.pago-btn{padding:5px 9px;border-radius:6px;border:1.5px solid var(--border);background:#fff;color:var(--text3);font-size:14px;cursor:pointer;transition:all .2s;line-height:1}
-.pago-btn.sel-transfer{background:rgba(0,113,206,.1);border-color:var(--blue)}
-.pago-btn.sel-efectivo{background:rgba(95,180,70,.1);border-color:var(--green)}
+/* Botón WhatsApp */
+.btn-wa-msg{display:inline-flex;align-items:center;gap:4px;background:rgba(37,211,102,.15);color:var(--wa);border:1.5px solid rgba(37,211,102,.5);border-radius:6px;padding:6px 10px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;cursor:pointer;transition:all .2s}
+.btn-wa-msg:hover{background:rgba(37,211,102,.25)}
 
-/* Retiro inline */
-.retiro-cell{display:flex;gap:4px;align-items:center;min-width:170px}
-.fi-hora{flex:1;background:#fff;border:1.5px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;outline:none;font-size:11px;font-family:'Sora',sans-serif}
-.fi-hora:focus{border-color:var(--blue)}
-.btn-retiro{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-weight:700;font-size:12px;cursor:pointer}
-
-/* Chip */
-.saved-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(95,180,70,.12);border:1px solid rgba(95,180,70,.3);color:var(--green);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-top:4px}
-
-/* Empty / Loading */
+/* Empty */
 .empty{text-align:center;padding:48px 20px;color:var(--text3)}
 .empty-icon{font-size:44px;margin-bottom:10px}
 .empty-txt{font-size:14px;line-height:1.6}
-.loading{text-align:center;padding:48px 20px;color:var(--text3)}
-.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
-@keyframes spin{to{transform:rotate(360deg)}}
 
 /* Toast */
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--blue3);color:#fff;border-radius:30px;padding:11px 22px;font-size:13px;font-weight:600;z-index:999;transition:transform .3s;white-space:nowrap;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.2)}
@@ -133,38 +99,14 @@ tr:hover td{background:var(--bg3)}
 .toast.ok{background:var(--green)}
 .toast.err{background:var(--red)}
 
-/* MENSAJES */
-.msg-search{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;width:100%;outline:none;color:var(--text);font-size:13px}
-.msg-search:focus{border-color:var(--blue)}
-
-.msg-item{background:#fff;border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);border:2px solid var(--border);cursor:pointer;transition:all .2s}
-.msg-item:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(0,113,206,.12)}
-.msg-item.selected{border-color:var(--blue);background:rgba(0,113,206,.04)}
-.msg-client{font-weight:700;color:var(--text);font-size:13px;margin-bottom:4px}
-.msg-meta{font-size:11px;color:var(--text3);display:flex;gap:12px}
-.msg-monto{font-weight:700;color:var(--green);margin-top:6px;font-size:12px}
-
-.msg-templates{display:grid;grid-template-columns:1fr;gap:10px}
-.template-card{background:#fff;border-radius:var(--radius);padding:14px;border:2px solid var(--border);box-shadow:var(--shadow)}
-.template-card:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(0,113,206,.12)}
-.template-titulo{font-weight:700;color:var(--text);font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
-.template-icon{font-size:18px}
-.template-fase{font-size:10px;background:rgba(0,113,206,.1);color:var(--blue);padding:3px 10px;border-radius:20px;font-weight:700}
-.template-text{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;line-height:1.5;color:var(--text2);margin-bottom:10px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
-.template-actions{display:flex;gap:8px}
-.btn-copy{flex:1;background:rgba(0,113,206,.1);color:var(--blue);border:1.5px solid var(--blue);padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
-.btn-copy:hover{background:rgba(0,113,206,.15)}
-.btn-send{flex:1;background:var(--wa);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
-.btn-send:hover{background:#1ebd46}
-
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(4,30,66,.7);z-index:200;display:none;align-items:flex-end}
 .modal-bg.show{display:flex}
 .modal-box{background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
 .modal-title{font-size:16px;font-weight:800;color:var(--blue3);margin-bottom:16px}
-.modal-msg{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;line-height:1.6;color:var(--text2);margin-bottom:16px;max-height:240px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;font-family:'Sora',sans-serif}
+.modal-msg{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;line-height:1.6;color:var(--text2);margin-bottom:16px;max-height:240px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
 .modal-btns{display:flex;gap:8px}
-.modal-btns button{flex:1;padding:10px;border:none;border-radius:var(--radius);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s}
+.modal-btns button{flex:1;padding:10px;border:none;border-radius:var(--radius);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;font-family:'Sora',sans-serif}
 .modal-btns .btn-cancel{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
 .modal-btns .btn-confirm{background:var(--wa);color:#fff}
 </style>
@@ -189,7 +131,6 @@ tr:hover td{background:var(--bg3)}
       <input type="password" class="fi" id="loginPass" placeholder="••••••••">
     </div>
     <button class="btn-primary" id="btnLogin" onclick="doLogin()">Ingresar</button>
-    <div class="login-footer">© 2025 AKIMEL</div>
   </div>
 </div>
 
@@ -201,62 +142,43 @@ tr:hover td{background:var(--bg3)}
         <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%230071ce' width='100' height='100'/%3E%3Ctext x='50' y='60' font-size='60' fill='white' text-anchor='middle' dominant-baseline='middle'%3E⚡%3C/text%3E%3C/svg%3E" alt="">
       </div>
       <div>
-        <div class="hdr-name" id="workerName">Clientes</div>
-        <div class="hdr-fecha" id="workerDate"></div>
+        <div class="hdr-name" id="hdrName">Cliente</div>
+        <div class="hdr-fecha" id="hdrFecha"></div>
       </div>
     </div>
     <button class="btn-logout" onclick="doLogout()">Salir</button>
   </div>
 
-  <!-- NAV TABS -->
-  <div style="background:#fff;border-bottom:2px solid var(--border);padding:0 16px">
-    <div class="nav-tabs">
-      <div class="nav-tab active" onclick="switchSection('arriendos', this)">📋 Mis Arriendos</div>
-      <div class="nav-tab" onclick="switchSection('mensajes', this)">💬 Mensajes</div>
-    </div>
-  </div>
-
   <div class="main">
-    <!-- SECCIÓN: ARRIENDOS (original) -->
-    <div class="section active" id="arriendos">
-      <div class="worker-badge">
-        <div class="worker-avatar" id="workerAvatar">C</div>
-        <div>
-          <div class="worker-info-name" id="workerFullName">Clientes</div>
-          <div class="worker-info-sub" id="workerSub">Mis arriendos</div>
-        </div>
+    <div class="worker-badge">
+      <div class="worker-avatar">C</div>
+      <div>
+        <div class="worker-info-name" id="userName">Cliente</div>
+        <div class="worker-info-sub">Mis arriendos de esta semana</div>
       </div>
-      <div class="stats">
-        <div class="stat"><div class="stat-v" id="statTotal">0</div><div class="stat-l">Total</div></div>
-        <div class="stat"><div class="stat-v" id="statPending">0</div><div class="stat-l">Pendiente</div></div>
-        <div class="stat"><div class="stat-v" id="statMonto">$0</div><div class="stat-l">Por cobrar</div></div>
-      </div>
-      <div id="scheduleCont"></div>
     </div>
 
-    <!-- SECCIÓN: MENSAJES (nuevo) -->
-    <div class="section" id="mensajes">
-      <div id="selectedArrierInfo" style="background:#fff;border-radius:var(--radius);padding:14px;margin-bottom:16px;box-shadow:var(--shadow)"></div>
-      
-      <div style="background:#fff;border-radius:var(--radius);padding:14px;margin-bottom:16px;box-shadow:var(--shadow)">
-        <div style="font-size:14px;font-weight:700;color:var(--blue3);margin-bottom:12px">📨 Plantillas disponibles</div>
-        <div id="templatesContainer"></div>
-      </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-v" id="statTotal">0</div><div class="stat-l">Total</div></div>
+      <div class="stat"><div class="stat-v" id="statPend">0</div><div class="stat-l">Pendiente</div></div>
+      <div class="stat"><div class="stat-v" id="statMonto">$0</div><div class="stat-l">Monto</div></div>
     </div>
+
+    <div id="mainContent"></div>
   </div>
 </div>
 
-<!-- MODAL CONFIRMAR ENVÍO -->
-<div class="modal-bg" id="modalConfirm">
+<!-- MODAL ENVIAR MENSAJE -->
+<div class="modal-bg" id="modalMsg">
   <div class="modal-box">
-    <div class="modal-title">📤 Listo para enviar</div>
+    <div class="modal-title">📤 Enviar mensaje por WhatsApp</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
       El mensaje se copiará a tu portapapeles. Abre WhatsApp, busca el contacto y pega.
     </div>
-    <div class="modal-msg" id="modalMsg"></div>
+    <div class="modal-msg" id="msgContent"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn-confirm" onclick="copiarAlPortapapeles()">📋 Copiar y enviar</button>
+      <button class="btn-confirm" onclick="copiarYCerrar()">📋 Copiar mensaje</button>
     </div>
   </div>
 </div>
@@ -268,7 +190,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebas
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
-// Firebase config (del index.html)
 const firebaseConfig = {
   apiKey: "AIzaSyCwqFq4B3YOAT5q5LiKHCSYNQhQphviQHE",
   authDomain: "base-de-datos-akimel-arriendos.firebaseapp.com",
@@ -282,107 +203,23 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let currentUser = null;
 let arriendos = [];
-let selectedArriendo = null;
-let mensajeEnPortapapeles = '';
 
-const TEMPLATES = {
-  confirmacion: {
-    titulo: '✓ Confirmación de Arriendo',
-    icon: '✓',
-    fase: 'confirmacion',
-    content: `Hola {{cliente}}, confirmamos tu arriendo para el {{fecha}}{{hora}} en {{comuna}}.
-
-📋 Detalles:
-• Juegos: {{juegos}}
-• Monto: {{monto}}
-{{localizacion}}
-
-¡Nos vemos pronto! 🎉`
-  },
-  preevento: {
-    titulo: '📸 Comparte tu diversión',
-    icon: '📸',
-    fase: 'preevento',
-    content: `¡Hola {{cliente}}! 
-
-Estamos listos con {{juegos}} para hacer de tu día algo especial 🎊
-
-📸 *Comparte tu diversión:*
-Etiquétanos con #EntretencionesAkimel o menciona @entretenciones_akimel en IG.
-
-¡Que comience la diversión!`
-  },
-  postariendo1: {
-    titulo: '⭐ ¿Cómo estuvo?',
-    icon: '⭐',
-    fase: 'postariendo',
-    content: `Hola {{cliente}}, esperamos que lo hayan pasado increíble con {{juegos}} 🎉
-
-Nos gustaría saber:
-✓ ¿Les gustó el servicio?
-✓ ¿Qué juego fue el favorito?
-✓ ¿Volverían a contratar?
-
-¡Gracias!`
-  },
-  postariendo2: {
-    titulo: '📲 Síguenos en Instagram',
-    icon: '📲',
-    fase: 'postariendo',
-    content: `Hola {{cliente}}, ¿buscas entretención para tu próximo evento?
-
-Síguenos en @entretenciones_akimel para:
-📸 Galería de eventos
-🎁 Ofertas exclusivas
-💝 Promociones especiales
-
-¡No te pierdas nada! 👉 instagram.com/entretenciones_akimel`
-  },
-  referral: {
-    titulo: '🎁 Recomienda y gana',
-    icon: '🎁',
-    fase: 'retencion',
-    content: `Hola {{cliente}}, ¿te gustó tu arriendo? ¡Queremos recompensarte!
-
-Por cada amigo que nos recomiendes, ambos obtienen 10% de descuento en el próximo arriendo.
-
-Comparte tu código: {{codigo}}
-
-¡Es tan fácil como eso! 🙌`
-  },
-  proximo: {
-    titulo: '🔔 Próximo evento',
-    icon: '🔔',
-    fase: 'retencion',
-    content: `¡Hola {{cliente}}!
-
-Pronto viene otra celebración. Por eso queremos hacertelo irresistible:
-
-🎯 Envíos gratis + pago facilitado
-
-Responde este mensaje y atenderemos tu evento de forma prioritaria.
-
-¡Que no te lo pierdan! 💪`
-  }
-};
-
-function toast(msg, tipo='ok') {
+function toast(msg, tipo) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast ' + tipo + ' show';
-  setTimeout(() => t.classList.remove('show'), 2600);
+  t.className = 'toast show '+(tipo||'ok');
+  setTimeout(() => t.className = 'toast', 2800);
 }
 
-async function doLogin() {
+window.doLogin = async function() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
   const err = document.getElementById('loginErr');
   const btn = document.getElementById('btnLogin');
   
   if(!email || !pass) {
-    err.textContent = 'Por favor completa email y contraseña';
+    err.textContent = 'Completa email y contraseña';
     err.style.display = 'block';
     return;
   }
@@ -392,219 +229,126 @@ async function doLogin() {
   btn.textContent = 'Ingresando...';
   
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-    console.log('Login exitoso:', userCredential.user.email);
+    await signInWithEmailAndPassword(auth, email, pass);
   } catch(e) {
-    console.error('Error de login:', e.code, e.message);
-    
-    // Mensajes más específicos según el error
-    if(e.code === 'auth/invalid-email') {
-      err.textContent = 'El email no es válido';
-    } else if(e.code === 'auth/user-not-found') {
-      err.textContent = 'Este usuario no existe. Verifica el email en Firebase.';
-    } else if(e.code === 'auth/wrong-password') {
-      err.textContent = 'Contraseña incorrecta';
-    } else if(e.code === 'auth/invalid-credential') {
-      err.textContent = 'Email o contraseña incorrectos';
-    } else {
-      err.textContent = 'Error: ' + e.message;
-    }
-    
+    err.textContent = e.code === 'auth/user-not-found' ? 'Usuario no existe' : 'Email o contraseña incorrectos';
     err.style.display = 'block';
     btn.disabled = false;
     btn.textContent = 'Ingresar';
   }
-}
+};
 
-function doLogout() {
-  signOut(auth);
-}
+window.doLogout = async function() {
+  await signOut(auth);
+};
 
 onAuthStateChanged(auth, user => {
-  const loginWrap = document.getElementById('loginWrap');
-  const appWrap = document.getElementById('appWrap');
-  
   if(user) {
-    currentUser = user;
-    loginWrap.style.display = 'none';
-    appWrap.classList.add('active');
-    document.getElementById('workerName').textContent = user.displayName || 'Cliente';
-    document.getElementById('workerFullName').textContent = user.displayName || 'Cliente';
-    document.getElementById('workerDate').textContent = new Date().toLocaleDateString('es-CL', {weekday: 'long', day: 'numeric', month: 'long'});
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('appWrap').classList.add('active');
+    document.getElementById('hdrName').textContent = user.displayName || user.email.split('@')[0];
+    document.getElementById('userName').textContent = user.displayName || 'Cliente';
+    document.getElementById('hdrFecha').textContent = new Date().toLocaleDateString('es-CL', {weekday:'long', day:'numeric', month:'long'});
     cargarArriendos();
   } else {
-    currentUser = null;
-    loginWrap.style.display = 'flex';
-    appWrap.classList.remove('active');
+    document.getElementById('loginWrap').style.display = 'flex';
+    document.getElementById('appWrap').classList.remove('active');
   }
 });
 
 async function cargarArriendos() {
   try {
-    // Cargar arriendos desde Firestore (misma colección que en index.html)
     const snap = await getDocs(collection(db, 'arriendos'));
     arriendos = snap.docs.map(d => ({id: d.id, ...d.data()}));
     renderizar();
   } catch(e) {
-    console.error('Error cargando arriendos:', e);
-    toast('Error cargando datos', 'err');
+    console.error(e);
+    document.getElementById('mainContent').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-txt">Error cargando datos</div></div>';
   }
 }
 
 function renderizar() {
-  // Sección arriendos (original)
-  const hoy = new Date().toISOString().split('T')[0];
-  const arriendosHoy = arriendos.filter(a => a.fecha === hoy).length;
-  const pendiente = arriendos.filter(a => a.estado === 'Pendiente' || !a.estado).length;
-  const montoTotal = arriendos.filter(a => a.estado === 'Pendiente' || !a.estado).reduce((s, a) => s + (parseInt(a.monto) || 0), 0);
+  const total = arriendos.length;
+  const pend = arriendos.filter(a => a.estado === 'Pendiente' || !a.estado).length;
+  const monto = arriendos.filter(a => a.estado === 'Pendiente' || !a.estado).reduce((s, a) => s + (parseInt(a.monto) || 0), 0);
   
-  document.getElementById('statTotal').textContent = arriendos.length;
-  document.getElementById('statPending').textContent = pendiente;
-  document.getElementById('statMonto').textContent = '$' + montoTotal.toLocaleString('es-CL');
-  
-  // Mostrar arriendos en tarjetas
-  const scheduleCont = document.getElementById('scheduleCont');
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statPend').textContent = pend;
+  document.getElementById('statMonto').textContent = '$' + monto.toLocaleString('es-CL');
   
   if(arriendos.length === 0) {
-    scheduleCont.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-txt">No hay arriendos disponibles</div></div>';
+    document.getElementById('mainContent').innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-txt">No hay arriendos</div></div>';
     return;
   }
   
-  const html = arriendos.map(a => `
-    <div class="msg-item" style="margin-bottom:12px">
-      <div class="msg-client">${a.cliente || 'Sin nombre'}</div>
-      <div class="msg-meta">
-        <span>📅 ${a.fecha || 'Sin fecha'}</span>
-        <span>📍 ${a.comuna || 'Sin ubicar'}</span>
-      </div>
-      <div class="msg-monto">$${parseInt(a.monto || 0).toLocaleString('es-CL')}</div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn-copy" onclick="abrirMensajes('${a.id}')">💬 Mensajes</button>
-      </div>
-    </div>
-  `).join('');
+  let html = '<div class="table-wrap"><table><thead><tr>'
+    + '<th>#</th><th>Cliente</th><th>Dirección</th><th>Hora</th><th>Teléfono</th><th>Juegos</th><th>Estado</th><th>Mensaje</th>'
+    + '</tr></thead><tbody>';
   
-  scheduleCont.innerHTML = html;
-}
-
-function abrirMensajes(id) {
-  selectedArriendo = arriendos.find(a => a.id === id);
-  if(!selectedArriendo) return;
-  
-  renderTemplates();
-  
-  // Cambiar a pestaña de mensajes
-  document.getElementById('arriendos').classList.remove('active');
-  document.getElementById('mensajes').classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-tab')[1].classList.add('active');
-}
-
-
-
-function renderTemplates() {
-  if(!selectedArriendo) return;
-  
-  // Mostrar datos del arriendo seleccionado
-  document.getElementById('selectedArrierInfo').innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div>
-        <div style="font-size:15px;font-weight:700;color:var(--text)">${selectedArriendo.cliente}</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:4px">${selectedArriendo.fecha} • ${selectedArriendo.comuna}</div>
-      </div>
-      <div style="font-size:15px;font-weight:800;color:var(--green)">$${parseInt(selectedArriendo.monto || 0).toLocaleString('es-CL')}</div>
-    </div>
-    <div style="font-size:12px;color:var(--text2);padding-top:10px;border-top:1px solid var(--border);margin-top:10px">
-      🎮 ${(selectedArriendo.juegos || []).join(', ') || 'Sin juegos'}
-    </div>
-  `;
-  
-  const html = Object.entries(TEMPLATES).map(([key, tpl]) => {
-    const msg = generarMensaje(tpl, selectedArriendo);
-    return `
-      <div class="template-card">
-        <div class="template-titulo">
-          <span class="template-icon">${tpl.icon}</span>
-          <span>${tpl.titulo}</span>
-          <span class="template-fase">${tpl.fase}</span>
-        </div>
-        <div class="template-text">${escapeHtml(msg)}</div>
-        <div class="template-actions">
-          <button class="btn-copy" onclick="copiarMensaje(\`${escapeBacktick(msg)}\`)">📋 Copiar</button>
-          <button class="btn-send" onclick="abrirConfirm(\`${escapeBacktick(msg)}\`)">✓ Enviar</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-  
-  document.getElementById('templatesContainer').innerHTML = html;
-}
-
-function generarMensaje(tpl, arr) {
-  let msg = tpl.content;
-  const codigo = `AK-${arr.cliente.slice(0,3).toUpperCase()}-${arr.id.slice(-4)}`;
-  
-  msg = msg.replace(/{{cliente}}/g, arr.cliente || 'Cliente');
-  msg = msg.replace(/{{fecha}}/g, arr.fecha || 'hoy');
-  msg = msg.replace(/{{hora}}/g, arr.hora ? ' a las ' + arr.hora : '');
-  msg = msg.replace(/{{comuna}}/g, arr.comuna || '');
-  msg = msg.replace(/{{juegos}}/g, (arr.juegos || []).join(', ') || 'juegos');
-  msg = msg.replace(/{{monto}}/g, '$' + parseInt(arr.monto || 0).toLocaleString('es-CL'));
-  msg = msg.replace(/{{localizacion}}/g, arr.direccion ? '\n📍 ' + arr.direccion : '');
-  msg = msg.replace(/{{codigo}}/g, codigo);
-  
-  return msg;
-}
-
-function escapeHtml(s) {
-  const div = document.createElement('div');
-  div.textContent = s;
-  return div.innerHTML;
-}
-
-function escapeBacktick(s) {
-  return s.replace(/`/g, '\\`');
-}
-
-function copiarMensaje(msg) {
-  navigator.clipboard.writeText(msg).then(() => {
-    toast('✓ Copiado al portapapeles');
-  }).catch(() => {
-    toast('✗ Error al copiar', 'err');
+  arriendos.forEach((a, i) => {
+    const estado = a.estado || 'Pendiente';
+    const badgeClass = estado === 'Pagado' ? 'badge-ok' : estado === 'Cancelado' ? 'badge-pend' : 'badge-pend';
+    const tel = a.telefono ? `<a href="tel:${a.telefono}" style="color:var(--blue);font-weight:700;text-decoration:none">${a.telefono}</a>` : '—';
+    const juegos = (a.juegos || []).join(', ') || '—';
+    const btnMsg = `<button class="btn-wa-msg" onclick="abrirMensaje('${a.id}')">💬 Mensaje</button>`;
+    
+    html += '<tr>'
+      + `<td style="color:var(--text3)">${i+1}</td>`
+      + `<td style="font-weight:700">${a.cliente || '—'}</td>`
+      + `<td style="font-size:11px">${a.direccion || '—'}<br><span style="color:var(--text3)">${a.comuna || ''}</span></td>`
+      + `<td>${a.hora || '—'}</td>`
+      + `<td>${tel}</td>`
+      + `<td style="font-size:11px">${juegos}</td>`
+      + `<td><span class="badge ${badgeClass}">${estado}</span></td>`
+      + `<td>${btnMsg}</td>`
+      + '</tr>';
   });
+  
+  html += '</tbody></table></div>';
+  document.getElementById('mainContent').innerHTML = html;
 }
 
-function abrirConfirm(msg) {
-  mensajeEnPortapapeles = msg;
-  document.getElementById('modalMsg').textContent = msg;
-  document.getElementById('modalConfirm').classList.add('show');
-}
+const TEMPLATES = {
+  confirmacion: { titulo: '✓ Confirmación', content: `Hola {{cliente}}, confirmamos tu arriendo para el {{fecha}}{{hora}} en {{comuna}}.\n\n📋 Detalles:\n• Juegos: {{juegos}}\n• Monto: {{monto}}\n{{localizacion}}\n\n¡Nos vemos pronto! 🎉` },
+  preevento: { titulo: '📸 Comparte tu diversión', content: `¡Hola {{cliente}}!\n\nEstamos listos con {{juegos}} para tu día especial 🎊\n\n📸 Etiquétanos con #EntretencionesAkimel en IG @entretenciones_akimel\n\n¡Que comience la diversión!` },
+  postariendo: { titulo: '⭐ ¿Cómo estuvo?', content: `Hola {{cliente}}, ¿cómo estuvo tu evento con {{juegos}}? 🎉\n\nNos gustaría saber tu experiencia. ¡Gracias!` },
+  instagram: { titulo: '📲 Síguenos en Instagram', content: `Hola {{cliente}}, para tu próximo evento síguenos en @entretenciones_akimel\n\n📸 Galería de eventos\n🎁 Ofertas exclusivas\n💝 Promociones especiales\n\n¡No te pierdas nada!` },
+  referral: { titulo: '🎁 Recomienda y gana', content: `Hola {{cliente}}, ¿te gustó? ¡Recomienda a un amigo!\n\nAmbos obtienen 10% de descuento en el próximo arriendo.\n\nCódigo: {{codigo}}\n\n¡Gracias!` },
+  proximo: { titulo: '🔔 Próximo evento', content: `¡Hola {{cliente}}!\n\nPara tu próximo evento tenemos ofertas especiales.\n\n🎯 Envíos gratis + Pago facilitado\n\n¡Contáctanos!` }
+};
 
-function cerrarModal() {
-  document.getElementById('modalConfirm').classList.remove('show');
-}
+window.abrirMensaje = function(id) {
+  const arr = arriendos.find(a => a.id === id);
+  if(!arr) return;
+  
+  const msgs = Object.values(TEMPLATES).map(t => {
+    let msg = t.content
+      .replace(/{{cliente}}/g, arr.cliente || 'Cliente')
+      .replace(/{{fecha}}/g, arr.fecha || 'hoy')
+      .replace(/{{hora}}/g, arr.hora ? ' a las ' + arr.hora : '')
+      .replace(/{{comuna}}/g, arr.comuna || '')
+      .replace(/{{juegos}}/g, (arr.juegos || []).join(', ') || 'juegos')
+      .replace(/{{monto}}/g, '$' + (parseInt(arr.monto) || 0).toLocaleString('es-CL'))
+      .replace(/{{localizacion}}/g, arr.direccion ? '\n📍 ' + arr.direccion : '')
+      .replace(/{{codigo}}/g, `AK-${arr.cliente.slice(0,3).toUpperCase()}-${arr.id.slice(-4)}`);
+    return msg;
+  }).join('\n\n---\n\n');
+  
+  document.getElementById('msgContent').textContent = msgs;
+  document.getElementById('modalMsg').classList.add('show');
+  window.msgToCopy = msgs;
+};
 
-function copiarAlPortapapeles() {
-  navigator.clipboard.writeText(mensajeEnPortapapeles).then(() => {
-    toast('✓ Abre WhatsApp y pega el mensaje');
+window.cerrarModal = function() {
+  document.getElementById('modalMsg').classList.remove('show');
+};
+
+window.copiarYCerrar = function() {
+  navigator.clipboard.writeText(window.msgToCopy).then(() => {
+    toast('✓ Copiado. Abre WhatsApp y pega', 'ok');
     cerrarModal();
-  }).catch(() => {
-    toast('✗ Error al copiar', 'err');
   });
-}
-
-function switchSection(name, tab) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  
-  document.getElementById(name).classList.add('active');
-  tab.classList.add('active');
-}
-
-// Actualizar arriendos cada 5 segundos
-setInterval(() => {
-  if(currentUser) cargarArriendos();
-}, 5000);
+};
 </script>
 </body>
 </html>
