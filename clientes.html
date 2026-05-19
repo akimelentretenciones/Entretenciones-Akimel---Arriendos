@@ -142,7 +142,7 @@ tr:hover td{background:var(--bg3)}
         <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%230071ce' width='100' height='100'/%3E%3Ctext x='50' y='60' font-size='60' fill='white' text-anchor='middle' dominant-baseline='middle'%3E⚡%3C/text%3E%3C/svg%3E" alt="">
       </div>
       <div>
-        <div class="hdr-name" id="hdrName">Cliente</div>
+        <div class="hdr-name" id="hdrName">App Clientes</div>
         <div class="hdr-fecha" id="hdrFecha"></div>
       </div>
     </div>
@@ -162,6 +162,32 @@ tr:hover td{background:var(--bg3)}
       <div class="stat"><div class="stat-v" id="statTotal">0</div><div class="stat-l">Total</div></div>
       <div class="stat"><div class="stat-v" id="statPend">0</div><div class="stat-l">Pendiente</div></div>
       <div class="stat"><div class="stat-v" id="statMonto">$0</div><div class="stat-l">Monto</div></div>
+    </div>
+
+    <!-- FILTROS -->
+    <div style="background:#fff;border-radius:var(--radius);padding:14px;margin-bottom:16px;box-shadow:var(--shadow);display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <select id="filtroAno" onchange="aplicarFiltros()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600">
+        <option value="2024">2024</option>
+        <option value="2025" selected>2025</option>
+        <option value="2026">2026</option>
+      </select>
+      
+      <select id="filtroMes" onchange="aplicarFiltros()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600">
+        <option value="1">Enero</option>
+        <option value="2">Febrero</option>
+        <option value="3">Marzo</option>
+        <option value="4">Abril</option>
+        <option value="5" selected>Mayo</option>
+        <option value="6">Junio</option>
+        <option value="7">Julio</option>
+        <option value="8">Agosto</option>
+        <option value="9">Septiembre</option>
+        <option value="10">Octubre</option>
+        <option value="11">Noviembre</option>
+        <option value="12">Diciembre</option>
+      </select>
+      
+      <button id="btnSemana" onclick="filtrarPorSemana()" style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:var(--bg);cursor:pointer;transition:all .2s">📅 Esta semana</button>
     </div>
 
     <div id="mainContent"></div>
@@ -204,6 +230,9 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let arriendos = [];
+let filtroAno = new Date().getFullYear();
+let filtroMes = new Date().getMonth() + 1;
+let filtroSemana = false;
 
 function toast(msg, tipo) {
   const t = document.getElementById('toast');
@@ -260,6 +289,11 @@ async function cargarArriendos() {
   try {
     const snap = await getDocs(collection(db, 'arriendos'));
     arriendos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    
+    // Inicializar filtros
+    document.getElementById('filtroAno').value = filtroAno;
+    document.getElementById('filtroMes').value = filtroMes;
+    
     renderizar();
   } catch(e) {
     console.error(e);
@@ -268,24 +302,25 @@ async function cargarArriendos() {
 }
 
 function renderizar() {
-  const total = arriendos.length;
-  const pend = arriendos.filter(a => a.estado === 'Pendiente' || !a.estado).length;
-  const monto = arriendos.filter(a => a.estado === 'Pendiente' || !a.estado).reduce((s, a) => s + (parseInt(a.monto) || 0), 0);
+  const filtrados = filtrarArriendos();
+  const total = filtrados.length;
+  const pend = filtrados.filter(a => a.estado === 'Pendiente' || !a.estado).length;
+  const monto = filtrados.filter(a => a.estado === 'Pendiente' || !a.estado).reduce((s, a) => s + (parseInt(a.monto) || 0), 0);
   
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statPend').textContent = pend;
   document.getElementById('statMonto').textContent = '$' + monto.toLocaleString('es-CL');
   
-  if(arriendos.length === 0) {
-    document.getElementById('mainContent').innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-txt">No hay arriendos</div></div>';
+  if(filtrados.length === 0) {
+    document.getElementById('mainContent').innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-txt">No hay arriendos para este período</div></div>';
     return;
   }
   
   let html = '<div class="table-wrap"><table><thead><tr>'
-    + '<th>#</th><th>Cliente</th><th>Dirección</th><th>Hora</th><th>Teléfono</th><th>Juegos</th><th>Estado</th><th>Mensaje</th>'
+    + '<th>#</th><th>Cliente</th><th>Fecha</th><th>Dirección</th><th>Comuna</th><th>Hora</th><th>Teléfono</th><th>Juegos</th><th>Estado</th><th>Mensaje</th>'
     + '</tr></thead><tbody>';
   
-  arriendos.forEach((a, i) => {
+  filtrados.forEach((a, i) => {
     const estado = a.estado || 'Pendiente';
     const badgeClass = estado === 'Pagado' ? 'badge-ok' : estado === 'Cancelado' ? 'badge-pend' : 'badge-pend';
     const tel = a.telefono ? `<a href="tel:${a.telefono}" style="color:var(--blue);font-weight:700;text-decoration:none">${a.telefono}</a>` : '—';
@@ -295,7 +330,9 @@ function renderizar() {
     html += '<tr>'
       + `<td style="color:var(--text3)">${i+1}</td>`
       + `<td style="font-weight:700">${a.cliente || '—'}</td>`
-      + `<td style="font-size:11px">${a.direccion || '—'}<br><span style="color:var(--text3)">${a.comuna || ''}</span></td>`
+      + `<td style="font-weight:600">${a.fecha || '—'}</td>`
+      + `<td style="font-size:11px">${a.direccion || '—'}</td>`
+      + `<td style="font-weight:600;color:var(--blue)">${a.comuna || '—'}</td>`
       + `<td>${a.hora || '—'}</td>`
       + `<td>${tel}</td>`
       + `<td style="font-size:11px">${juegos}</td>`
@@ -306,6 +343,33 @@ function renderizar() {
   
   html += '</tbody></table></div>';
   document.getElementById('mainContent').innerHTML = html;
+}
+
+function filtrarArriendos() {
+  if(filtroSemana) {
+    const {inicio, fin} = obtenerFechasSemanaActual();
+    return arriendos.filter(a => {
+      if(!a.fecha) return false;
+      const [d, m, y] = a.fecha.split('/');
+      const fecha = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+      return fecha >= inicio && fecha <= fin;
+    });
+  } else {
+    return arriendos.filter(a => {
+      if(!a.fecha) return false;
+      const [d, m, y] = a.fecha.split('/');
+      return parseInt(y) === filtroAno && parseInt(m) === filtroMes;
+    });
+  }
+}
+
+function obtenerFechasSemanaActual() {
+  const hoy = new Date();
+  const dia = hoy.getDay();
+  const primero = hoy.getDate() - dia + (dia === 0 ? -6 : 1);
+  const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), primero);
+  const fin = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + 6);
+  return {inicio, fin};
 }
 
 const TEMPLATES = {
@@ -349,6 +413,60 @@ window.copiarYCerrar = function() {
     cerrarModal();
   });
 };
+
+window.aplicarFiltros = function() {
+  filtroAno = parseInt(document.getElementById('filtroAno').value);
+  filtroMes = parseInt(document.getElementById('filtroMes').value);
+  filtroSemana = false;
+  document.getElementById('btnSemana').style.background = 'var(--bg)';
+  document.getElementById('btnSemana').style.color = 'var(--text)';
+  renderizar();
+};
+
+window.filtrarPorSemana = function() {
+  filtroSemana = !filtroSemana;
+  if(filtroSemana) {
+    document.getElementById('btnSemana').style.background = 'var(--blue)';
+    document.getElementById('btnSemana').style.color = '#fff';
+  } else {
+    document.getElementById('btnSemana').style.background = 'var(--bg)';
+    document.getElementById('btnSemana').style.color = 'var(--text)';
+  }
+  renderizar();
+};
+
+function obtenerFechasDelAno(year, month) {
+  const inicio = new Date(year, month - 1, 1);
+  const fin = new Date(year, month, 0);
+  return {inicio, fin};
+}
+
+function obtenerFechasSemanaActual() {
+  const hoy = new Date();
+  const dia = hoy.getDay();
+  const primero = hoy.getDate() - dia + (dia === 0 ? -6 : 1);
+  const inicio = new Date(hoy.setDate(primero));
+  const fin = new Date(hoy.setDate(inicio.getDate() + 6));
+  return {inicio, fin};
+}
+
+function filtrarArriendos() {
+  if(filtroSemana) {
+    const {inicio, fin} = obtenerFechasSemanaActual();
+    return arriendos.filter(a => {
+      if(!a.fecha) return false;
+      const [d, m, y] = a.fecha.split('/');
+      const fecha = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+      return fecha >= inicio && fecha <= fin;
+    });
+  } else {
+    return arriendos.filter(a => {
+      if(!a.fecha) return false;
+      const [d, m, y] = a.fecha.split('/');
+      return parseInt(y) === filtroAno && parseInt(m) === filtroMes;
+    });
+  }
+}
 </script>
 </body>
 </html>
