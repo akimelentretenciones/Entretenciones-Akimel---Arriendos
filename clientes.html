@@ -196,12 +196,13 @@ tr:hover td{background:var(--bg3)}
   <div class="modal-box">
     <div class="modal-title">📤 Enviar mensaje por WhatsApp</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
-      El mensaje se copiará a tu portapapeles. Abre WhatsApp, busca el contacto y pega.
+      Elige cómo enviar el mensaje a tu cliente.
     </div>
     <div class="modal-msg" id="msgContent"></div>
-    <div class="modal-btns">
+    <div class="modal-btns" style="flex-direction: column; gap: 10px;">
+      <button class="btn-confirm" style="background:var(--wa);color:#fff;border:none" onclick="enviarWhatsApp(window.currentMsgId)">🟢 Enviar por WhatsApp</button>
+      <button class="btn-confirm" style="background:var(--blue);color:#fff;border:none" onclick="copiarYCerrar()">📋 Copiar mensaje</button>
       <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn-confirm" onclick="copiarYCerrar()">📋 Copiar mensaje</button>
     </div>
   </div>
 </div>
@@ -388,6 +389,9 @@ window.abrirMensaje = function(id) {
   const arr = arriendos.find(a => a.id === id);
   if(!arr) return;
   
+  // Guardar el ID para usar en enviarWhatsApp
+  window.currentMsgId = id;
+  
   // Obtener el día de la semana a partir de la fecha
   let fechaDia = 'ese día';
   if(arr.fecha) {
@@ -425,6 +429,51 @@ window.copiarYCerrar = function() {
     toast('✓ Copiado. Abre WhatsApp y pega', 'ok');
     cerrarModal();
   });
+};
+
+window.enviarWhatsApp = function(id) {
+  const arr = arriendos.find(a => a.id === id);
+  if(!arr || !arr.telefono) {
+    toast('⚠️ No hay teléfono disponible', 'err');
+    return;
+  }
+  
+  // Obtener el mensaje de confirmación
+  let fechaDia = 'ese día';
+  if(arr.fecha) {
+    const [d, m, y] = arr.fecha.split('/');
+    const fecha = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    fechaDia = dias[fecha.getDay()];
+  }
+  
+  let msg = TEMPLATES.confirmacion.content
+    .replace(/{{cliente}}/g, arr.cliente || 'Cliente')
+    .replace(/{{fechaDia}}/g, fechaDia)
+    .replace(/{{fecha}}/g, arr.fecha || 'hoy')
+    .replace(/{{hora}}/g, arr.hora ? ' a las ' + arr.hora : '')
+    .replace(/{{comuna}}/g, arr.comuna || '')
+    .replace(/{{juegos}}/g, (arr.juegos || []).join(', ') || 'juegos')
+    .replace(/{{monto}}/g, '$' + (parseInt(arr.monto) || 0).toLocaleString('es-CL'))
+    .replace(/{{localizacion}}/g, arr.direccion ? '\n📍 ' + arr.direccion : '')
+    .replace(/{{codigo}}/g, `AK-${arr.cliente.slice(0,3).toUpperCase()}-${arr.id.slice(-4)}`);
+  
+  // Limpiar número de teléfono para WhatsApp
+  let phone = arr.telefono.replace(/\D/g, '');
+  if(!phone.startsWith('56')) {
+    if(phone.startsWith('9')) phone = '56' + phone;
+    else phone = '56' + phone;
+  }
+  
+  // Codificar el mensaje
+  const encodedMsg = encodeURIComponent(msg);
+  
+  // URL de WhatsApp
+  const waUrl = `https://wa.me/${phone}?text=${encodedMsg}`;
+  
+  // Abrir WhatsApp
+  window.open(waUrl, '_blank');
+  cerrarModal();
 };
 
 window.aplicarFiltros = function() {
