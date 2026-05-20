@@ -173,17 +173,32 @@ tr:hover td{background:var(--bg3)}
 
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+// Configuración Firebase (MISMA que en index.html)
+const firebaseConfig = {
+  apiKey: "AIzaSyB-1PQ0xHHoXBqb0H5LI0GWEfL6tUYGMTA",
+  authDomain: "base-de-datos-akimel-arriendos.firebaseapp.com",
+  projectId: "base-de-datos-akimel-arriendos",
+  storageBucket: "base-de-datos-akimel-arriendos.firebasestorage.app",
+  messagingSenderId: "319707843854",
+  appId: "1:319707843854:web:fe82dd81dade45eb4bcc1e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 // ═══════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════
-let arriendos = JSON.parse(localStorage.getItem('akimel_arriendos') || '[]');
+let arriendos = [];
 let mensajes = JSON.parse(localStorage.getItem('akimel_mensajes') || '{}');
 let filtroActual = 'todos';
 let arriendoActual = null;
 
 const save = () => {
-  localStorage.setItem('akimel_arriendos', JSON.stringify(arriendos));
   localStorage.setItem('akimel_mensajes', JSON.stringify(mensajes));
 };
 
@@ -256,8 +271,8 @@ function renderList() {
 // ═══════════════════════════════════════════════════
 // DETALLE CON MENSAJES
 // ═══════════════════════════════════════════════════
-function verDetalle(id) {
-  arriendoActual = arriendos.find(x => x.id === id || x.id === parseInt(id));
+window.verDetalle = function(id) {
+  arriendoActual = arriendos.find(x => x.id === id);
   if(!arriendoActual) return;
 
   const msgsKey = `arriendo_${arriendoActual.id}`;
@@ -325,9 +340,9 @@ function verDetalle(id) {
   container.innerHTML = html;
   ir('detalle');
   setTimeout(() => document.getElementById('msg-input').focus(), 100);
-}
+};
 
-function agregarMensaje() {
+window.agregarMensaje = function() {
   if(!arriendoActual) return;
   const input = document.getElementById('msg-input');
   const text = input.value.trim();
@@ -343,51 +358,62 @@ function agregarMensaje() {
   save();
   toast('✓ Mensaje guardado');
   input.value = '';
-  verDetalle(arriendoActual.id);
-}
+  window.verDetalle(arriendoActual.id);
+};
 
 // ═══════════════════════════════════════════════════
 // FILTROS
 // ═══════════════════════════════════════════════════
-function setFiltro(f) {
+window.setFiltro = function(f) {
   filtroActual = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
   event.target.classList.add('on');
   renderList();
-}
+};
 
 // ═══════════════════════════════════════════════════
 // NAVEGACIÓN
 // ═══════════════════════════════════════════════════
-function ir(name) {
+window.ir = function(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('pg-' + name).classList.add('active');
   if(name === 'list') renderList();
-}
+};
 
-function volverLista() {
-  ir('list');
-}
+window.volverLista = function() {
+  window.ir('list');
+};
+
+// ═══════════════════════════════════════════════════
+// FIREBASE LISTENER
+// ═══════════════════════════════════════════════════
+onSnapshot(collection(db, 'arriendos'), (snap) => {
+  arriendos = [];
+  snap.forEach(doc => {
+    arriendos.push({
+      id: doc.id,
+      ...doc.data()
+    });
+  });
+  renderList();
+  
+  // Si hay un arriendo abierto, actualizar sus detalles
+  if(arriendoActual && document.getElementById('pg-detalle').classList.contains('active')) {
+    const actualizado = arriendos.find(a => a.id === arriendoActual.id);
+    if(actualizado) {
+      arriendoActual = actualizado;
+      window.verDetalle(arriendoActual.id);
+    }
+  }
+}, (error) => {
+  console.error('Error al escuchar Firestore:', error);
+});
 
 // ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  renderList();
-});
-
-// Sincronizar cambios desde otra tab
-window.addEventListener('storage', () => {
-  arriendos = JSON.parse(localStorage.getItem('akimel_arriendos') || '[]');
-  mensajes = JSON.parse(localStorage.getItem('akimel_mensajes') || '{}');
-  renderList();
-  if(arriendoActual) {
-    const actualizado = arriendos.find(a => a.id === arriendoActual.id);
-    if(actualizado) {
-      arriendoActual = actualizado;
-      verDetalle(arriendoActual.id);
-    }
-  }
+  window.ir('list');
 });
 </script>
 </body>
