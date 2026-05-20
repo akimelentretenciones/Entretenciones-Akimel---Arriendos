@@ -2,312 +2,62 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>AKIMEL — Enviar Mensajes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AKIMEL - Enviar Mensajes</title>
 <meta name="theme-color" content="#0071ce">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 :root {
   --bg: #f0f4f8;
-  --bg2: #ffffff;
-  --bg3: #e8f0f7;
   --blue: #0071ce;
-  --blue2: #005fa3;
   --blue3: #041e42;
   --green: #5fb446;
   --text: #041e42;
-  --text2: #3a5068;
   --text3: #7a93aa;
   --border: rgba(0,113,206,.12);
   --wa: #25D366;
   --radius: 12px;
   --shadow: 0 2px 12px rgba(0,0,0,.07);
 }
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-}
-
-header {
-  background: var(--blue3);
-  padding: 0 16px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: var(--shadow);
-  color: white;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.logo-icon {
-  width: 34px;
-  height: 34px;
-  background: var(--green);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.logo-text {
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -.3px;
-}
-
-.main {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-bottom: 40px;
-}
-
-.import-section {
-  background: white;
-  padding: 24px;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.import-section h2 {
-  margin-bottom: 12px;
-  color: var(--blue3);
-}
-
-.import-section p {
-  color: var(--text3);
-  font-size: 14px;
-  margin-bottom: 16px;
-}
-
-.btn {
-  background: var(--blue);
-  color: white;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 14px;
-  transition: all .2s;
-}
-
-.btn:hover {
-  background: var(--blue2);
-}
-
-.btn-secondary {
-  background: var(--bg3);
-  color: var(--text2);
-  margin-left: 8px;
-}
-
-.btn-secondary:hover {
-  background: var(--border);
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.stat {
-  background: white;
-  padding: 16px;
-  border-radius: var(--radius);
-  border-left: 4px solid var(--blue);
-  box-shadow: var(--shadow);
-}
-
-.stat-v {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--blue);
-}
-
-.stat-l {
-  font-size: 12px;
-  color: var(--text3);
-  margin-top: 6px;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-}
-
-.filters {
-  background: white;
-  padding: 16px;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  margin-bottom: 20px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.filters select,
-.filters input {
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: 'Sora', sans-serif;
-}
-
-.table-container {
-  background: white;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-thead {
-  background: var(--bg3);
-}
-
-th {
-  padding: 12px;
-  text-align: left;
-  font-weight: 700;
-  color: var(--text2);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .6px;
-  border-bottom: 2px solid var(--border);
-}
-
-td {
-  padding: 12px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text2);
-}
-
-tr:hover td {
-  background: var(--bg3);
-}
-
-.cliente-cell {
-  font-weight: 700;
-  color: var(--text);
-}
-
-.monto-cell {
-  font-weight: 700;
-  color: var(--blue);
-}
-
-.btn-wa {
-  background: rgba(37, 211, 102, .15);
-  color: var(--wa);
-  border: 1.5px solid rgba(37, 211, 102, .5);
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 12px;
-  transition: all .2s;
-  font-family: 'Sora', sans-serif;
-}
-
-.btn-wa:hover {
-  background: rgba(37, 211, 102, .25);
-}
-
-.empty {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--text3);
-}
-
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-}
-
-.empty-txt {
-  font-size: 16px;
-}
-
-#file-input {
-  display: none;
-}
-
-.toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--blue3);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 30px;
-  box-shadow: var(--shadow);
-  z-index: 1000;
-}
-
-.toast.ok {
-  background: var(--green);
-}
-
-@media (max-width: 768px) {
-  table { font-size: 11px; }
-  th, td { padding: 8px; }
-  .filters { flex-direction: column; align-items: stretch; }
-  .filters select, .filters input { width: 100%; }
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Sora', sans-serif; background: var(--bg); color: var(--text); }
+header { background: var(--blue3); padding: 12px 16px; display: flex; align-items: center; gap: 10px; color: white; position: sticky; top: 0; box-shadow: var(--shadow); }
+.logo-icon { width: 34px; height: 34px; background: var(--green); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; }
+.logo-text { font-size: 16px; font-weight: 800; }
+.main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat { background: white; padding: 16px; border-radius: var(--radius); border-left: 4px solid var(--blue); box-shadow: var(--shadow); }
+.stat-v { font-size: 28px; font-weight: 800; color: var(--blue); }
+.stat-l { font-size: 11px; color: var(--text3); margin-top: 6px; }
+.filters { background: white; padding: 16px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
+.filters select, .filters input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+.table-container { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { background: #e8f0f7; }
+th { padding: 12px; text-align: left; font-weight: 700; color: var(--text3); font-size: 11px; border-bottom: 2px solid var(--border); }
+td { padding: 12px; border-bottom: 1px solid var(--border); }
+tr:hover td { background: #e8f0f7; }
+.btn-wa { background: rgba(37, 211, 102, .15); color: var(--wa); border: 1px solid rgba(37, 211, 102, .5); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
+.btn-wa:hover { background: rgba(37, 211, 102, .25); }
+.empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+.loading { text-align: center; padding: 40px; }
+.spinner { border: 3px solid var(--border); border-top: 3px solid var(--blue); border-radius: 50%; width: 30px; height: 30px; animation: spin .6s linear infinite; margin: 0 auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--blue3); color: white; padding: 12px 20px; border-radius: 30px; box-shadow: var(--shadow); z-index: 1000; }
+.toast.ok { background: var(--green); }
+@media(max-width:768px) { table { font-size: 11px; } th, td { padding: 8px; } .filters { flex-direction: column; } .filters select, .filters input { width: 100%; } }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">
-    <div class="logo-icon">💬</div>
-    <div>
-      <div class="logo-text">AKIMEL Mensajes</div>
-      <div style="font-size: 10px; color: rgba(255,255,255,.6);">Enviar confirmaciones</div>
-    </div>
+  <div class="logo-icon">💬</div>
+  <div>
+    <div class="logo-text">AKIMEL Mensajes</div>
+    <div style="font-size: 10px; color: rgba(255,255,255,.6);">Enviar confirmaciones</div>
   </div>
 </header>
 
 <div class="main">
-  <div class="import-section">
-    <h2>📥 Importar arriendos</h2>
-    <p>En index.html haz clic en "Exportar como JSON" y carga el archivo aquí</p>
-    <button class="btn" onclick="document.getElementById('file-input').click()">📄 Cargar JSON</button>
-    <input type="file" id="file-input" accept=".json" onchange="cargarJSON(event)">
-  </div>
-
   <div class="stats">
     <div class="stat">
       <div class="stat-v" id="stat-total">0</div>
@@ -319,7 +69,7 @@ tr:hover td {
     </div>
     <div class="stat">
       <div class="stat-v" id="stat-monto">$0</div>
-      <div class="stat-l">Monto</div>
+      <div class="stat-l">Por cobrar</div>
     </div>
   </div>
 
@@ -340,30 +90,10 @@ tr:hover td {
       <option value="12">Diciembre</option>
     </select>
     <input type="search" id="filtro-cliente" placeholder="Buscar cliente..." style="flex: 1;">
-    <button onclick="renderTable()" style="padding: 8px 16px; background: var(--blue); color: white; border: none; border-radius: 8px; cursor: pointer;">Filtrar</button>
+    <button onclick="renderTable()" style="padding: 8px 16px; background: var(--blue); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700;">Filtrar</button>
   </div>
 
-  <div class="table-container">
-    <table id="tabla">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Cliente</th>
-          <th>Fecha</th>
-          <th>Hora</th>
-          <th>Teléfono</th>
-          <th>Juegos</th>
-          <th>Monto</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div id="empty" class="empty">
-      <div class="empty-icon">📭</div>
-      <div class="empty-txt">Importa un archivo JSON para ver arriendos</div>
-    </div>
-  </div>
+  <div id="content"></div>
 </div>
 
 <div id="toast"></div>
@@ -371,22 +101,21 @@ tr:hover td {
 <script>
 let arriendos = [];
 
-function cargarJSON(event) {
-  const file = event.target.files[0];
-  if(!file) return;
-  
-  const reader = new FileReader();
-  reader.onload = (e) => {
+// Sincronizar datos desde localStorage de index.html
+function sincronizar() {
+  const dataLocal = localStorage.getItem('akimel_arriendos');
+  if(dataLocal) {
     try {
-      arriendos = JSON.parse(e.target.result);
-      showToast(`✓ ${arriendos.length} arriendos importados`);
+      arriendos = JSON.parse(dataLocal);
+      console.log('✓ Datos sincronizados:', arriendos.length);
       renderStats();
       renderTable();
-    } catch(err) {
-      showToast('✗ Error en JSON');
+      return true;
+    } catch(e) {
+      console.error('Error:', e);
     }
-  };
-  reader.readAsText(file);
+  }
+  return false;
 }
 
 function renderStats() {
@@ -411,86 +140,88 @@ function renderStats() {
 }
 
 function filtrarArriendos() {
-  let filtrados = arriendos;
+  let f = arriendos;
   const mes = document.getElementById('filtro-mes').value;
   const cliente = document.getElementById('filtro-cliente').value.toLowerCase();
   
-  if(mes) {
-    filtrados = filtrados.filter(a => {
-      const [d, m, y] = a.fecha.split('/');
-      return parseInt(m) === parseInt(mes);
-    });
-  }
+  if(mes) f = f.filter(a => {
+    const [d, m, y] = a.fecha.split('/');
+    return parseInt(m) === parseInt(mes);
+  });
   
-  if(cliente) {
-    filtrados = filtrados.filter(a => a.cliente.toLowerCase().includes(cliente));
-  }
-  
-  return filtrados;
+  if(cliente) f = f.filter(a => a.cliente.toLowerCase().includes(cliente));
+  return f;
 }
 
 function renderTable() {
-  const filtrados = filtrarArriendos();
-  const tbody = document.getElementById('tbody');
-  const empty = document.getElementById('empty');
+  const f = filtrarArriendos();
+  let html = '<div class="table-container"><table><thead><tr>' +
+    '<th>#</th><th>Cliente</th><th>Fecha</th><th>Hora</th><th>Teléfono</th><th>Juegos</th><th>Monto</th><th></th>' +
+    '</tr></thead><tbody>';
   
-  if(filtrados.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
+  if(f.length === 0) {
+    document.getElementById('content').innerHTML = '<div class="empty"><div style="font-size:44px">📭</div><div>Sin arriendos</div></div>';
     return;
   }
   
-  empty.style.display = 'none';
-  tbody.innerHTML = filtrados.map((a, i) => {
+  f.forEach((a, i) => {
     const fecha = a.fecha ? a.fecha.split('/').reverse().join('/') : '—';
     const monto = a.monto ? '$' + parseInt(a.monto).toLocaleString('es-CL') : '$0';
     const juegos = (a.juegos || []).join(', ') || '—';
-    
-    return `<tr>
+    html += `<tr>
       <td>${i+1}</td>
-      <td class="cliente-cell">${a.cliente || '—'}</td>
+      <td style="font-weight:700">${a.cliente}</td>
       <td>${fecha}</td>
       <td>${a.hora || '—'}</td>
       <td>${a.telefono || '—'}</td>
       <td style="font-size:12px">${juegos}</td>
-      <td class="monto-cell">${monto}</td>
-      <td><button class="btn-wa" onclick="enviarMensaje('${a.cliente}','${a.fecha}','${a.telefono}','${a.hora}','${(a.juegos||[]).join(', ')}','${monto}')">💬</button></td>
+      <td style="font-weight:700;color:var(--blue)">${monto}</td>
+      <td><button class="btn-wa" onclick="enviar('${a.cliente}','${a.fecha}','${a.telefono}','${a.hora}','${juegos}','${monto}')">💬</button></td>
     </tr>`;
-  }).join('');
+  });
+  
+  html += '</tbody></table></div>';
+  document.getElementById('content').innerHTML = html;
 }
 
-function getDayName(fecha) {
-  if(!fecha) return 'ese día';
+function getDia(fecha) {
   const [d, m, y] = fecha.split('/');
   const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
   const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
   return dias[date.getDay()];
 }
 
-function enviarMensaje(cliente, fecha, telefono, hora, juegos, monto) {
-  if(!telefono) { showToast('⚠️ Sin teléfono'); return; }
+function enviar(cliente, fecha, tel, hora, juegos, monto) {
+  if(!tel) { toast('⚠️ Sin teléfono'); return; }
   
-  const dayName = getDayName(fecha);
-  let msg = `¡Hola ${cliente}! 👋\n\nTe recordamos que este ${dayName} tienes tu arriendo con Akimel ⚡\n\n📆 ${fecha}${hora ? ' a las ' + hora : ''}\n🎪 ${juegos || 'juegos'}\n💰 Monto: ${monto}\n\n✓ ¿Confirmamos? 🎉`;
+  const dia = getDia(fecha);
+  const msg = `¡Hola ${cliente}! 👋\n\nTe recordamos que este ${dia} tienes tu arriendo con Akimel ⚡\n\n📆 ${fecha}${hora ? ' a las ' + hora : ''}\n🎪 ${juegos}\n💰 Monto: ${monto}\n\n✓ ¿Confirmamos? 🎉`;
   
-  let phone = telefono.replace(/\D/g, '');
+  let phone = tel.replace(/\D/g, '');
   if(!phone.startsWith('56')) phone = '56' + (phone.startsWith('9') ? phone : phone);
   
-  const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
-  showToast('✓ WhatsApp abierto');
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  toast('✓ WhatsApp abierto');
 }
 
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.className = 'toast';
-  if(msg.includes('✓')) toast.classList.add('ok');
-  setTimeout(() => { toast.style.display = 'none'; }, 3000);
-  toast.style.display = 'block';
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast';
+  if(msg.includes('✓')) t.classList.add('ok');
+  setTimeout(() => t.style.display = 'none', 2000);
+  t.style.display = 'block';
 }
 
-renderStats();
+// Iniciar
+if(!sincronizar()) {
+  document.getElementById('content').innerHTML = '<div class="empty"><div style="font-size:44px">⏳</div><div>Cargando datos...</div><div style="font-size:12px;margin-top:12px">Abre index.html primero</div></div>';
+  
+  // Intentar cada 2 segundos
+  const interval = setInterval(() => {
+    if(sincronizar()) clearInterval(interval);
+  }, 2000);
+}
 </script>
 
 </body>
