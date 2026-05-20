@@ -3,503 +3,482 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>AKIMEL — Clientes</title>
-<meta name="theme-color" content="#041e42">
+<title>AKIMEL — Enviar Mensajes</title>
+<meta name="theme-color" content="#0071ce">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="AKIMEL Clientes">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#f0f4f8;--bg2:#fff;--bg3:#e8f0f7;--bg4:#ddeaf6;
-  --blue:#0071ce;--blue2:#005fa3;--blue3:#041e42;
-  --green:#5fb446;--yellow:#ffc220;--orange:#fa6400;--red:#de1c24;
-  --text:#041e42;--text2:#3a5068;--text3:#7a93aa;
-  --border:rgba(0,113,206,.12);--radius:12px;--shadow:0 2px 12px rgba(0,0,0,.07);
-  --wa:#25D366;
+:root {
+  --bg: #f0f4f8;
+  --bg2: #ffffff;
+  --bg3: #e8f0f7;
+  --blue: #0071ce;
+  --blue2: #005fa3;
+  --blue3: #041e42;
+  --green: #5fb446;
+  --text: #041e42;
+  --text2: #3a5068;
+  --text3: #7a93aa;
+  --border: rgba(0,113,206,.12);
+  --wa: #25D366;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,.07);
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;-webkit-text-size-adjust:100%}
-input,select,textarea,button{font-size:16px;font-family:'Sora',sans-serif}
 
-/* LOGIN */
-.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--blue3)}
-.login-box{background:#fff;border-radius:20px;padding:36px 28px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.25)}
-.login-logo{text-align:center;margin-bottom:24px}
-.login-logo img{width:110px;height:110px;object-fit:contain;border-radius:16px;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto}
-.login-title{font-size:20px;font-weight:800;color:var(--blue3)}
-.login-sub{font-size:13px;color:var(--text3);margin-top:4px}
-.fg{margin-bottom:16px}
-.fl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:block;font-weight:700}
-.fi{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);padding:13px 14px;outline:none;transition:border-color .2s;-webkit-appearance:none}
-.fi:focus{border-color:var(--blue)}
-.btn-primary{width:100%;padding:14px;border:none;border-radius:var(--radius);font-family:'Sora',sans-serif;font-weight:700;font-size:15px;cursor:pointer;background:var(--blue);color:#fff;transition:opacity .2s;margin-top:4px}
-.btn-primary:active{opacity:.85}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed}
-.login-err{background:rgba(222,28,36,.08);border:1px solid rgba(222,28,36,.25);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-/* APP */
-.app{display:none;flex-direction:column;min-height:100vh}
-.app.active{display:flex}
+body {
+  font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
 
-/* Header */
-.hdr{background:var(--blue3);padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
-.hdr-left{display:flex;align-items:center;gap:10px}
-.hdr-logo{width:34px;height:34px;border-radius:8px;overflow:hidden;flex-shrink:0}
-.hdr-logo img{width:100%;height:100%;object-fit:cover}
-.hdr-name{font-weight:800;font-size:15px;color:#fff}
-.hdr-fecha{font-size:10px;color:rgba(255,255,255,.55);margin-top:1px}
-.btn-logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:rgba(255,255,255,.8);padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
+header {
+  background: var(--blue3);
+  padding: 0 16px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+  color: white;
+}
 
-/* Main */
-.main{flex:1;padding:16px;padding-bottom:48px;max-width:1400px;margin:0 auto;width:100%}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-/* Worker badge */
-.worker-badge{background:linear-gradient(135deg,var(--blue),var(--blue3));border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)}
-.worker-avatar{width:44px;height:44px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,.3)}
-.worker-info-name{font-weight:800;font-size:17px;color:#fff}
-.worker-info-sub{font-size:12px;color:rgba(255,255,255,.7);margin-top:2px}
+.logo-icon {
+  width: 34px;
+  height: 34px;
+  background: var(--green);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+}
 
-/* Stats */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
-.stat{background:#fff;border-radius:var(--radius);padding:12px;text-align:center;box-shadow:var(--shadow);border-left:3px solid var(--blue)}
-.stat-v{font-weight:800;font-size:22px;color:var(--blue)}
-.stat-l{font-size:10px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.logo-text {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+}
 
-/* Tabla */
-.table-wrap{overflow-x:auto;border-radius:var(--radius);box-shadow:var(--shadow);background:#fff;margin-bottom:20px}
-table{width:100%;border-collapse:collapse;font-size:12px}
-thead{background:var(--bg3)}
-th{padding:10px 12px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;white-space:nowrap;border-bottom:2px solid var(--border)}
-td{padding:10px 12px;border-top:1px solid var(--border);color:var(--text2);vertical-align:middle}
-tr:hover td{background:var(--bg3)}
+.main {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
 
-/* Badge */
-.badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700}
-.badge-pend{background:rgba(0,113,206,.1);color:var(--blue)}
-.badge-ok{background:rgba(95,180,70,.12);color:var(--green)}
-.badge-wa{background:rgba(37,211,102,.1);color:var(--wa)}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
 
-/* Botón WhatsApp */
-.btn-wa-msg{display:inline-flex;align-items:center;gap:4px;background:rgba(37,211,102,.15);color:var(--wa);border:1.5px solid rgba(37,211,102,.5);border-radius:6px;padding:6px 10px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;cursor:pointer;transition:all .2s}
-.btn-wa-msg:hover{background:rgba(37,211,102,.25)}
+.stat {
+  background: white;
+  padding: 16px;
+  border-radius: var(--radius);
+  border-left: 4px solid var(--blue);
+  box-shadow: var(--shadow);
+}
 
-/* Empty */
-.empty{text-align:center;padding:48px 20px;color:var(--text3)}
-.empty-icon{font-size:44px;margin-bottom:10px}
-.empty-txt{font-size:14px;line-height:1.6}
+.stat-v {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--blue);
+}
 
-/* Toast */
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--blue3);color:#fff;border-radius:30px;padding:11px 22px;font-size:13px;font-weight:600;z-index:999;transition:transform .3s;white-space:nowrap;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.2)}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.toast.ok{background:var(--green)}
-.toast.err{background:var(--red)}
+.stat-l {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
 
-/* MODAL */
-.modal-bg{position:fixed;inset:0;background:rgba(4,30,66,.7);z-index:200;display:none;align-items:flex-end}
-.modal-bg.show{display:flex}
-.modal-box{background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
-.modal-title{font-size:16px;font-weight:800;color:var(--blue3);margin-bottom:16px}
-.modal-msg{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;line-height:1.6;color:var(--text2);margin-bottom:16px;max-height:240px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
-.modal-btns{display:flex;gap:8px}
-.modal-btns button{flex:1;padding:10px;border:none;border-radius:var(--radius);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;font-family:'Sora',sans-serif}
-.modal-btns .btn-cancel{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
-.modal-btns .btn-confirm{background:var(--wa);color:#fff}
+.filters {
+  background: white;
+  padding: 16px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filters select,
+.filters input {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Sora', sans-serif;
+}
+
+.table-container {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead {
+  background: var(--bg3);
+}
+
+th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text2);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  border-bottom: 2px solid var(--border);
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+}
+
+tr:hover td {
+  background: var(--bg3);
+}
+
+.cliente-cell {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.monto-cell {
+  font-weight: 700;
+  color: var(--blue);
+}
+
+.btn-wa {
+  background: rgba(37, 211, 102, .15);
+  color: var(--wa);
+  border: 1.5px solid rgba(37, 211, 102, .5);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+  transition: all .2s;
+  font-family: 'Sora', sans-serif;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-wa:hover {
+  background: rgba(37, 211, 102, .25);
+  transform: scale(1.05);
+}
+
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text3);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.empty-txt {
+  font-size: 16px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--blue3);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 30px;
+  box-shadow: var(--shadow);
+  z-index: 1000;
+  animation: slideUp .3s ease;
+}
+
+.toast.ok {
+  background: var(--green);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  table {
+    font-size: 11px;
+  }
+  
+  th, td {
+    padding: 8px;
+  }
+  
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filters select,
+  .filters input {
+    width: 100%;
+  }
+}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div class="login-wrap" id="loginWrap">
-  <div class="login-box">
-    <div class="login-logo">
-      <div style="width:110px;height:110px;background:var(--blue);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:48px;margin-left:auto;margin-right:auto">⚡</div>
+<header>
+  <div class="logo">
+    <div class="logo-icon">💬</div>
+    <div>
+      <div class="logo-text">AKIMEL Mensajes</div>
+      <div style="font-size: 10px; color: rgba(255,255,255,.6);">Enviar confirmaciones</div>
     </div>
-    <div class="login-title">AKIMEL</div>
-    <div class="login-sub">Clientes</div>
-    <div id="loginErr" class="login-err"></div>
-    <div class="fg">
-      <label class="fl">Email</label>
-      <input type="email" class="fi" id="loginEmail" placeholder="tu@email.com">
+  </div>
+</header>
+
+<div class="main">
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-v" id="stat-total">0</div>
+      <div class="stat-l">Total</div>
     </div>
-    <div class="fg">
-      <label class="fl">Contraseña</label>
-      <input type="password" class="fi" id="loginPass" placeholder="••••••••">
+    <div class="stat">
+      <div class="stat-v" id="stat-semana">0</div>
+      <div class="stat-l">Esta semana</div>
     </div>
-    <button class="btn-primary" id="btnLogin" onclick="doLogin()">Ingresar</button>
+    <div class="stat">
+      <div class="stat-v" id="stat-monto">$0</div>
+      <div class="stat-l">Monto por cobrar</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <select id="filtro-mes">
+      <option value="">Todos los meses</option>
+      <option value="1">Enero</option>
+      <option value="2">Febrero</option>
+      <option value="3">Marzo</option>
+      <option value="4">Abril</option>
+      <option value="5">Mayo</option>
+      <option value="6">Junio</option>
+      <option value="7">Julio</option>
+      <option value="8">Agosto</option>
+      <option value="9">Septiembre</option>
+      <option value="10">Octubre</option>
+      <option value="11">Noviembre</option>
+      <option value="12">Diciembre</option>
+    </select>
+    <input type="search" id="filtro-cliente" placeholder="Buscar cliente..." style="flex: 1;">
+    <button onclick="renderTable()" style="padding: 8px 16px; background: var(--blue); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700;">Filtrar</button>
+  </div>
+
+  <div class="table-container">
+    <table id="tabla">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Teléfono</th>
+          <th>Juegos</th>
+          <th>Monto</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+      </tbody>
+    </table>
+    <div id="empty" class="empty" style="display:none">
+      <div class="empty-icon">📭</div>
+      <div class="empty-txt">No hay arriendos para mostrar</div>
+    </div>
   </div>
 </div>
 
-<!-- APP -->
-<div class="app" id="appWrap">
-  <div class="hdr">
-    <div class="hdr-left">
-      <div class="hdr-logo">
-        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%230071ce' width='100' height='100'/%3E%3Ctext x='50' y='60' font-size='60' fill='white' text-anchor='middle' dominant-baseline='middle'%3E⚡%3C/text%3E%3C/svg%3E" alt="">
-      </div>
-      <div>
-        <div class="hdr-name" id="hdrName">App Clientes</div>
-        <div class="hdr-fecha" id="hdrFecha"></div>
-      </div>
-    </div>
-    <button class="btn-logout" onclick="doLogout()">Salir</button>
-  </div>
-
-  <div class="main">
-    <div class="worker-badge">
-      <div class="worker-avatar">C</div>
-      <div>
-        <div class="worker-info-name" id="userName">Cliente</div>
-        <div class="worker-info-sub">Mis arriendos de esta semana</div>
-      </div>
-    </div>
-
-    <div class="stats">
-      <div class="stat"><div class="stat-v" id="statTotal">0</div><div class="stat-l">Total</div></div>
-      <div class="stat"><div class="stat-v" id="statPend">0</div><div class="stat-l">Pendiente</div></div>
-      <div class="stat"><div class="stat-v" id="statMonto">$0</div><div class="stat-l">Monto</div></div>
-    </div>
-
-    <!-- FILTROS -->
-    <div style="background:#fff;border-radius:var(--radius);padding:14px;margin-bottom:16px;box-shadow:var(--shadow);display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <select id="filtroAno" onchange="aplicarFiltros()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600">
-        <option value="2024">2024</option>
-        <option value="2025" selected>2025</option>
-        <option value="2026">2026</option>
-      </select>
-      
-      <select id="filtroMes" onchange="aplicarFiltros()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600">
-        <option value="1">Enero</option>
-        <option value="2">Febrero</option>
-        <option value="3">Marzo</option>
-        <option value="4">Abril</option>
-        <option value="5" selected>Mayo</option>
-        <option value="6">Junio</option>
-        <option value="7">Julio</option>
-        <option value="8">Agosto</option>
-        <option value="9">Septiembre</option>
-        <option value="10">Octubre</option>
-        <option value="11">Noviembre</option>
-        <option value="12">Diciembre</option>
-      </select>
-      
-      <button id="btnSemana" onclick="filtrarPorSemana()" style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:var(--bg);cursor:pointer;transition:all .2s">📅 Esta semana</button>
-    </div>
-
-    <div id="mainContent"></div>
-  </div>
-</div>
-
-<!-- MODAL ENVIAR MENSAJE -->
-
+<div id="toast"></div>
 
 <script>
-// Declarar doLogin y doLogout como globales antes del módulo
-window.doLogin = null;
-window.doLogout = null;
-</script>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCwqFq4B3YOAT5q5LiKHCSYNQhQphviQHE",
-  authDomain: "base-de-datos-akimel-arriendos.firebaseapp.com",
-  projectId: "base-de-datos-akimel-arriendos",
-  storageBucket: "base-de-datos-akimel-arriendos.firebasestorage.app",
-  messagingSenderId: "449557988944",
-  appId: "1:449557988944:web:f5d9e8c7a2b1c3d4e5f6g7h8"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
 let arriendos = [];
-let filtroAno = new Date().getFullYear();
-let filtroMes = new Date().getMonth() + 1;
-let filtroSemana = false;
 
-function toast(msg, tipo) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show '+(tipo||'ok');
-  setTimeout(() => t.className = 'toast', 2800);
+// Cargar arriendos desde localStorage
+function cargarArriendos() {
+  const data = localStorage.getItem('akimel_arriendos');
+  arriendos = data ? JSON.parse(data) : [];
+  console.log('Arriendos cargados:', arriendos);
+  renderStats();
+  renderTable();
 }
 
-window.doLogin = async function() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  const err = document.getElementById('loginErr');
-  const btn = document.getElementById('btnLogin');
-  
-  if(!email || !pass) {
-    err.textContent = 'Completa email y contraseña';
-    err.style.display = 'block';
-    return;
-  }
-  
-  err.style.display = 'none';
-  btn.disabled = true;
-  btn.textContent = 'Ingresando...';
-  
-  try {
-    await signInWithEmailAndPassword(auth, email, pass);
-  } catch(e) {
-    err.textContent = e.code === 'auth/user-not-found' ? 'Usuario no existe' : 'Email o contraseña incorrectos';
-    err.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = 'Ingresar';
-  }
-};
-
-window.doLogout = async function() {
-  await signOut(auth);
-};
-
-onAuthStateChanged(auth, user => {
-  if(user) {
-    document.getElementById('loginWrap').style.display = 'none';
-    document.getElementById('appWrap').classList.add('active');
-    document.getElementById('hdrName').textContent = user.displayName || user.email.split('@')[0];
-    document.getElementById('userName').textContent = user.displayName || 'Cliente';
-    document.getElementById('hdrFecha').textContent = new Date().toLocaleDateString('es-CL', {weekday:'long', day:'numeric', month:'long'});
-    cargarArriendos();
-  } else {
-    document.getElementById('loginWrap').style.display = 'flex';
-    document.getElementById('appWrap').classList.remove('active');
-  }
-});
-
-async function cargarArriendos() {
-  try {
-    const snap = await getDocs(collection(db, 'arriendos'));
-    
-    // Cargar montos desde localStorage de index.html
-    const arrendientosLocal = JSON.parse(localStorage.getItem('akimel_arriendos') || '[]');
-    
-    arriendos = snap.docs.map(d => {
-      const data = d.data();
-      
-      // Buscar en localStorage el monto correspondiente
-      if(!data.monto || data.monto === 0) {
-        const local = arrendientosLocal.find(a => 
-          a.cliente && data.cliente &&
-          a.cliente.toLowerCase() === data.cliente.toLowerCase() && 
-          a.fecha === data.fecha &&
-          a.telefono === data.telefono
-        );
-        if(local && local.monto) {
-          data.monto = local.monto;
-        }
-      }
-      
-      return {id: d.id, ...data};
-    });
-    
-    console.log('Arriendos cargados con montos:', arriendos);
-    
-    // Inicializar filtros
-    document.getElementById('filtroAno').value = filtroAno;
-    document.getElementById('filtroMes').value = filtroMes;
-    
-    renderizar();
-  } catch(e) {
-    console.error(e);
-    document.getElementById('mainContent').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-txt">Error cargando datos</div></div>';
-  }
-}
-
-function renderizar() {
+function renderStats() {
   const filtrados = filtrarArriendos();
-  const total = filtrados.length;
-  const pend = filtrados.filter(a => a.estado === 'Pendiente' || !a.estado).length;
   
-  // CORREGIR: Procesar monto correctamente sea cual sea su formato
-  const monto = filtrados.filter(a => a.estado === 'Pendiente' || !a.estado).reduce((s, a) => {
-    let val = 0;
-    if(a.monto) {
-      if(typeof a.monto === 'string') {
-        val = parseInt(a.monto.replace(/[^0-9]/g, '')) || 0;
-      } else if(typeof a.monto === 'number') {
-        val = a.monto;
-      }
-    }
-    return s + val;
-  }, 0);
+  // Total
+  document.getElementById('stat-total').textContent = arriendos.length;
   
-  document.getElementById('statTotal').textContent = total;
-  document.getElementById('statPend').textContent = pend;
-  document.getElementById('statMonto').textContent = '$' + monto.toLocaleString('es-CL');
+  // Esta semana
+  const hoy = new Date();
+  const primero = hoy.getDate() - hoy.getDay() + (hoy.getDay() === 0 ? -6 : 1);
+  const lunes = new Date(hoy.setDate(primero));
+  const domingo = new Date(lunes);
+  domingo.setDate(domingo.getDate() + 6);
   
-  if(filtrados.length === 0) {
-    document.getElementById('mainContent').innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-txt">No hay arriendos para este período</div></div>';
-    return;
-  }
-  
-  let html = '<div class="table-wrap"><table><thead><tr>'
-    + '<th>#</th><th>Cliente</th><th>Fecha</th><th>Dirección</th><th>Comuna</th><th>Hora</th><th>Teléfono</th><th>Juegos</th><th>Monto</th><th>Mensaje</th>'
-    + '</tr></thead><tbody>';
-  
-  filtrados.forEach((a, i) => {
-    console.log('Arriendo completo:', a); // Debug
-    console.log('Monto valor:', a.monto, 'tipo:', typeof a.monto); // Debug
-    
-    const tel = a.telefono ? `<a href="tel:${a.telefono}" style="color:var(--blue);font-weight:700;text-decoration:none">${a.telefono}</a>` : '—';
-    const juegos = (a.juegos || []).join(', ') || '—';
-    
-    // PROCESAR MONTO CON TODOS LOS CASOS POSIBLES
-    let montoVal = 0;
-    if(a.monto !== undefined && a.monto !== null && a.monto !== '') {
-      if(typeof a.monto === 'string') {
-        const clean = a.monto.replace(/[^0-9]/g, '');
-        montoVal = parseInt(clean) || 0;
-      } else if(typeof a.monto === 'number') {
-        montoVal = a.monto;
-      }
-    }
-    const monto = '$' + montoVal.toLocaleString('es-CL');
-    
-    const btnMsg = `<button class="btn-wa-msg" onclick="abrirMensaje('${a.id}')">💬 Mensaje</button>`;
-    
-    html += '<tr>'
-      + `<td style="color:var(--text3)">${i+1}</td>`
-      + `<td style="font-weight:700">${a.cliente || '—'}</td>`
-      + `<td style="font-weight:600">${a.fecha || '—'}</td>`
-      + `<td style="font-size:11px">${a.direccion || '—'}</td>`
-      + `<td style="font-weight:600;color:var(--blue)">${a.comuna || '—'}</td>`
-      + `<td>${a.hora || '—'}</td>`
-      + `<td>${tel}</td>`
-      + `<td style="font-size:11px">${juegos}</td>`
-      + `<td style="font-weight:700;color:var(--blue)">${monto}</td>`
-      + `<td>${btnMsg}</td>`
-      + '</tr>';
+  const semana = arriendos.filter(a => {
+    const [d, m, y] = a.fecha.split('/');
+    const fecha = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    return fecha >= lunes && fecha <= domingo;
   });
   
-  html += '</tbody></table></div>';
-  document.getElementById('mainContent').innerHTML = html;
+  document.getElementById('stat-semana').textContent = semana.length;
+  
+  // Monto total
+  const monto = filtrados.reduce((s, a) => s + (parseInt(a.monto) || 0), 0);
+  document.getElementById('stat-monto').textContent = '$' + monto.toLocaleString('es-CL');
 }
 
 function filtrarArriendos() {
-  if(filtroSemana) {
-    const {inicio, fin} = obtenerFechasSemanaActual();
-    return arriendos.filter(a => {
-      if(!a.fecha) return false;
+  let filtrados = arriendos;
+  
+  const mes = document.getElementById('filtro-mes').value;
+  const cliente = document.getElementById('filtro-cliente').value.toLowerCase();
+  
+  if(mes) {
+    filtrados = filtrados.filter(a => {
       const [d, m, y] = a.fecha.split('/');
-      const fecha = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-      return fecha >= inicio && fecha <= fin;
-    });
-  } else {
-    return arriendos.filter(a => {
-      if(!a.fecha) return false;
-      const [d, m, y] = a.fecha.split('/');
-      return parseInt(y) === filtroAno && parseInt(m) === filtroMes;
+      return parseInt(m) === parseInt(mes);
     });
   }
+  
+  if(cliente) {
+    filtrados = filtrados.filter(a => 
+      a.cliente.toLowerCase().includes(cliente)
+    );
+  }
+  
+  return filtrados;
 }
 
-function obtenerFechasSemanaActual() {
-  const hoy = new Date();
-  const dia = hoy.getDay();
-  const primero = hoy.getDate() - dia + (dia === 0 ? -6 : 1);
-  const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), primero);
-  const fin = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + 6);
-  return {inicio, fin};
-}
-
-const TEMPLATES = {
-  confirmacion: { titulo: '📅 Confirmar tu arriendo', content: `¡Hola {{cliente}}! 👋\n\nTe recordamos que este {{fechaDia}} tienes tu arriendo con Akimel ⚡\n\n📆 {{fecha}}{{hora}}\n🎪 {{juegos}}\n📍 {{comuna}}{{localizacion}}\n💰 Monto: {{monto}}\n\n✓ ¿Confirmamos? 🎉` },
-  preevento: { titulo: '📸 Comparte tu diversión', content: `¡Hola {{cliente}}! 🎊\n\nEstamos listos con {{juegos}} para tu día especial 🎉\n\n📸 Etiquétanos con #EntretencionesAkimel en IG @entretenciones_akimel\n\n¡Que comience la diversión! 🚀` },
-  postariendo: { titulo: '⭐ ¿Cómo estuvo?', content: `Hola {{cliente}}, ¿cómo estuvo tu evento con {{juegos}}? 🎉\n\n⭐ Nos gustaría saber tu experiencia.\n💬 Tu opinión es importante para nosotros\n\n¡Gracias! 🙌` },
-  instagram: { titulo: '📲 Síguenos en Instagram', content: `Hola {{cliente}}, para tu próximo evento síguenos en @entretenciones_akimel 📸\n\n🎨 Galería de eventos\n🎁 Ofertas exclusivas\n💝 Promociones especiales\n🔔 Novedades en tiempo real\n\n¡No te pierdas nada! 👉 @entretenciones_akimel` },
-  referral: { titulo: '🎁 Recomienda y gana', content: `Hola {{cliente}}, ¿te gustó? 😊\n\n🎁 ¡Recomienda a un amigo y ambos ganan!\n\n💰 10% de descuento en el próximo arriendo\n🎯 Código: {{codigo}}\n\n¡Gracias por confiar en Akimel! ⚡` },
-  proximo: { titulo: '🔔 Próximo evento', content: `¡Hola {{cliente}}! 👋\n\n✨ Para tu próximo evento tenemos sorpresas especiales\n\n🚚 Envíos gratis\n💳 Pago facilitado\n🎊 Ofertas increíbles\n\n¡Contáctanos! 📱` }
-};
-
-window.abrirMensaje = function(id) {
-  const arr = arriendos.find(a => a.id === id);
-  if(!arr || !arr.telefono) {
-    toast('⚠️ No hay teléfono disponible', 'err');
+function renderTable() {
+  const filtrados = filtrarArriendos();
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty');
+  
+  if(filtrados.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
     return;
   }
   
-  let fechaDia = 'ese día';
-  if(arr.fecha) {
-    const [d, m, y] = arr.fecha.split('/');
-    const fecha = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-    fechaDia = dias[fecha.getDay()];
-  }
+  empty.style.display = 'none';
   
-  // PROCESAR MONTO CON TODOS LOS CASOS POSIBLES
-  let montoVal = 0;
-  if(arr.monto !== undefined && arr.monto !== null && arr.monto !== '') {
-    if(typeof arr.monto === 'string') {
-      const clean = arr.monto.replace(/[^0-9]/g, '');
-      montoVal = parseInt(clean) || 0;
-    } else if(typeof arr.monto === 'number') {
-      montoVal = arr.monto;
-    }
-  }
-  const montoFormato = montoVal.toLocaleString('es-CL');
-  
-  console.log('DEBUG abrirMensaje - ID:', id, 'Monto original:', arr.monto, 'Monto procesado:', montoVal); // Debug
-  
-  let msg = `¡Hola ${arr.cliente}! 👋\n\nTe recordamos que este ${fechaDia} tienes tu arriendo con Akimel ⚡\n\n📆 ${arr.fecha}${arr.hora ? ' a las ' + arr.hora : ''}\n🎪 ${(arr.juegos || []).join(', ') || 'juegos'}\n📍 ${arr.comuna}${arr.direccion ? '\n📍 ' + arr.direccion : ''}\n💰 Monto: $${montoFormato}\n\n✓ ¿Confirmamos? 🎉`;
-  
-  let phone = arr.telefono.replace(/\D/g, '');
-  if(!phone.startsWith('56')) {
-    if(phone.startsWith('9')) phone = '56' + phone;
-    else phone = '56' + phone;
-  }
-  
-  const encodedMsg = encodeURIComponent(msg);
-  const waUrl = `https://wa.me/${phone}?text=${encodedMsg}`;
-  
-  window.open(waUrl, '_blank');
-};
-
-window.cerrarModal = function() {
-  // Modal eliminado
-};
-
-window.copiarYCerrar = function() {
-  // Función eliminada
-};
-
-window.enviarWhatsApp = function(id) {
-  // Función eliminada - ahora en abrirMensaje
-};
-
-window.aplicarFiltros = function() {
-  filtroAno = parseInt(document.getElementById('filtroAno').value);
-  filtroMes = parseInt(document.getElementById('filtroMes').value);
-  filtroSemana = false;
-  document.getElementById('btnSemana').style.background = 'var(--bg)';
-  document.getElementById('btnSemana').style.color = 'var(--text)';
-  renderizar();
-};
-
-window.filtrarPorSemana = function() {
-  filtroSemana = !filtroSemana;
-  if(filtroSemana) {
-    document.getElementById('btnSemana').style.background = 'var(--blue)';
-    document.getElementById('btnSemana').style.color = '#fff';
-  } else {
-    document.getElementById('btnSemana').style.background = 'var(--bg)';
-    document.getElementById('btnSemana').style.color = 'var(--text)';
-  }
-  renderizar();
-};
-
-function obtenerFechasDelAno(year, month) {
-  const inicio = new Date(year, month - 1, 1);
-  const fin = new Date(year, month, 0);
-  return {inicio, fin};
+  tbody.innerHTML = filtrados.map((a, i) => {
+    const fecha = a.fecha ? a.fecha.split('/').reverse().join('/') : '—';
+    const monto = a.monto ? '$' + parseInt(a.monto).toLocaleString('es-CL') : '$0';
+    const juegos = (a.juegos || []).join(', ') || '—';
+    
+    return `<tr>
+      <td>${i+1}</td>
+      <td class="cliente-cell">${a.cliente || '—'}</td>
+      <td>${fecha}</td>
+      <td>${a.hora || '—'}</td>
+      <td>${a.telefono || '—'}</td>
+      <td style="font-size: 12px;">${juegos}</td>
+      <td class="monto-cell">${monto}</td>
+      <td><button class="btn-wa" onclick="enviarMensaje('${a.id}', '${a.cliente}', '${a.fecha}', '${a.telefono}', '${a.hora}', '${(a.juegos || []).join(', ')}', '${monto}')">💬 Enviar</button></td>
+    </tr>`;
+  }).join('');
 }
+
+function getDayName(fecha) {
+  if(!fecha) return 'ese día';
+  const [d, m, y] = fecha.split('/');
+  const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+  const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  return dias[date.getDay()];
+}
+
+function enviarMensaje(id, cliente, fecha, telefono, hora, juegos, monto) {
+  if(!telefono) {
+    showToast('⚠️ No hay teléfono disponible');
+    return;
+  }
+  
+  const dayName = getDayName(fecha);
+  
+  let msg = `¡Hola ${cliente}! 👋\n\nTe recordamos que este ${dayName} tienes tu arriendo con Akimel ⚡\n\n📆 ${fecha}${hora ? ' a las ' + hora : ''}\n🎪 ${juegos || 'juegos'}\n💰 Monto: ${monto}\n\n✓ ¿Confirmamos? 🎉`;
+  
+  let phone = telefono.replace(/\D/g, '');
+  if(!phone.startsWith('56')) {
+    phone = '56' + (phone.startsWith('9') ? phone : phone);
+  }
+  
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+  
+  showToast('✓ Abriendo WhatsApp...');
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast';
+  if(msg.includes('✓')) toast.classList.add('ok');
+  
+  setTimeout(() => {
+    toast.className = 'toast';
+    toast.style.display = 'none';
+  }, 3000);
+  
+  toast.style.display = 'block';
+}
+
+// Cargar al iniciar
+document.addEventListener('DOMContentLoaded', cargarArriendos);
 </script>
+
 </body>
 </html>
