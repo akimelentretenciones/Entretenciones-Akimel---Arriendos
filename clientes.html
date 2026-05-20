@@ -192,22 +192,7 @@ tr:hover td{background:var(--bg3)}
 </div>
 
 <!-- MODAL ENVIAR MENSAJE -->
-<div class="modal-bg" id="modalMsg">
-  <div class="modal-box">
-    <div class="modal-title">📤 Enviar mensaje por WhatsApp</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
-      Elige cómo enviar el mensaje a tu cliente.
-    </div>
-    <div class="modal-msg" id="msgContent"></div>
-    <div class="modal-btns" style="flex-direction: column; gap: 10px;">
-      <button class="btn-confirm" style="background:var(--wa);color:#fff;border:none" onclick="enviarWhatsApp(window.currentMsgId)">🟢 Enviar por WhatsApp</button>
-      <button class="btn-confirm" style="background:var(--blue);color:#fff;border:none" onclick="copiarYCerrar()">📋 Copiar mensaje</button>
-      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
-    </div>
-  </div>
-</div>
 
-<div class="toast" id="toast"></div>
 
 <script>
 // Declarar doLogin y doLogout como globales antes del módulo
@@ -387,58 +372,11 @@ const TEMPLATES = {
 
 window.abrirMensaje = function(id) {
   const arr = arriendos.find(a => a.id === id);
-  if(!arr) return;
-  
-  // Guardar el ID para usar en enviarWhatsApp
-  window.currentMsgId = id;
-  
-  // Obtener el día de la semana a partir de la fecha
-  let fechaDia = 'ese día';
-  if(arr.fecha) {
-    const [d, m, y] = arr.fecha.split('/');
-    const fecha = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-    fechaDia = dias[fecha.getDay()];
-  }
-  
-  const msgs = Object.values(TEMPLATES).map(t => {
-    let msg = t.content
-      .replace(/{{cliente}}/g, arr.cliente || 'Cliente')
-      .replace(/{{fechaDia}}/g, fechaDia)
-      .replace(/{{fecha}}/g, arr.fecha || 'hoy')
-      .replace(/{{hora}}/g, arr.hora ? ' a las ' + arr.hora : '')
-      .replace(/{{comuna}}/g, arr.comuna || '')
-      .replace(/{{juegos}}/g, (arr.juegos || []).join(', ') || 'juegos')
-      .replace(/{{monto}}/g, '$' + (parseInt(arr.monto) || 0).toLocaleString('es-CL'))
-      .replace(/{{localizacion}}/g, arr.direccion ? '\n📍 ' + arr.direccion : '')
-      .replace(/{{codigo}}/g, `AK-${arr.cliente.slice(0,3).toUpperCase()}-${arr.id.slice(-4)}`);
-    return msg;
-  }).join('\n\n---\n\n');
-  
-  document.getElementById('msgContent').textContent = msgs;
-  document.getElementById('modalMsg').classList.add('show');
-  window.msgToCopy = msgs;
-};
-
-window.cerrarModal = function() {
-  document.getElementById('modalMsg').classList.remove('show');
-};
-
-window.copiarYCerrar = function() {
-  navigator.clipboard.writeText(window.msgToCopy).then(() => {
-    toast('✓ Copiado. Abre WhatsApp y pega', 'ok');
-    cerrarModal();
-  });
-};
-
-window.enviarWhatsApp = function(id) {
-  const arr = arriendos.find(a => a.id === id);
   if(!arr || !arr.telefono) {
     toast('⚠️ No hay teléfono disponible', 'err');
     return;
   }
   
-  // Obtener el mensaje de confirmación
   let fechaDia = 'ese día';
   if(arr.fecha) {
     const [d, m, y] = arr.fecha.split('/');
@@ -447,33 +385,30 @@ window.enviarWhatsApp = function(id) {
     fechaDia = dias[fecha.getDay()];
   }
   
-  let msg = TEMPLATES.confirmacion.content
-    .replace(/{{cliente}}/g, arr.cliente || 'Cliente')
-    .replace(/{{fechaDia}}/g, fechaDia)
-    .replace(/{{fecha}}/g, arr.fecha || 'hoy')
-    .replace(/{{hora}}/g, arr.hora ? ' a las ' + arr.hora : '')
-    .replace(/{{comuna}}/g, arr.comuna || '')
-    .replace(/{{juegos}}/g, (arr.juegos || []).join(', ') || 'juegos')
-    .replace(/{{monto}}/g, '$' + (parseInt(arr.monto) || 0).toLocaleString('es-CL'))
-    .replace(/{{localizacion}}/g, arr.direccion ? '\n📍 ' + arr.direccion : '')
-    .replace(/{{codigo}}/g, `AK-${arr.cliente.slice(0,3).toUpperCase()}-${arr.id.slice(-4)}`);
+  let msg = `¡Hola ${arr.cliente}! 👋\n\nTe recordamos que este ${fechaDia} tienes tu arriendo con Akimel ⚡\n\n📆 ${arr.fecha}${arr.hora ? ' a las ' + arr.hora : ''}\n🎪 ${(arr.juegos || []).join(', ') || 'juegos'}\n📍 ${arr.comuna}${arr.direccion ? '\n📍 ' + arr.direccion : ''}\n💰 Monto: $${(parseInt(arr.monto) || 0).toLocaleString('es-CL')}\n\n✓ ¿Confirmamos? 🎉`;
   
-  // Limpiar número de teléfono para WhatsApp
   let phone = arr.telefono.replace(/\D/g, '');
   if(!phone.startsWith('56')) {
     if(phone.startsWith('9')) phone = '56' + phone;
     else phone = '56' + phone;
   }
   
-  // Codificar el mensaje
   const encodedMsg = encodeURIComponent(msg);
-  
-  // URL de WhatsApp
   const waUrl = `https://wa.me/${phone}?text=${encodedMsg}`;
   
-  // Abrir WhatsApp
   window.open(waUrl, '_blank');
-  cerrarModal();
+};
+
+window.cerrarModal = function() {
+  // Modal eliminado
+};
+
+window.copiarYCerrar = function() {
+  // Función eliminada
+};
+
+window.enviarWhatsApp = function(id) {
+  // Función eliminada - ahora en abrirMensaje
 };
 
 window.aplicarFiltros = function() {
