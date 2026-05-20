@@ -277,7 +277,30 @@ onAuthStateChanged(auth, user => {
 async function cargarArriendos() {
   try {
     const snap = await getDocs(collection(db, 'arriendos'));
-    arriendos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    
+    // Cargar montos desde localStorage de index.html
+    const arrendientosLocal = JSON.parse(localStorage.getItem('akimel_arriendos') || '[]');
+    
+    arriendos = snap.docs.map(d => {
+      const data = d.data();
+      
+      // Buscar en localStorage el monto correspondiente
+      if(!data.monto || data.monto === 0) {
+        const local = arrendientosLocal.find(a => 
+          a.cliente && data.cliente &&
+          a.cliente.toLowerCase() === data.cliente.toLowerCase() && 
+          a.fecha === data.fecha &&
+          a.telefono === data.telefono
+        );
+        if(local && local.monto) {
+          data.monto = local.monto;
+        }
+      }
+      
+      return {id: d.id, ...data};
+    });
+    
+    console.log('Arriendos cargados con montos:', arriendos);
     
     // Inicializar filtros
     document.getElementById('filtroAno').value = filtroAno;
