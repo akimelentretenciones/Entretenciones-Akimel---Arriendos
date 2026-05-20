@@ -310,10 +310,21 @@ function renderizar() {
     + '</tr></thead><tbody>';
   
   filtrados.forEach((a, i) => {
+    console.log('Arriendo:', a); // Debug
     const tel = a.telefono ? `<a href="tel:${a.telefono}" style="color:var(--blue);font-weight:700;text-decoration:none">${a.telefono}</a>` : '—';
     const juegos = (a.juegos || []).join(', ') || '—';
-    const montoVal = a.monto ? parseInt(String(a.monto).replace(/[^0-9]/g, '')) : 0;
-    const monto = montoVal > 0 ? '$' + montoVal.toLocaleString('es-CL') : '$0';
+    
+    // Asegurar que monto siempre tenga un valor
+    let montoVal = 0;
+    if(a.monto) {
+      if(typeof a.monto === 'string') {
+        montoVal = parseInt(a.monto.replace(/[^0-9]/g, '')) || 0;
+      } else {
+        montoVal = parseInt(a.monto) || 0;
+      }
+    }
+    const monto = '$' + montoVal.toLocaleString('es-CL');
+    
     const btnMsg = `<button class="btn-wa-msg" onclick="abrirMensaje('${a.id}')">💬 Mensaje</button>`;
     
     html += '<tr>'
