@@ -355,19 +355,17 @@ function cargarArriendos() {
     try {
       arriendos = JSON.parse(dataLocal);
       console.log('✓ Arriendos desde localStorage:', arriendos.length);
+      renderStats();
+      renderTable();
+      return;
     } catch(e) {
       console.error('Error parseando localStorage:', e);
     }
   }
   
   // Si no hay en localStorage, cargar desde Firebase
-  if(arriendos.length === 0) {
-    console.log('Cargando desde Firebase...');
-    cargarDesdeFirebase();
-  } else {
-    renderStats();
-    renderTable();
-  }
+  console.log('Cargando desde Firebase...');
+  cargarDesdeFirebase();
 }
 
 function cargarDesdeFirebase() {
@@ -381,35 +379,47 @@ function cargarDesdeFirebase() {
       appId: "1:968529319648:web:fe066b3c3c8e03e3d91e52"
     };
     
-    const app = firebase.initializeApp(firebaseConfig);
+    // Inicializar Firebase si no está ya inicializado
+    let app;
+    try {
+      app = firebase.app();
+    } catch(e) {
+      app = firebase.initializeApp(firebaseConfig);
+    }
+    
     const db = firebase.firestore();
     
-    db.collection('arriendos').get().then(snap => {
-      arriendos = [];
-      snap.forEach(doc => {
-        const data = doc.data();
-        arriendos.push({
-          id: doc.id,
-          cliente: data.cliente || '',
-          fecha: data.fecha || '',
-          hora: data.hora || '',
-          direccion: data.direccion || '',
-          comuna: data.comuna || '',
-          telefono: data.telefono || '',
-          juegos: data.juegos || [],
-          monto: data.monto || 0,
-          estado: data.estado || 'Pendiente'
+    // Permitir lectura anónima
+    db.collection('arriendos')
+      .orderBy('fecha', 'desc')
+      .get()
+      .then(snap => {
+        arriendos = [];
+        snap.forEach(doc => {
+          const data = doc.data();
+          arriendos.push({
+            id: doc.id,
+            cliente: data.cliente || '',
+            fecha: data.fecha || '',
+            hora: data.hora || '',
+            direccion: data.direccion || '',
+            comuna: data.comuna || '',
+            telefono: data.telefono || '',
+            juegos: Array.isArray(data.juegos) ? data.juegos : (data.juegos ? [data.juegos] : []),
+            monto: parseInt(data.monto) || 0,
+            estado: data.estado || 'Pendiente'
+          });
         });
+        
+        console.log('✓ Arriendos desde Firebase:', arriendos.length);
+        renderStats();
+        renderTable();
+      })
+      .catch(e => {
+        console.error('Error leyendo Firebase:', e.code, e.message);
+        renderStats();
+        renderTable();
       });
-      
-      console.log('✓ Arriendos desde Firebase:', arriendos.length);
-      renderStats();
-      renderTable();
-    }).catch(e => {
-      console.error('Error Firebase:', e);
-      renderStats();
-      renderTable();
-    });
     
   } catch(e) {
     console.error('Error inicializando Firebase:', e);
