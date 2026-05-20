@@ -60,13 +60,6 @@ tr:hover td{background:var(--bg3)}
 .badge-install{background:rgba(95,180,70,.1);color:var(--green)}
 .badge-retir{background:rgba(222,28,36,.1);color:var(--red)}
 
-.btn{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:'Sora',sans-serif}
-.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue2)}
-.btn-white{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2)}.btn-white:hover{background:rgba(255,255,255,.25)}
-.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--bg4)}
-.btn-sm{padding:5px 12px;font-size:12px}
-.btn-red{background:rgba(222,28,36,.1);color:var(--red);border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif}.btn-red:hover{background:rgba(222,28,36,.2)}
-
 .detail-card{background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
 .detail-header{font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px}
 .detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px}
@@ -90,14 +83,6 @@ tr:hover td{background:var(--bg3)}
 
 .back-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;margin-bottom:16px;font-family:'Sora',sans-serif}
 .back-btn:hover{background:var(--bg4)}
-
-.empty-state{text-align:center;padding:40px 20px}
-.empty-state-icon{font-size:48px;margin-bottom:12px}
-.empty-state-text{font-size:14px;color:var(--text3)}
-
-.row-gap{display:flex;gap:12px}
-.col-full{flex:1}
-.col-half{flex:0.5}
 </style>
 </head>
 <body>
@@ -133,7 +118,7 @@ tr:hover td{background:var(--bg3)}
       </div>
       <div class="kpi orange">
         <div class="kpi-label">Total esta semana</div>
-        <div class="kpi-value" id="s-total">0</div>
+        <div class="kpi-value" id="s-total">$0</div>
       </div>
     </div>
 
@@ -159,7 +144,7 @@ tr:hover td{background:var(--bg3)}
           </tr>
         </thead>
         <tbody id="list-container">
-          <tr><td colspan="6" style="text-align:center;padding:40px">Cargando...</td></tr>
+          <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Cargando arriendos...</td></tr>
         </tbody>
       </table>
     </div>
@@ -173,38 +158,14 @@ tr:hover td{background:var(--bg3)}
 
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
-
-// Configuración Firebase (MISMA que en index.html)
-const firebaseConfig = {
-  apiKey: "AIzaSyB-1PQ0xHHoXBqb0H5LI0GWEfL6tUYGMTA",
-  authDomain: "base-de-datos-akimel-arriendos.firebaseapp.com",
-  projectId: "base-de-datos-akimel-arriendos",
-  storageBucket: "base-de-datos-akimel-arriendos.firebasestorage.app",
-  messagingSenderId: "319707843854",
-  appId: "1:319707843854:web:fe82dd81dade45eb4bcc1e"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// ═══════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════
+<script>
+// Variables globales
 let arriendos = [];
 let mensajes = JSON.parse(localStorage.getItem('akimel_mensajes') || '{}');
 let filtroActual = 'todos';
 let arriendoActual = null;
+let db = null;
 
-const save = () => {
-  localStorage.setItem('akimel_mensajes', JSON.stringify(mensajes));
-};
-
-// ═══════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════
 const fmt$ = n => n ? '$' + parseInt(n).toLocaleString('es-CL') : '$0';
 const today = () => new Date().toISOString().split('T')[0];
 const dowFull = s => s ? ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][new Date(s+'T12:00').getDay()] : '';
@@ -213,6 +174,8 @@ const fmtFecha = s => {
   const d = new Date(s+'T12:00');
   return d.toLocaleDateString('es-CL',{day:'numeric',month:'short'});
 };
+
+const save = () => localStorage.setItem('akimel_mensajes', JSON.stringify(mensajes));
 
 function toast(msg) {
   const existente = document.querySelector('.toast');
@@ -225,16 +188,12 @@ function toast(msg) {
   setTimeout(()=>t.remove(), 2000);
 }
 
-// ═══════════════════════════════════════════════════
-// RENDER LISTA
-// ═══════════════════════════════════════════════════
 function renderList() {
   const filtered = arriendos.filter(a => {
     if(filtroActual === 'todos') return true;
     return a.estado === filtroActual;
   }).sort((a,b) => a.fecha.localeCompare(b.fecha));
 
-  // Stats
   const proximos = filtered.filter(a => a.fecha >= today()).length;
   const pendientes = filtered.filter(a => a.estado === 'Pendiente');
   const totPend = pendientes.reduce((s,a) => s + (parseInt(a.monto)||0), 0);
@@ -246,7 +205,6 @@ function renderList() {
   document.getElementById('s-pagados').textContent = pagados;
   document.getElementById('s-total').textContent = fmt$(totAll);
 
-  // Table
   const tbody = document.getElementById('list-container');
   if(filtered.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Sin arriendos</td></tr>';
@@ -268,10 +226,7 @@ function renderList() {
   }
 }
 
-// ═══════════════════════════════════════════════════
-// DETALLE CON MENSAJES
-// ═══════════════════════════════════════════════════
-window.verDetalle = function(id) {
+function verDetalle(id) {
   arriendoActual = arriendos.find(x => x.id === id);
   if(!arriendoActual) return;
 
@@ -339,10 +294,13 @@ window.verDetalle = function(id) {
 
   container.innerHTML = html;
   ir('detalle');
-  setTimeout(() => document.getElementById('msg-input').focus(), 100);
-};
+  setTimeout(() => {
+    const input = document.getElementById('msg-input');
+    if(input) input.focus();
+  }, 100);
+}
 
-window.agregarMensaje = function() {
+function agregarMensaje() {
   if(!arriendoActual) return;
   const input = document.getElementById('msg-input');
   const text = input.value.trim();
@@ -358,65 +316,76 @@ window.agregarMensaje = function() {
   save();
   toast('✓ Mensaje guardado');
   input.value = '';
-  window.verDetalle(arriendoActual.id);
-};
+  verDetalle(arriendoActual.id);
+}
 
-// ═══════════════════════════════════════════════════
-// FILTROS
-// ═══════════════════════════════════════════════════
-window.setFiltro = function(f) {
+function setFiltro(f) {
   filtroActual = f;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
   event.target.classList.add('on');
   renderList();
-};
+}
 
-// ═══════════════════════════════════════════════════
-// NAVEGACIÓN
-// ═══════════════════════════════════════════════════
-window.ir = function(name) {
+function ir(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('pg-' + name).classList.add('active');
   if(name === 'list') renderList();
-};
+}
 
-window.volverLista = function() {
-  window.ir('list');
-};
+function volverLista() {
+  ir('list');
+}
 
-// ═══════════════════════════════════════════════════
-// FIREBASE LISTENER
-// ═══════════════════════════════════════════════════
-onSnapshot(collection(db, 'arriendos'), (snap) => {
-  arriendos = [];
-  snap.forEach(doc => {
-    arriendos.push({
-      id: doc.id,
-      ...doc.data()
+// Inicializar Firebase
+async function initFirebase() {
+  try {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js");
+    const { getFirestore, collection, onSnapshot } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js");
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB-1PQ0xHHoXBqb0H5LI0GWEfL6tUYGMTA",
+      authDomain: "base-de-datos-akimel-arriendos.firebaseapp.com",
+      projectId: "base-de-datos-akimel-arriendos",
+      storageBucket: "base-de-datos-akimel-arriendos.firebasestorage.app",
+      messagingSenderId: "319707843854",
+      appId: "1:319707843854:web:fe82dd81dade45eb4bcc1e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+
+    // Escuchar cambios en Firestore
+    onSnapshot(collection(db, 'arriendos'), (snap) => {
+      arriendos = [];
+      snap.forEach(doc => {
+        arriendos.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      renderList();
+      
+      if(arriendoActual && document.getElementById('pg-detalle').classList.contains('active')) {
+        const actualizado = arriendos.find(a => a.id === arriendoActual.id);
+        if(actualizado) {
+          arriendoActual = actualizado;
+          verDetalle(arriendoActual.id);
+        }
+      }
+    }, (error) => {
+      console.error('Error en Firestore:', error);
+      document.getElementById('list-container').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--red)">Error al cargar datos</td></tr>';
     });
-  });
-  renderList();
-  
-  // Si hay un arriendo abierto, actualizar sus detalles
-  if(arriendoActual && document.getElementById('pg-detalle').classList.contains('active')) {
-    const actualizado = arriendos.find(a => a.id === arriendoActual.id);
-    if(actualizado) {
-      arriendoActual = actualizado;
-      window.verDetalle(arriendoActual.id);
-    }
-  }
-}, (error) => {
-  console.error('Error al escuchar Firestore:', error);
-});
 
-// ═══════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════
+  } catch(err) {
+    console.error('Error inicializando Firebase:', err);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  window.ir('list');
+  initFirebase();
+  ir('list');
 });
 </script>
-</body>
-</html>
 </body>
 </html>
