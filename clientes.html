@@ -294,7 +294,19 @@ function renderizar() {
   const filtrados = filtrarArriendos();
   const total = filtrados.length;
   const pend = filtrados.filter(a => a.estado === 'Pendiente' || !a.estado).length;
-  const monto = filtrados.filter(a => a.estado === 'Pendiente' || !a.estado).reduce((s, a) => s + (parseInt(a.monto) || 0), 0);
+  
+  // CORREGIR: Procesar monto correctamente sea cual sea su formato
+  const monto = filtrados.filter(a => a.estado === 'Pendiente' || !a.estado).reduce((s, a) => {
+    let val = 0;
+    if(a.monto) {
+      if(typeof a.monto === 'string') {
+        val = parseInt(a.monto.replace(/[^0-9]/g, '')) || 0;
+      } else if(typeof a.monto === 'number') {
+        val = a.monto;
+      }
+    }
+    return s + val;
+  }, 0);
   
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statPend').textContent = pend;
@@ -310,17 +322,20 @@ function renderizar() {
     + '</tr></thead><tbody>';
   
   filtrados.forEach((a, i) => {
-    console.log('Arriendo:', a); // Debug
+    console.log('Arriendo completo:', a); // Debug
+    console.log('Monto valor:', a.monto, 'tipo:', typeof a.monto); // Debug
+    
     const tel = a.telefono ? `<a href="tel:${a.telefono}" style="color:var(--blue);font-weight:700;text-decoration:none">${a.telefono}</a>` : '—';
     const juegos = (a.juegos || []).join(', ') || '—';
     
-    // Asegurar que monto siempre tenga un valor
+    // PROCESAR MONTO CON TODOS LOS CASOS POSIBLES
     let montoVal = 0;
-    if(a.monto) {
+    if(a.monto !== undefined && a.monto !== null && a.monto !== '') {
       if(typeof a.monto === 'string') {
-        montoVal = parseInt(a.monto.replace(/[^0-9]/g, '')) || 0;
-      } else {
-        montoVal = parseInt(a.monto) || 0;
+        const clean = a.monto.replace(/[^0-9]/g, '');
+        montoVal = parseInt(clean) || 0;
+      } else if(typeof a.monto === 'number') {
+        montoVal = a.monto;
       }
     }
     const monto = '$' + montoVal.toLocaleString('es-CL');
@@ -396,16 +411,19 @@ window.abrirMensaje = function(id) {
     fechaDia = dias[fecha.getDay()];
   }
   
-  // Procesar monto correctamente
+  // PROCESAR MONTO CON TODOS LOS CASOS POSIBLES
   let montoVal = 0;
-  if(arr.monto) {
+  if(arr.monto !== undefined && arr.monto !== null && arr.monto !== '') {
     if(typeof arr.monto === 'string') {
-      montoVal = parseInt(arr.monto.replace(/[^0-9]/g, '')) || 0;
-    } else {
-      montoVal = parseInt(arr.monto) || 0;
+      const clean = arr.monto.replace(/[^0-9]/g, '');
+      montoVal = parseInt(clean) || 0;
+    } else if(typeof arr.monto === 'number') {
+      montoVal = arr.monto;
     }
   }
-  const montoFormato = montoVal > 0 ? montoVal.toLocaleString('es-CL') : '0';
+  const montoFormato = montoVal.toLocaleString('es-CL');
+  
+  console.log('DEBUG abrirMensaje - ID:', id, 'Monto original:', arr.monto, 'Monto procesado:', montoVal); // Debug
   
   let msg = `¡Hola ${arr.cliente}! 👋\n\nTe recordamos que este ${fechaDia} tienes tu arriendo con Akimel ⚡\n\n📆 ${arr.fecha}${arr.hora ? ' a las ' + arr.hora : ''}\n🎪 ${(arr.juegos || []).join(', ') || 'juegos'}\n📍 ${arr.comuna}${arr.direccion ? '\n📍 ' + arr.direccion : ''}\n💰 Monto: $${montoFormato}\n\n✓ ¿Confirmamos? 🎉`;
   
