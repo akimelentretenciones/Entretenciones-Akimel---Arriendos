@@ -306,14 +306,13 @@ function renderizar() {
   }
   
   let html = '<div class="table-wrap"><table><thead><tr>'
-    + '<th>#</th><th>Cliente</th><th>Fecha</th><th>Dirección</th><th>Comuna</th><th>Hora</th><th>Teléfono</th><th>Juegos</th><th>Estado</th><th>Mensaje</th>'
+    + '<th>#</th><th>Cliente</th><th>Fecha</th><th>Dirección</th><th>Comuna</th><th>Hora</th><th>Teléfono</th><th>Juegos</th><th>Monto</th><th>Mensaje</th>'
     + '</tr></thead><tbody>';
   
   filtrados.forEach((a, i) => {
-    const estado = a.estado || 'Pendiente';
-    const badgeClass = estado === 'Pagado' ? 'badge-ok' : estado === 'Cancelado' ? 'badge-pend' : 'badge-pend';
     const tel = a.telefono ? `<a href="tel:${a.telefono}" style="color:var(--blue);font-weight:700;text-decoration:none">${a.telefono}</a>` : '—';
     const juegos = (a.juegos || []).join(', ') || '—';
+    const monto = a.monto ? '$' + parseInt(a.monto).toLocaleString('es-CL') : '—';
     const btnMsg = `<button class="btn-wa-msg" onclick="abrirMensaje('${a.id}')">💬 Mensaje</button>`;
     
     html += '<tr>'
@@ -325,7 +324,7 @@ function renderizar() {
       + `<td>${a.hora || '—'}</td>`
       + `<td>${tel}</td>`
       + `<td style="font-size:11px">${juegos}</td>`
-      + `<td><span class="badge ${badgeClass}">${estado}</span></td>`
+      + `<td style="font-weight:700;color:var(--blue)">${monto}</td>`
       + `<td>${btnMsg}</td>`
       + '</tr>';
   });
