@@ -312,7 +312,8 @@ function renderizar() {
   filtrados.forEach((a, i) => {
     const tel = a.telefono ? `<a href="tel:${a.telefono}" style="color:var(--blue);font-weight:700;text-decoration:none">${a.telefono}</a>` : '—';
     const juegos = (a.juegos || []).join(', ') || '—';
-    const monto = a.monto ? '$' + parseInt(a.monto).toLocaleString('es-CL') : '—';
+    const montoVal = a.monto ? parseInt(String(a.monto).replace(/[^0-9]/g, '')) : 0;
+    const monto = montoVal > 0 ? '$' + montoVal.toLocaleString('es-CL') : '$0';
     const btnMsg = `<button class="btn-wa-msg" onclick="abrirMensaje('${a.id}')">💬 Mensaje</button>`;
     
     html += '<tr>'
