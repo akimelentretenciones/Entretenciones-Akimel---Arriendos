@@ -396,7 +396,18 @@ window.abrirMensaje = function(id) {
     fechaDia = dias[fecha.getDay()];
   }
   
-  let msg = `¡Hola ${arr.cliente}! 👋\n\nTe recordamos que este ${fechaDia} tienes tu arriendo con Akimel ⚡\n\n📆 ${arr.fecha}${arr.hora ? ' a las ' + arr.hora : ''}\n🎪 ${(arr.juegos || []).join(', ') || 'juegos'}\n📍 ${arr.comuna}${arr.direccion ? '\n📍 ' + arr.direccion : ''}\n💰 Monto: $${(parseInt(arr.monto) || 0).toLocaleString('es-CL')}\n\n✓ ¿Confirmamos? 🎉`;
+  // Procesar monto correctamente
+  let montoVal = 0;
+  if(arr.monto) {
+    if(typeof arr.monto === 'string') {
+      montoVal = parseInt(arr.monto.replace(/[^0-9]/g, '')) || 0;
+    } else {
+      montoVal = parseInt(arr.monto) || 0;
+    }
+  }
+  const montoFormato = montoVal > 0 ? montoVal.toLocaleString('es-CL') : '0';
+  
+  let msg = `¡Hola ${arr.cliente}! 👋\n\nTe recordamos que este ${fechaDia} tienes tu arriendo con Akimel ⚡\n\n📆 ${arr.fecha}${arr.hora ? ' a las ' + arr.hora : ''}\n🎪 ${(arr.juegos || []).join(', ') || 'juegos'}\n📍 ${arr.comuna}${arr.direccion ? '\n📍 ' + arr.direccion : ''}\n💰 Monto: $${montoFormato}\n\n✓ ¿Confirmamos? 🎉`;
   
   let phone = arr.telefono.replace(/\D/g, '');
   if(!phone.startsWith('56')) {
