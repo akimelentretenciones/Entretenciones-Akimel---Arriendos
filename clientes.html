@@ -7,8 +7,6 @@
 <meta name="theme-color" content="#0071ce">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js"></script>
 <style>
 :root {
   --bg: #f0f4f8;
@@ -83,6 +81,52 @@ header {
   max-width: 1200px;
   margin: 0 auto;
   padding-bottom: 40px;
+}
+
+.import-section {
+  background: white;
+  padding: 24px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.import-section h2 {
+  margin-bottom: 12px;
+  color: var(--blue3);
+}
+
+.import-section p {
+  color: var(--text3);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.btn {
+  background: var(--blue);
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all .2s;
+}
+
+.btn:hover {
+  background: var(--blue2);
+}
+
+.btn-secondary {
+  background: var(--bg3);
+  color: var(--text2);
+  margin-left: 8px;
+}
+
+.btn-secondary:hover {
+  background: var(--border);
 }
 
 .stats {
@@ -194,15 +238,10 @@ tr:hover td {
   font-size: 12px;
   transition: all .2s;
   font-family: 'Sora', sans-serif;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .btn-wa:hover {
   background: rgba(37, 211, 102, .25);
-  transform: scale(1.05);
 }
 
 .empty {
@@ -220,6 +259,10 @@ tr:hover td {
   font-size: 16px;
 }
 
+#file-input {
+  display: none;
+}
+
 .toast {
   position: fixed;
   bottom: 20px;
@@ -231,42 +274,17 @@ tr:hover td {
   border-radius: 30px;
   box-shadow: var(--shadow);
   z-index: 1000;
-  animation: slideUp .3s ease;
 }
 
 .toast.ok {
   background: var(--green);
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateX(-50%) translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-  }
-}
-
 @media (max-width: 768px) {
-  table {
-    font-size: 11px;
-  }
-  
-  th, td {
-    padding: 8px;
-  }
-  
-  .filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .filters select,
-  .filters input {
-    width: 100%;
-  }
+  table { font-size: 11px; }
+  th, td { padding: 8px; }
+  .filters { flex-direction: column; align-items: stretch; }
+  .filters select, .filters input { width: 100%; }
 }
 </style>
 </head>
@@ -283,6 +301,13 @@ tr:hover td {
 </header>
 
 <div class="main">
+  <div class="import-section">
+    <h2>📥 Importar arriendos</h2>
+    <p>En index.html haz clic en "Exportar como JSON" y carga el archivo aquí</p>
+    <button class="btn" onclick="document.getElementById('file-input').click()">📄 Cargar JSON</button>
+    <input type="file" id="file-input" accept=".json" onchange="cargarJSON(event)">
+  </div>
+
   <div class="stats">
     <div class="stat">
       <div class="stat-v" id="stat-total">0</div>
@@ -294,13 +319,13 @@ tr:hover td {
     </div>
     <div class="stat">
       <div class="stat-v" id="stat-monto">$0</div>
-      <div class="stat-l">Monto por cobrar</div>
+      <div class="stat-l">Monto</div>
     </div>
   </div>
 
   <div class="filters">
     <select id="filtro-mes">
-      <option value="">Todos los meses</option>
+      <option value="">Todos</option>
       <option value="1">Enero</option>
       <option value="2">Febrero</option>
       <option value="3">Marzo</option>
@@ -315,7 +340,7 @@ tr:hover td {
       <option value="12">Diciembre</option>
     </select>
     <input type="search" id="filtro-cliente" placeholder="Buscar cliente..." style="flex: 1;">
-    <button onclick="renderTable()" style="padding: 8px 16px; background: var(--blue); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700;">Filtrar</button>
+    <button onclick="renderTable()" style="padding: 8px 16px; background: var(--blue); color: white; border: none; border-radius: 8px; cursor: pointer;">Filtrar</button>
   </div>
 
   <div class="table-container">
@@ -332,12 +357,11 @@ tr:hover td {
           <th>Acción</th>
         </tr>
       </thead>
-      <tbody id="tbody">
-      </tbody>
+      <tbody id="tbody"></tbody>
     </table>
-    <div id="empty" class="empty" style="display:none">
+    <div id="empty" class="empty">
       <div class="empty-icon">📭</div>
-      <div class="empty-txt">No hay arriendos para mostrar</div>
+      <div class="empty-txt">Importa un archivo JSON para ver arriendos</div>
     </div>
   </div>
 </div>
@@ -347,94 +371,28 @@ tr:hover td {
 <script>
 let arriendos = [];
 
-// Cargar arriendos
-function cargarArriendos() {
-  // Primero intentar localStorage
-  const dataLocal = localStorage.getItem('akimel_arriendos');
-  if(dataLocal) {
+function cargarJSON(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
     try {
-      arriendos = JSON.parse(dataLocal);
-      console.log('✓ Arriendos desde localStorage:', arriendos.length);
+      arriendos = JSON.parse(e.target.result);
+      showToast(`✓ ${arriendos.length} arriendos importados`);
       renderStats();
       renderTable();
-      return;
-    } catch(e) {
-      console.error('Error parseando localStorage:', e);
+    } catch(err) {
+      showToast('✗ Error en JSON');
     }
-  }
-  
-  // Si no hay en localStorage, cargar desde Firebase
-  console.log('Cargando desde Firebase...');
-  cargarDesdeFirebase();
-}
-
-function cargarDesdeFirebase() {
-  try {
-    const firebaseConfig = {
-      apiKey: "AIzaSyCWj87nZf_A68s2O8x8Z-q1dZYcJUZa1Ew",
-      authDomain: "akimel-f8b87.firebaseapp.com",
-      projectId: "akimel-f8b87",
-      storageBucket: "akimel-f8b87.appspot.com",
-      messagingSenderId: "968529319648",
-      appId: "1:968529319648:web:fe066b3c3c8e03e3d91e52"
-    };
-    
-    // Inicializar Firebase si no está ya inicializado
-    let app;
-    try {
-      app = firebase.app();
-    } catch(e) {
-      app = firebase.initializeApp(firebaseConfig);
-    }
-    
-    const db = firebase.firestore();
-    
-    // Permitir lectura anónima
-    db.collection('arriendos')
-      .orderBy('fecha', 'desc')
-      .get()
-      .then(snap => {
-        arriendos = [];
-        snap.forEach(doc => {
-          const data = doc.data();
-          arriendos.push({
-            id: doc.id,
-            cliente: data.cliente || '',
-            fecha: data.fecha || '',
-            hora: data.hora || '',
-            direccion: data.direccion || '',
-            comuna: data.comuna || '',
-            telefono: data.telefono || '',
-            juegos: Array.isArray(data.juegos) ? data.juegos : (data.juegos ? [data.juegos] : []),
-            monto: parseInt(data.monto) || 0,
-            estado: data.estado || 'Pendiente'
-          });
-        });
-        
-        console.log('✓ Arriendos desde Firebase:', arriendos.length);
-        renderStats();
-        renderTable();
-      })
-      .catch(e => {
-        console.error('Error leyendo Firebase:', e.code, e.message);
-        renderStats();
-        renderTable();
-      });
-    
-  } catch(e) {
-    console.error('Error inicializando Firebase:', e);
-    renderStats();
-    renderTable();
-  }
+  };
+  reader.readAsText(file);
 }
 
 function renderStats() {
   const filtrados = filtrarArriendos();
-  
-  // Total
   document.getElementById('stat-total').textContent = arriendos.length;
   
-  // Esta semana
   const hoy = new Date();
   const primero = hoy.getDate() - hoy.getDay() + (hoy.getDay() === 0 ? -6 : 1);
   const lunes = new Date(hoy.setDate(primero));
@@ -448,15 +406,12 @@ function renderStats() {
   });
   
   document.getElementById('stat-semana').textContent = semana.length;
-  
-  // Monto total
   const monto = filtrados.reduce((s, a) => s + (parseInt(a.monto) || 0), 0);
   document.getElementById('stat-monto').textContent = '$' + monto.toLocaleString('es-CL');
 }
 
 function filtrarArriendos() {
   let filtrados = arriendos;
-  
   const mes = document.getElementById('filtro-mes').value;
   const cliente = document.getElementById('filtro-cliente').value.toLowerCase();
   
@@ -468,9 +423,7 @@ function filtrarArriendos() {
   }
   
   if(cliente) {
-    filtrados = filtrados.filter(a => 
-      a.cliente.toLowerCase().includes(cliente)
-    );
+    filtrados = filtrados.filter(a => a.cliente.toLowerCase().includes(cliente));
   }
   
   return filtrados;
@@ -488,7 +441,6 @@ function renderTable() {
   }
   
   empty.style.display = 'none';
-  
   tbody.innerHTML = filtrados.map((a, i) => {
     const fecha = a.fecha ? a.fecha.split('/').reverse().join('/') : '—';
     const monto = a.monto ? '$' + parseInt(a.monto).toLocaleString('es-CL') : '$0';
@@ -500,9 +452,9 @@ function renderTable() {
       <td>${fecha}</td>
       <td>${a.hora || '—'}</td>
       <td>${a.telefono || '—'}</td>
-      <td style="font-size: 12px;">${juegos}</td>
+      <td style="font-size:12px">${juegos}</td>
       <td class="monto-cell">${monto}</td>
-      <td><button class="btn-wa" onclick="enviarMensaje('${a.id}', '${a.cliente}', '${a.fecha}', '${a.telefono}', '${a.hora}', '${(a.juegos || []).join(', ')}', '${monto}')">💬 Enviar</button></td>
+      <td><button class="btn-wa" onclick="enviarMensaje('${a.cliente}','${a.fecha}','${a.telefono}','${a.hora}','${(a.juegos||[]).join(', ')}','${monto}')">💬</button></td>
     </tr>`;
   }).join('');
 }
@@ -515,25 +467,18 @@ function getDayName(fecha) {
   return dias[date.getDay()];
 }
 
-function enviarMensaje(id, cliente, fecha, telefono, hora, juegos, monto) {
-  if(!telefono) {
-    showToast('⚠️ No hay teléfono disponible');
-    return;
-  }
+function enviarMensaje(cliente, fecha, telefono, hora, juegos, monto) {
+  if(!telefono) { showToast('⚠️ Sin teléfono'); return; }
   
   const dayName = getDayName(fecha);
-  
   let msg = `¡Hola ${cliente}! 👋\n\nTe recordamos que este ${dayName} tienes tu arriendo con Akimel ⚡\n\n📆 ${fecha}${hora ? ' a las ' + hora : ''}\n🎪 ${juegos || 'juegos'}\n💰 Monto: ${monto}\n\n✓ ¿Confirmamos? 🎉`;
   
   let phone = telefono.replace(/\D/g, '');
-  if(!phone.startsWith('56')) {
-    phone = '56' + (phone.startsWith('9') ? phone : phone);
-  }
+  if(!phone.startsWith('56')) phone = '56' + (phone.startsWith('9') ? phone : phone);
   
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
-  
-  showToast('✓ Abriendo WhatsApp...');
+  showToast('✓ WhatsApp abierto');
 }
 
 function showToast(msg) {
@@ -541,17 +486,11 @@ function showToast(msg) {
   toast.textContent = msg;
   toast.className = 'toast';
   if(msg.includes('✓')) toast.classList.add('ok');
-  
-  setTimeout(() => {
-    toast.className = 'toast';
-    toast.style.display = 'none';
-  }, 3000);
-  
+  setTimeout(() => { toast.style.display = 'none'; }, 3000);
   toast.style.display = 'block';
 }
 
-// Cargar al iniciar
-document.addEventListener('DOMContentLoaded', cargarArriendos);
+renderStats();
 </script>
 
 </body>
