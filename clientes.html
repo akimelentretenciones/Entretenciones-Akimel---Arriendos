@@ -376,21 +376,31 @@ function obtenerFechasSemanaActual() {
 }
 
 const TEMPLATES = {
-  confirmacion: { titulo: '✓ Confirmación', content: `Hola {{cliente}}, confirmamos tu arriendo para el {{fecha}}{{hora}} en {{comuna}}.\n\n📋 Detalles:\n• Juegos: {{juegos}}\n• Monto: {{monto}}\n{{localizacion}}\n\n¡Nos vemos pronto! 🎉` },
-  preevento: { titulo: '📸 Comparte tu diversión', content: `¡Hola {{cliente}}!\n\nEstamos listos con {{juegos}} para tu día especial 🎊\n\n📸 Etiquétanos con #EntretencionesAkimel en IG @entretenciones_akimel\n\n¡Que comience la diversión!` },
-  postariendo: { titulo: '⭐ ¿Cómo estuvo?', content: `Hola {{cliente}}, ¿cómo estuvo tu evento con {{juegos}}? 🎉\n\nNos gustaría saber tu experiencia. ¡Gracias!` },
-  instagram: { titulo: '📲 Síguenos en Instagram', content: `Hola {{cliente}}, para tu próximo evento síguenos en @entretenciones_akimel\n\n📸 Galería de eventos\n🎁 Ofertas exclusivas\n💝 Promociones especiales\n\n¡No te pierdas nada!` },
-  referral: { titulo: '🎁 Recomienda y gana', content: `Hola {{cliente}}, ¿te gustó? ¡Recomienda a un amigo!\n\nAmbos obtienen 10% de descuento en el próximo arriendo.\n\nCódigo: {{codigo}}\n\n¡Gracias!` },
-  proximo: { titulo: '🔔 Próximo evento', content: `¡Hola {{cliente}}!\n\nPara tu próximo evento tenemos ofertas especiales.\n\n🎯 Envíos gratis + Pago facilitado\n\n¡Contáctanos!` }
+  confirmacion: { titulo: '📅 Confirmar tu arriendo', content: `¡Hola {{cliente}}! 👋\n\nTe recordamos que este {{fechaDia}} tienes tu arriendo con Akimel ⚡\n\n📆 {{fecha}}{{hora}}\n🎪 {{juegos}}\n📍 {{comuna}}{{localizacion}}\n💰 Monto: {{monto}}\n\n✓ ¿Confirmamos? 🎉` },
+  preevento: { titulo: '📸 Comparte tu diversión', content: `¡Hola {{cliente}}! 🎊\n\nEstamos listos con {{juegos}} para tu día especial 🎉\n\n📸 Etiquétanos con #EntretencionesAkimel en IG @entretenciones_akimel\n\n¡Que comience la diversión! 🚀` },
+  postariendo: { titulo: '⭐ ¿Cómo estuvo?', content: `Hola {{cliente}}, ¿cómo estuvo tu evento con {{juegos}}? 🎉\n\n⭐ Nos gustaría saber tu experiencia.\n💬 Tu opinión es importante para nosotros\n\n¡Gracias! 🙌` },
+  instagram: { titulo: '📲 Síguenos en Instagram', content: `Hola {{cliente}}, para tu próximo evento síguenos en @entretenciones_akimel 📸\n\n🎨 Galería de eventos\n🎁 Ofertas exclusivas\n💝 Promociones especiales\n🔔 Novedades en tiempo real\n\n¡No te pierdas nada! 👉 @entretenciones_akimel` },
+  referral: { titulo: '🎁 Recomienda y gana', content: `Hola {{cliente}}, ¿te gustó? 😊\n\n🎁 ¡Recomienda a un amigo y ambos ganan!\n\n💰 10% de descuento en el próximo arriendo\n🎯 Código: {{codigo}}\n\n¡Gracias por confiar en Akimel! ⚡` },
+  proximo: { titulo: '🔔 Próximo evento', content: `¡Hola {{cliente}}! 👋\n\n✨ Para tu próximo evento tenemos sorpresas especiales\n\n🚚 Envíos gratis\n💳 Pago facilitado\n🎊 Ofertas increíbles\n\n¡Contáctanos! 📱` }
 };
 
 window.abrirMensaje = function(id) {
   const arr = arriendos.find(a => a.id === id);
   if(!arr) return;
   
+  // Obtener el día de la semana a partir de la fecha
+  let fechaDia = 'ese día';
+  if(arr.fecha) {
+    const [d, m, y] = arr.fecha.split('/');
+    const fecha = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    fechaDia = dias[fecha.getDay()];
+  }
+  
   const msgs = Object.values(TEMPLATES).map(t => {
     let msg = t.content
       .replace(/{{cliente}}/g, arr.cliente || 'Cliente')
+      .replace(/{{fechaDia}}/g, fechaDia)
       .replace(/{{fecha}}/g, arr.fecha || 'hoy')
       .replace(/{{hora}}/g, arr.hora ? ' a las ' + arr.hora : '')
       .replace(/{{comuna}}/g, arr.comuna || '')
