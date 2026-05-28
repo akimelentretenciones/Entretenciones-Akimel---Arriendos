@@ -3160,19 +3160,13 @@ const MSG_PLANTILLAS = {
     label:'👋 Presentación',
     desc:'Lead de Facebook · saludo + detalle + cuenta',
     color:'#0071ce', bg:'rgba(0,113,206,.1)',
-    build:a=>`¡Hola ${primerNombre(a)}! Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n- ${equiposTexto(a)}${a.fecha?`\n- ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n- Pendiente: ${clp(a.pendiente)}`:''}\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()}!\n👉 ${getUrlIG()}`
+    build:a=>`¡Hola ${primerNombre(a)}! Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n- ${equiposTexto(a)}${a.fecha?`\n- ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n- Pendiente: ${clp(a.pendiente)}`:''}\n\nEl pago se debe realizar cuando el juego ya esté instalado a la siguiente cuenta:\n\nKimberli Javiera Ávila Herrera\nRUT: 192275873\nMercado Pago\nCuenta Vista\nNúmero de cuenta: 1055705946\navila.kimberly95@gmail.com\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()}!\n${getUrlIG()}`
   },
   confirmacion: {
     label:'✅ Confirmar',
     desc:'1-2 días antes · confirmar que sigue en pie',
     color:'#128c3e', bg:'rgba(37,211,102,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! Te escribimos de *Akimel* para confirmar tu arriendo de${a.dia?` el *${a.dia}*`:''}${a.fecha?` ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}.\n\n- ${equiposTexto(a)}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}\n\n¿Confirmas que todo sigue en pie?`
-  },
-  enCamino: {
-    label:'🚚 En camino',
-    desc:'El día · aviso de llegada para instalar',
-    color:'#b45309', bg:'rgba(245,158,11,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! Te avisamos de *Akimel* que vamos en camino para instalar ${equiposTexto(a)}.\n\nLlegamos en aproximadamente 30 min. ¡Nos vemos!`
+    build:a=>`¡Hola ${primerNombre(a)}! Te recordamos que este ${a.dia||'día'} tienes tu arriendo con *Akimel*. ¿Confirmamos?`
   },
   saldo: {
     label:'💰 Cobro saldo',
@@ -3191,18 +3185,18 @@ const MSG_PLANTILLAS = {
     label:'⭐ Feedback + IG',
     desc:'Post-arriendo · cómo estuvo + seguir en IG',
     color:'#128c3e', bg:'rgba(37,211,102,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! Aquí el equipo de *Akimel*.\n\n¿Cómo lo pasaron con ${equiposTexto(a)}? Esperamos que haya sido una celebración increíble.\n\nNos encantaría saber tu opinión, nos ayuda muchísimo a mejorar. Y si quedaron contentos, ¡síguenos en Instagram ${getHandleIG()}!\n👉 ${getUrlIG()}`
+    build:a=>`¡Hola ${primerNombre(a)}! Aquí el equipo de *Akimel*.\n\n¿Cómo lo pasaron con ${equiposTexto(a)}? Esperamos que haya sido una celebración increíble.\n\nNos encantaría saber tu opinión, nos ayuda muchísimo a mejorar. Y si quedaron contentos, ¡síguenos en Instagram ${getHandleIG()}!\n${getUrlIG()}`
   },
   reactivacion: {
     label:'🔁 Reactivar',
     desc:'Cliente recurrente · ofrecer nueva fecha',
     color:'#b45309', bg:'rgba(245,158,11,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! Te saludamos de *Akimel*. ¿Se viene otro cumpleaños o celebración?\n\nTenemos nuevos juegos esta temporada y nos encantaría acompañarte de nuevo. ¿Te cotizamos?\n\nMira nuestras novedades en Instagram ${getHandleIG()}\n👉 ${getUrlIG()}`
+    build:a=>`¡Hola ${primerNombre(a)}! Te saludamos de *Akimel*. ¿Se viene otro cumpleaños o celebración?\n\nTenemos nuevos juegos esta temporada y nos encantaría acompañarte de nuevo. ¿Te cotizamos?\n\nMira nuestras novedades en Instagram ${getHandleIG()}\n${getUrlIG()}`
   },
 };
 
 // Orden de aparición de los botones en cada tarjeta
-const MSG_ORDEN = ['presentacion','confirmacion','enCamino','saldo','retiro','feedback','reactivacion'];
+const MSG_ORDEN = ['presentacion','confirmacion','saldo','retiro','feedback','reactivacion'];
 
 // Construye la URL wa.me directa con el mensaje precompletado
 function urlWA(a, plantillaKey){
