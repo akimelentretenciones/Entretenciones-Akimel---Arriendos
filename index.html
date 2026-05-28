@@ -682,6 +682,12 @@ select:focus{border-color:var(--blue)}
   </div>
 
   <div id="msgContenedor"></div>
+  <div class="table-wrap" id="msgTablaWrap" style="display:none">
+    <table>
+      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>Equipos</th><th>Monto</th><th style="min-width:340px">📱 Mensajes WhatsApp</th></tr></thead>
+      <tbody id="msgTablaBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <!-- AGREGAR CHAT -->
@@ -3245,10 +3251,16 @@ function renderMensajes(){
   document.getElementById('msgCountTel').textContent = arr.filter(a=>limpiarTelefono(a.telefono)).length;
 
   const cont = document.getElementById('msgContenedor');
+  const wrap = document.getElementById('msgTablaWrap');
+  const tbody = document.getElementById('msgTablaBody');
+
   if(!arr.length){
+    wrap.style.display = 'none';
     cont.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--text3)"><div style="font-size:40px;margin-bottom:10px">📭</div><div style="font-size:14px">Sin arriendos esta semana</div></div>';
     return;
   }
+  cont.innerHTML = '';
+  wrap.style.display = 'block';
 
   // Agrupar por día
   const grupos = {};
@@ -3260,62 +3272,65 @@ function renderMensajes(){
   const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
-  cont.innerHTML = Object.keys(grupos).sort().map(k=>{
+  let n = 0;
+  let html = '';
+  Object.keys(grupos).sort().forEach(k=>{
     const g = grupos[k];
     const titulo = `${DIAS[g.dt.getDay()]} ${g.dt.getDate()} ${MESES[g.dt.getMonth()]}`;
-    const cards = g.items.map(a=>msgCardHtml(a)).join('');
-    return `<div style="margin-bottom:20px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:13px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.5px">📅 ${titulo}</span>
-        <span style="font-size:11px;color:var(--text3)">· ${g.items.length} arriendo${g.items.length!==1?'s':''}</span>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-      </div>
-      ${cards}
-    </div>`;
-  }).join('');
+    // Fila separadora de día
+    html += `<tr style="background:var(--bg3)"><td colspan="12" style="padding:8px 14px;font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.5px">📅 ${titulo} · ${g.items.length} arriendo${g.items.length!==1?'s':''}</td></tr>`;
+    g.items.forEach(a=>{ n++; html += msgFilaHtml(a, n); });
+  });
+  tbody.innerHTML = html;
 }
 
-function msgCardHtml(a){
+// Genera la fila de tabla de un arriendo con la misma estructura que Arriendos + botones WhatsApp
+function msgFilaHtml(a, n){
   const num = limpiarTelefono(a.telefono);
   const tieneTel = !!num;
   const tieneSaldo = (a.pendiente||0) > 0;
+  const sem = a.semana || (parseFechaArr(a.fecha) ? isoWeek(parseFechaArr(a.fecha)) : '');
 
-  // Botones de mensaje (compactos, en una fila)
+  // Teléfono badge
+  const telCell = (()=>{
+    if(!tieneTel) return '<span style="color:var(--red);font-size:11px;font-weight:700">⚠️ Sin tel</span>';
+    const digitos = num.replace(/^56/,'');
+    const incompleto = digitos.length < 9;
+    return `<a href="tel:+${num}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:${incompleto?'rgba(239,68,68,.1)':'rgba(0,113,206,.1)'};color:${incompleto?'var(--red)':'var(--blue)'};border-radius:6px;font-size:10px;font-weight:700;text-decoration:none;white-space:nowrap">${incompleto?'⚠️':'📞'} ${num}</a>`;
+  })();
+
+  // Equipos (lista vertical, igual que Arriendos)
+  const equiposCell = (a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean)
+    .map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;white-space:nowrap">${e}</div>`).join('') || '—';
+
+  // Botones de mensaje
   const botones = MSG_ORDEN.map(key=>{
     const p = MSG_PLANTILLAS[key];
-    // Saltar "cobro saldo" si no hay saldo pendiente
     if(p.soloConSaldo && !tieneSaldo) return '';
     if(!tieneTel){
-      return `<span style="display:inline-flex;align-items:center;gap:3px;padding:5px 8px;background:#f1f1f1;color:#bbb;border-radius:7px;font-size:10px;font-weight:700;cursor:not-allowed;white-space:nowrap" title="Sin teléfono válido">${p.label}</span>`;
+      return `<span style="display:inline-flex;align-items:center;gap:3px;padding:4px 7px;background:#f1f1f1;color:#bbb;border-radius:6px;font-size:10px;font-weight:700;cursor:not-allowed;white-space:nowrap" title="Sin teléfono válido">${p.label}</span>`;
     }
     const url = urlWA(a, key);
     return `<a href="${url}" target="_blank" rel="noopener" title="${p.desc}"
-      style="display:inline-flex;align-items:center;gap:3px;padding:5px 8px;background:${p.bg};color:${p.color};border:1.5px solid ${p.color};border-radius:7px;font-size:10px;font-weight:700;text-decoration:none;font-family:'Sora',sans-serif;white-space:nowrap;transition:all .12s"
+      style="display:inline-flex;align-items:center;gap:3px;padding:4px 7px;background:${p.bg};color:${p.color};border:1.5px solid ${p.color};border-radius:6px;font-size:10px;font-weight:700;text-decoration:none;font-family:'Sora',sans-serif;white-space:nowrap;transition:all .12s"
       onmouseenter="this.style.background='${p.color}';this.style.color='#fff'"
       onmouseleave="this.style.background='${p.bg}';this.style.color='${p.color}'">${p.label}</a>`;
   }).filter(Boolean).join('');
 
-  const telBadge = tieneTel
-    ? `<a href="tel:+${num}" style="font-size:10px;color:var(--blue);text-decoration:none;font-weight:700;white-space:nowrap">📞 ${num}</a>`
-    : `<span style="font-size:10px;color:var(--red);font-weight:700;white-space:nowrap">⚠️ Sin tel</span>`;
-
-  const equipos = (a.equipos||'').split(',').map(e=>e.trim()).filter(Boolean);
-  const equiposCorto = equipos.join(' · ');
-
-  return `<div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:6px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <div style="min-width:200px;flex:0 0 auto">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px;font-weight:800;color:var(--blue3)">${a.cliente||'—'}</span>
-        ${a.hora?`<span style="font-size:11px;color:var(--text3);font-weight:600">🕐 ${a.hora}</span>`:''}
-        ${tieneSaldo?`<span style="font-size:11px;font-weight:800;color:var(--blue);font-family:'JetBrains Mono',monospace">${clp(a.pendiente)}</span>`:''}
-      </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px">
-        ${[a.direccion,a.comuna].filter(Boolean).join(', ')||'—'}${equiposCorto?` · <span style="color:var(--text2)">${equiposCorto}</span>`:''}
-      </div>
-    </div>
-    <div style="flex:0 0 auto">${telBadge}</div>
-    <div style="display:flex;gap:5px;flex:1;flex-wrap:wrap;justify-content:flex-end">${botones}</div>
-  </div>`;
+  return `<tr>
+    <td style="color:var(--text3);font-size:11px">${n}</td>
+    <td style="font-weight:600;color:var(--blue3)">${a.cliente||'—'}</td>
+    <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.direccion||'—'}</td>
+    <td>${a.comuna||'—'}</td>
+    <td style="white-space:nowrap">${a.fecha||'—'}</td>
+    <td>${a.dia||'—'}</td>
+    <td style="color:var(--text3);font-size:11px;font-weight:700">${sem||'—'}</td>
+    <td>${a.hora||'—'}</td>
+    <td style="white-space:nowrap">${telCell}</td>
+    <td style="min-width:140px;max-width:200px">${equiposCell}</td>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue);white-space:nowrap">${a.pendiente?clp(a.pendiente):'—'}</td>
+    <td style="min-width:340px"><div style="display:flex;gap:5px;flex-wrap:wrap">${botones}</div></td>
+  </tr>`;
 }
 
 // ===== DISPONIBILIDAD RÁPIDA =====
