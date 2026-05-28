@@ -423,6 +423,7 @@ select:focus{border-color:var(--blue)}
   <div class="nav-tab" onclick="goTab('arriendos')" id="tab-arriendos">📋 Arriendos</div>
   <div class="nav-tab" onclick="goTab('semana')" id="tab-semana">🗓️ Trabajo Semana</div>
   <div class="nav-tab" onclick="goTab('mensajes')" id="tab-mensajes">📱 Mensajería</div>
+  <div class="nav-tab" onclick="goTab('recontacto')" id="tab-recontacto">🔁 Recontacto</div>
   <div class="nav-tab" onclick="goTab('subir')" id="tab-subir">➕ Agregar Arriendo</div>
   <div class="nav-tab" onclick="goTab('costos')" id="tab-costos">💰 Costos</div>
   <div class="nav-tab" onclick="goTab('notifs')" id="tab-notifs">🔔 Alertas<span id="notifBadgeTab" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:800;margin-left:5px"></span></div>
@@ -686,6 +687,47 @@ select:focus{border-color:var(--blue)}
     <table>
       <thead><tr id="msgThead"></tr></thead>
       <tbody id="msgTablaBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- RECONTACTO CLIENTES AÑO PASADO -->
+<div class="section" id="sec-recontacto">
+  <div style="background:linear-gradient(135deg,rgba(168,85,247,.14),rgba(168,85,247,.04));border-left:4px solid #a855f7;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div style="font-size:22px">🔁</div>
+    <div style="flex:1;min-width:200px">
+      <div style="font-size:14px;font-weight:800;color:var(--blue3)">Recontacto de clientes</div>
+      <div style="font-size:11px;color:var(--text3)" id="recoSubtitulo">—</div>
+    </div>
+    <div style="display:flex;gap:6px;font-size:11px;flex-wrap:wrap">
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px"><span style="color:var(--text3)">Clientes:</span> <b id="recoCount" style="color:#a855f7">0</b></div>
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px"><span style="color:var(--text3)">Con teléfono:</span> <b id="recoCountTel" style="color:var(--blue)">0</b></div>
+    </div>
+  </div>
+
+  <!-- Explicación + selector de mes -->
+  <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:14px">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">
+      💡 Aquí ves los clientes que arrendaron <b>el año pasado</b> en el mes que estás por comenzar, para ofrecerles el servicio de nuevo con anticipación.
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700;color:var(--text3)">Ver clientes de:</span>
+      <select id="recoMes" onchange="renderRecontacto()" style="font-size:13px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:'Sora',sans-serif;cursor:pointer">
+        <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+        <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+        <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+        <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+      </select>
+      <select id="recoAnio" onchange="renderRecontacto()" style="font-size:13px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:'Sora',sans-serif;cursor:pointer"></select>
+      <button class="btn btn-ghost btn-sm" onclick="recoReset()" title="Volver al mes recomendado">↻ Mes recomendado</button>
+    </div>
+  </div>
+
+  <div id="recoContenedor"></div>
+  <div class="table-wrap" id="recoTablaWrap" style="display:none">
+    <table>
+      <thead><tr><th>#</th><th>Cliente</th><th>Comuna</th><th>Fecha arriendo</th><th>Teléfono</th><th>Equipos</th><th>Monto</th><th style="text-align:center">Mensaje WhatsApp</th></tr></thead>
+      <tbody id="recoTablaBody"></tbody>
     </table>
   </div>
 </div>
@@ -2957,6 +2999,7 @@ window.goTab=function(tab){
   if(tab==='notifs') actualizarIndicadorPermiso();
   if(tab==='semana') activarTrabajoSemana();
   if(tab==='mensajes') renderMensajes();
+  if(tab==='recontacto') renderRecontacto();
 };
 
 // ===== TRABAJO SEMANA =====
@@ -3168,35 +3211,16 @@ const MSG_PLANTILLAS = {
     color:'#128c3e', bg:'rgba(37,211,102,.15)',
     build:a=>`¡Hola ${primerNombre(a)}! Te recordamos que este ${a.dia||'día'} tienes tu arriendo con *Akimel*. ¿Confirmamos?`
   },
-  saldo: {
-    label:'💰 Cobro saldo',
-    desc:'Recordatorio de saldo pendiente',
-    color:'#0071ce', bg:'rgba(0,113,206,.1)',
-    soloConSaldo:true,
-    build:a=>`¡Hola ${primerNombre(a)}! Te recordamos de *Akimel* que queda un saldo pendiente de *${clp(a.pendiente)}* por tu arriendo de ${equiposTexto(a)}.\n\nPuedes transferir a:\n[datos de la cuenta]\n\n¡Muchas gracias!`
-  },
-  retiro: {
-    label:'📦 Retiro',
-    desc:'Coordinar hora de retiro de los juegos',
-    color:'#7c3aed', bg:'rgba(124,58,237,.12)',
-    build:a=>`¡Hola ${primerNombre(a)}! Te escribimos de *Akimel* para coordinar el retiro de ${equiposTexto(a)}.\n\n¿A qué hora te queda cómodo que pasemos a retirar?`
-  },
   feedback: {
     label:'⭐ Feedback + IG',
     desc:'Post-arriendo · cómo estuvo + seguir en IG',
     color:'#128c3e', bg:'rgba(37,211,102,.15)',
     build:a=>`¡Hola ${primerNombre(a)}! Aquí el equipo de *Akimel*.\n\n¿Cómo lo pasaron con ${equiposTexto(a)}? Esperamos que haya sido una celebración increíble.\n\nNos encantaría saber tu opinión, nos ayuda muchísimo a mejorar. Y si quedaron contentos, ¡síguenos en Instagram ${getHandleIG()}!\n${getUrlIG()}`
   },
-  reactivacion: {
-    label:'🔁 Reactivar',
-    desc:'Cliente recurrente · ofrecer nueva fecha',
-    color:'#b45309', bg:'rgba(245,158,11,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! Te saludamos de *Akimel*. ¿Se viene otro cumpleaños o celebración?\n\nTenemos nuevos juegos esta temporada y nos encantaría acompañarte de nuevo. ¿Te cotizamos?\n\nMira nuestras novedades en Instagram ${getHandleIG()}\n${getUrlIG()}`
-  },
 };
 
 // Orden de aparición de los botones en cada tarjeta
-const MSG_ORDEN = ['presentacion','confirmacion','saldo','retiro','feedback','reactivacion'];
+const MSG_ORDEN = ['presentacion','confirmacion','feedback'];
 
 // Construye la URL wa.me directa con el mensaje precompletado
 function urlWA(a, plantillaKey){
@@ -3350,6 +3374,130 @@ function msgFilaHtml(a, n){
     <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue);white-space:nowrap">${a.pendiente?clp(a.pendiente):'—'}</td>
     ${celdasMsg}
   </tr>`;
+}
+
+// ═══════════════════════════════════════════════════
+// RECONTACTO DE CLIENTES (año pasado, mes siguiente)
+// ═══════════════════════════════════════════════════
+let RECO_INIT = false;
+
+// Mensaje de recontacto
+function mensajeRecontacto(a, nombreMes){
+  return `¡Hola ${primerNombre(a)}! Te saludamos del equipo de *Akimel*.\n\nEl año pasado celebraron con nosotros por estas fechas y nos encantaría acompañarte de nuevo. Ya estamos tomando reservas para ${nombreMes}.\n\nTenemos nuevos juegos esta temporada. ¿Te cotizamos sin compromiso?\n\nMira nuestras novedades en Instagram ${getHandleIG()}\n${getUrlIG()}`;
+}
+
+// Calcula [mes, año] recomendados: mes siguiente al actual, del año anterior
+function recoRecomendado(){
+  const hoy = new Date();
+  let mes = hoy.getMonth() + 2; // getMonth es 0-based; +1 para el actual, +1 para el siguiente
+  let anio = hoy.getFullYear() - 1;
+  if(mes > 12){ mes -= 12; anio += 1; } // si estamos en diciembre, el mes siguiente es enero
+  return [mes, anio];
+}
+
+const RECO_MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function recoReset(){
+  const [mes, anio] = recoRecomendado();
+  document.getElementById('recoMes').value = String(mes);
+  document.getElementById('recoAnio').value = String(anio);
+  renderRecontacto();
+}
+
+function renderRecontacto(){
+  // Poblar selector de años una sola vez (rango razonable según los datos)
+  const selAnio = document.getElementById('recoAnio');
+  if(!RECO_INIT){
+    const anios = new Set();
+    (ARRIENDOS||[]).forEach(a=>{ const dt=parseFechaArr(a.fecha); if(dt) anios.add(dt.getFullYear()); });
+    const hoyAnio = new Date().getFullYear();
+    anios.add(hoyAnio-1); anios.add(hoyAnio);
+    const lista = [...anios].sort((x,y)=>y-x);
+    selAnio.innerHTML = lista.map(y=>`<option value="${y}">${y}</option>`).join('');
+    const [mes, anio] = recoRecomendado();
+    document.getElementById('recoMes').value = String(mes);
+    selAnio.value = String(anio);
+    RECO_INIT = true;
+  }
+
+  const mes = parseInt(document.getElementById('recoMes').value);
+  const anio = parseInt(selAnio.value);
+  const nombreMes = RECO_MESES[mes];
+
+  document.getElementById('recoSubtitulo').textContent =
+    `Clientes de ${nombreMes} ${anio} · para reactivar en ${nombreMes} ${anio+1}`;
+
+  // Filtrar arriendos del mes/año seleccionado (excluir cancelados)
+  let arr = (ARRIENDOS||[]).filter(a=>{
+    const dt = parseFechaArr(a.fecha);
+    if(!dt) return false;
+    if(dt.getMonth()+1 !== mes || dt.getFullYear() !== anio) return false;
+    const est = (a.estado||'').toLowerCase();
+    if(est === 'cancelado') return false;
+    return true;
+  });
+
+  // Quitar clientes duplicados (mismo teléfono o mismo nombre): dejar el más reciente
+  const vistos = new Map();
+  arr.sort((x,y)=>parseFechaArr(y.fecha)-parseFechaArr(x.fecha));
+  const unicos = [];
+  arr.forEach(a=>{
+    const key = limpiarTelefono(a.telefono) || (a.cliente||'').trim().toLowerCase();
+    if(!key || vistos.has(key)) return;
+    vistos.set(key, true);
+    unicos.push(a);
+  });
+  arr = unicos;
+
+  // KPIs
+  document.getElementById('recoCount').textContent = arr.length;
+  document.getElementById('recoCountTel').textContent = arr.filter(a=>limpiarTelefono(a.telefono)).length;
+
+  const cont = document.getElementById('recoContenedor');
+  const wrap = document.getElementById('recoTablaWrap');
+  const tbody = document.getElementById('recoTablaBody');
+
+  if(!arr.length){
+    wrap.style.display = 'none';
+    cont.innerHTML = `<div style="text-align:center;padding:48px 20px;color:var(--text3)"><div style="font-size:40px;margin-bottom:10px">📭</div><div style="font-size:14px">No hay clientes registrados en ${nombreMes} ${anio}</div></div>`;
+    return;
+  }
+  cont.innerHTML = '';
+  wrap.style.display = 'block';
+
+  tbody.innerHTML = arr.map((a,i)=>{
+    const num = limpiarTelefono(a.telefono);
+    const tieneTel = !!num;
+    const telCell = tieneTel
+      ? `<a href="tel:+${num}" style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:rgba(0,113,206,.1);color:var(--blue);border-radius:6px;font-size:10px;font-weight:700;text-decoration:none;white-space:nowrap">📞 ${num}</a>`
+      : '<span style="color:var(--red);font-size:11px;font-weight:700">⚠️ Sin tel</span>';
+    const equiposCell = (a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean)
+      .map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;white-space:nowrap">${e}</div>`).join('') || '—';
+
+    // Botón de mensaje de recontacto
+    let botonCell;
+    if(!tieneTel){
+      botonCell = `<span style="display:inline-flex;align-items:center;gap:3px;padding:5px 10px;background:#f1f1f1;color:#bbb;border-radius:6px;font-size:11px;font-weight:700;cursor:not-allowed;white-space:nowrap" title="Sin teléfono válido">🔁 Recontactar</span>`;
+    } else {
+      const nombreMesSig = RECO_MESES[mes];
+      const url = `https://wa.me/${num}?text=${encodeURIComponent(mensajeRecontacto(a, nombreMesSig))}`;
+      botonCell = `<a href="${url}" target="_blank" rel="noopener" title="Enviar mensaje de recontacto"
+        style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:rgba(168,85,247,.12);color:#a855f7;border:1.5px solid #a855f7;border-radius:7px;font-size:11px;font-weight:700;text-decoration:none;font-family:'Sora',sans-serif;white-space:nowrap;transition:all .12s"
+        onmouseenter="this.style.background='#a855f7';this.style.color='#fff'"
+        onmouseleave="this.style.background='rgba(168,85,247,.12)';this.style.color='#a855f7'">🔁 Recontactar</a>`;
+    }
+
+    return `<tr>
+      <td style="color:var(--text3);font-size:11px">${i+1}</td>
+      <td style="font-weight:600;color:var(--blue3)">${a.cliente||'—'}</td>
+      <td>${a.comuna||'—'}</td>
+      <td style="white-space:nowrap">${a.fecha||'—'}</td>
+      <td style="white-space:nowrap">${telCell}</td>
+      <td style="min-width:140px;max-width:200px">${equiposCell}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue);white-space:nowrap">${a.pendiente?clp(a.pendiente):'—'}</td>
+      <td style="text-align:center">${botonCell}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ===== DISPONIBILIDAD RÁPIDA =====
