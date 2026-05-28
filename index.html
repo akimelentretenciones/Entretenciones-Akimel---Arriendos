@@ -677,7 +677,7 @@ select:focus{border-color:var(--blue)}
 
   <!-- Info handle Instagram -->
   <div style="background:rgba(0,113,206,.06);border:1px dashed var(--blue);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:11px;color:var(--text2)">
-    💡 El usuario de Instagram aparece en los mensajes como <b id="igHandleLabel">@akimel</b>.
+    💡 El usuario de Instagram aparece en los mensajes como <b id="igHandleLabel">@entretenciones_akimel</b>.
     <a href="javascript:void(0)" onclick="cambiarHandleIG()" style="color:var(--blue);font-weight:700;text-decoration:none">Cambiar</a>
   </div>
 
@@ -3117,19 +3117,30 @@ function actualizarResumenSemana(){
 let MSG_WK_OFF = 0; // offset de semana (0 = actual)
 
 // Handle de Instagram (editable, persistente)
+const IG_HANDLE_DEFAULT = '@entretenciones_akimel';
 function getHandleIG(){
-  return localStorage.getItem('akimel_ig_handle') || '@akimel';
+  let h = localStorage.getItem('akimel_ig_handle');
+  // Migrar el valor antiguo de pruebas hacia el handle real
+  if(!h || h === '@akimel'){
+    h = IG_HANDLE_DEFAULT;
+    localStorage.setItem('akimel_ig_handle', h);
+  }
+  return h;
 }
 function cambiarHandleIG(){
   const actual = getHandleIG();
-  let nuevo = prompt('Usuario de Instagram de Akimel (ej: @akimel):', actual);
+  let nuevo = prompt('Usuario de Instagram de Akimel (ej: @entretenciones_akimel):', actual);
   if(nuevo===null) return;
   nuevo = nuevo.trim();
   if(nuevo && !nuevo.startsWith('@')) nuevo = '@'+nuevo;
-  localStorage.setItem('akimel_ig_handle', nuevo || '@akimel');
+  localStorage.setItem('akimel_ig_handle', nuevo || IG_HANDLE_DEFAULT);
   const lbl = document.getElementById('igHandleLabel');
   if(lbl) lbl.textContent = getHandleIG();
   renderMensajes();
+}
+// URL cliqueable del perfil de Instagram (deriva del handle, sin el @)
+function getUrlIG(){
+  return 'https://instagram.com/' + getHandleIG().replace(/^@/,'');
 }
 
 // Primer nombre del cliente
@@ -3149,7 +3160,7 @@ const MSG_PLANTILLAS = {
     label:'👋 Presentación',
     desc:'Lead de Facebook · saludo + detalle + cuenta',
     color:'#0071ce', bg:'rgba(0,113,206,.1)',
-    build:a=>`¡Hola ${primerNombre(a)}! Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n- ${equiposTexto(a)}${a.fecha?`\n- ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n- Pendiente: ${clp(a.pendiente)}`:''}\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()} para ver más juegos y promos!`
+    build:a=>`¡Hola ${primerNombre(a)}! Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n- ${equiposTexto(a)}${a.fecha?`\n- ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n- Pendiente: ${clp(a.pendiente)}`:''}\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()}!\n👉 ${getUrlIG()}`
   },
   confirmacion: {
     label:'✅ Confirmar',
@@ -3180,13 +3191,13 @@ const MSG_PLANTILLAS = {
     label:'⭐ Feedback + IG',
     desc:'Post-arriendo · cómo estuvo + seguir en IG',
     color:'#128c3e', bg:'rgba(37,211,102,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! Aquí el equipo de *Akimel*.\n\n¿Cómo lo pasaron con ${equiposTexto(a)}? Esperamos que haya sido una celebración increíble.\n\nNos encantaría saber tu opinión, nos ayuda muchísimo a mejorar. Y si quedaron contentos, ¡síguenos en Instagram ${getHandleIG()} para ver novedades y promos!`
+    build:a=>`¡Hola ${primerNombre(a)}! Aquí el equipo de *Akimel*.\n\n¿Cómo lo pasaron con ${equiposTexto(a)}? Esperamos que haya sido una celebración increíble.\n\nNos encantaría saber tu opinión, nos ayuda muchísimo a mejorar. Y si quedaron contentos, ¡síguenos en Instagram ${getHandleIG()}!\n👉 ${getUrlIG()}`
   },
   reactivacion: {
     label:'🔁 Reactivar',
     desc:'Cliente recurrente · ofrecer nueva fecha',
     color:'#b45309', bg:'rgba(245,158,11,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! Te saludamos de *Akimel*. ¿Se viene otro cumpleaños o celebración?\n\nTenemos nuevos juegos esta temporada y nos encantaría acompañarte de nuevo. ¿Te cotizamos?\n\nMira nuestras novedades en Instagram ${getHandleIG()}`
+    build:a=>`¡Hola ${primerNombre(a)}! Te saludamos de *Akimel*. ¿Se viene otro cumpleaños o celebración?\n\nTenemos nuevos juegos esta temporada y nos encantaría acompañarte de nuevo. ¿Te cotizamos?\n\nMira nuestras novedades en Instagram ${getHandleIG()}\n👉 ${getUrlIG()}`
   },
 };
 
