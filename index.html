@@ -684,7 +684,7 @@ select:focus{border-color:var(--blue)}
   <div id="msgContenedor"></div>
   <div class="table-wrap" id="msgTablaWrap" style="display:none">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>Equipos</th><th>Monto</th><th style="min-width:340px">📱 Mensajes WhatsApp</th></tr></thead>
+      <thead><tr id="msgThead"></tr></thead>
       <tbody id="msgTablaBody"></tbody>
     </table>
   </div>
@@ -3149,44 +3149,44 @@ const MSG_PLANTILLAS = {
     label:'👋 Presentación',
     desc:'Lead de Facebook · saludo + detalle + cuenta',
     color:'#0071ce', bg:'rgba(0,113,206,.1)',
-    build:a=>`¡Hola ${primerNombre(a)}! 😀 Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n🎈 ${equiposTexto(a)}${a.fecha?`\n📅 ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n📍 ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n💰 Pendiente: ${clp(a.pendiente)}`:''}\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()} para ver más juegos y promos! 📸`
+    build:a=>`¡Hola ${primerNombre(a)}! Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n- ${equiposTexto(a)}${a.fecha?`\n- ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n- Pendiente: ${clp(a.pendiente)}`:''}\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()} para ver más juegos y promos!`
   },
   confirmacion: {
     label:'✅ Confirmar',
     desc:'1-2 días antes · confirmar que sigue en pie',
     color:'#128c3e', bg:'rgba(37,211,102,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! 😀 Te escribimos de *Akimel* para confirmar tu arriendo de${a.dia?` el *${a.dia}*`:''}${a.fecha?` ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}.\n\n🎈 ${equiposTexto(a)}${a.direccion||a.comuna?`\n📍 ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}\n\n¿Confirmas que todo sigue en pie? 😊`
+    build:a=>`¡Hola ${primerNombre(a)}! Te escribimos de *Akimel* para confirmar tu arriendo de${a.dia?` el *${a.dia}*`:''}${a.fecha?` ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}.\n\n- ${equiposTexto(a)}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}\n\n¿Confirmas que todo sigue en pie?`
   },
   enCamino: {
     label:'🚚 En camino',
     desc:'El día · aviso de llegada para instalar',
     color:'#b45309', bg:'rgba(245,158,11,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! 🚚 Te avisamos de *Akimel* que vamos en camino para instalar ${equiposTexto(a)}.\n\nLlegamos en aproximadamente 30 min. ¡Nos vemos! 🎉`
+    build:a=>`¡Hola ${primerNombre(a)}! Te avisamos de *Akimel* que vamos en camino para instalar ${equiposTexto(a)}.\n\nLlegamos en aproximadamente 30 min. ¡Nos vemos!`
   },
   saldo: {
     label:'💰 Cobro saldo',
     desc:'Recordatorio de saldo pendiente',
     color:'#0071ce', bg:'rgba(0,113,206,.1)',
     soloConSaldo:true,
-    build:a=>`¡Hola ${primerNombre(a)}! 😊 Te recordamos de *Akimel* que queda un saldo pendiente de *${clp(a.pendiente)}* por tu arriendo de ${equiposTexto(a)}.\n\nPuedes transferir a:\n🏦 [datos de la cuenta]\n\n¡Muchas gracias! 🙌`
+    build:a=>`¡Hola ${primerNombre(a)}! Te recordamos de *Akimel* que queda un saldo pendiente de *${clp(a.pendiente)}* por tu arriendo de ${equiposTexto(a)}.\n\nPuedes transferir a:\n[datos de la cuenta]\n\n¡Muchas gracias!`
   },
   retiro: {
     label:'📦 Retiro',
     desc:'Coordinar hora de retiro de los juegos',
     color:'#7c3aed', bg:'rgba(124,58,237,.12)',
-    build:a=>`¡Hola ${primerNombre(a)}! 😊 Te escribimos de *Akimel* para coordinar el retiro de ${equiposTexto(a)}.\n\n¿A qué hora te queda cómodo que pasemos a retirar? 📦`
+    build:a=>`¡Hola ${primerNombre(a)}! Te escribimos de *Akimel* para coordinar el retiro de ${equiposTexto(a)}.\n\n¿A qué hora te queda cómodo que pasemos a retirar?`
   },
   feedback: {
     label:'⭐ Feedback + IG',
     desc:'Post-arriendo · cómo estuvo + seguir en IG',
     color:'#128c3e', bg:'rgba(37,211,102,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! 👋 Aquí el equipo de *Akimel*.\n\n¿Cómo lo pasaron con ${equiposTexto(a)}? Esperamos que haya sido una celebración increíble 🎉\n\nNos encantaría saber tu opinión, nos ayuda muchísimo a mejorar 🙏 Y si quedaron contentos, ¡síguenos en Instagram ${getHandleIG()} para ver novedades y promos! 📸`
+    build:a=>`¡Hola ${primerNombre(a)}! Aquí el equipo de *Akimel*.\n\n¿Cómo lo pasaron con ${equiposTexto(a)}? Esperamos que haya sido una celebración increíble.\n\nNos encantaría saber tu opinión, nos ayuda muchísimo a mejorar. Y si quedaron contentos, ¡síguenos en Instagram ${getHandleIG()} para ver novedades y promos!`
   },
   reactivacion: {
     label:'🔁 Reactivar',
     desc:'Cliente recurrente · ofrecer nueva fecha',
     color:'#b45309', bg:'rgba(245,158,11,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! 😀 Te saludamos de *Akimel*. ¿Se viene otro cumpleaños o celebración? 🎂\n\nTenemos nuevos juegos esta temporada y nos encantaría acompañarte de nuevo. ¿Te cotizamos? 🎈\n\nMira nuestras novedades en Instagram ${getHandleIG()} 📸`
+    build:a=>`¡Hola ${primerNombre(a)}! Te saludamos de *Akimel*. ¿Se viene otro cumpleaños o celebración?\n\nTenemos nuevos juegos esta temporada y nos encantaría acompañarte de nuevo. ¿Te cotizamos?\n\nMira nuestras novedades en Instagram ${getHandleIG()}`
   },
 };
 
@@ -3262,6 +3262,14 @@ function renderMensajes(){
   cont.innerHTML = '';
   wrap.style.display = 'block';
 
+  // Construir encabezado: 11 columnas base + una por cada tipo de mensaje
+  const thead = document.getElementById('msgThead');
+  const colsBase = ['#','Cliente','Dirección','Comuna','Fecha','Día','Sem.','Hora','Teléfono','Equipos','Monto'];
+  let theadHtml = colsBase.map(c=>`<th>${c}</th>`).join('');
+  theadHtml += MSG_ORDEN.map(key=>`<th style="text-align:center;white-space:nowrap">${MSG_PLANTILLAS[key].label}</th>`).join('');
+  thead.innerHTML = theadHtml;
+  const NUM_COLS = colsBase.length + MSG_ORDEN.length; // 11 + 7 = 18
+
   // Agrupar por día
   const grupos = {};
   arr.forEach(a=>{
@@ -3278,13 +3286,30 @@ function renderMensajes(){
     const g = grupos[k];
     const titulo = `${DIAS[g.dt.getDay()]} ${g.dt.getDate()} ${MESES[g.dt.getMonth()]}`;
     // Fila separadora de día
-    html += `<tr style="background:var(--bg3)"><td colspan="12" style="padding:8px 14px;font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.5px">📅 ${titulo} · ${g.items.length} arriendo${g.items.length!==1?'s':''}</td></tr>`;
+    html += `<tr style="background:var(--bg3)"><td colspan="${NUM_COLS}" style="padding:8px 14px;font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.5px">📅 ${titulo} · ${g.items.length} arriendo${g.items.length!==1?'s':''}</td></tr>`;
     g.items.forEach(a=>{ n++; html += msgFilaHtml(a, n); });
   });
   tbody.innerHTML = html;
 }
 
-// Genera la fila de tabla de un arriendo con la misma estructura que Arriendos + botones WhatsApp
+// Genera la celda de un botón de mensaje para un arriendo dado
+function msgBotonCell(a, key, tieneTel, tieneSaldo){
+  const p = MSG_PLANTILLAS[key];
+  // "Cobro saldo" no aplica si no hay saldo pendiente
+  if(p.soloConSaldo && !tieneSaldo){
+    return `<td style="text-align:center"><span style="color:var(--text3);font-size:11px">—</span></td>`;
+  }
+  if(!tieneTel){
+    return `<td style="text-align:center"><span style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#f1f1f1;color:#bbb;border-radius:6px;font-size:10px;font-weight:700;cursor:not-allowed;white-space:nowrap" title="Sin teléfono válido">${p.label}</span></td>`;
+  }
+  const url = urlWA(a, key);
+  return `<td style="text-align:center"><a href="${url}" target="_blank" rel="noopener" title="${p.desc}"
+    style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:${p.bg};color:${p.color};border:1.5px solid ${p.color};border-radius:6px;font-size:10px;font-weight:700;text-decoration:none;font-family:'Sora',sans-serif;white-space:nowrap;transition:all .12s"
+    onmouseenter="this.style.background='${p.color}';this.style.color='#fff'"
+    onmouseleave="this.style.background='${p.bg}';this.style.color='${p.color}'">${p.label}</a></td>`;
+}
+
+// Genera la fila de tabla de un arriendo: columnas base + una columna por cada mensaje
 function msgFilaHtml(a, n){
   const num = limpiarTelefono(a.telefono);
   const tieneTel = !!num;
@@ -3303,19 +3328,8 @@ function msgFilaHtml(a, n){
   const equiposCell = (a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean)
     .map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;white-space:nowrap">${e}</div>`).join('') || '—';
 
-  // Botones de mensaje
-  const botones = MSG_ORDEN.map(key=>{
-    const p = MSG_PLANTILLAS[key];
-    if(p.soloConSaldo && !tieneSaldo) return '';
-    if(!tieneTel){
-      return `<span style="display:inline-flex;align-items:center;gap:3px;padding:4px 7px;background:#f1f1f1;color:#bbb;border-radius:6px;font-size:10px;font-weight:700;cursor:not-allowed;white-space:nowrap" title="Sin teléfono válido">${p.label}</span>`;
-    }
-    const url = urlWA(a, key);
-    return `<a href="${url}" target="_blank" rel="noopener" title="${p.desc}"
-      style="display:inline-flex;align-items:center;gap:3px;padding:4px 7px;background:${p.bg};color:${p.color};border:1.5px solid ${p.color};border-radius:6px;font-size:10px;font-weight:700;text-decoration:none;font-family:'Sora',sans-serif;white-space:nowrap;transition:all .12s"
-      onmouseenter="this.style.background='${p.color}';this.style.color='#fff'"
-      onmouseleave="this.style.background='${p.bg}';this.style.color='${p.color}'">${p.label}</a>`;
-  }).filter(Boolean).join('');
+  // Una celda por cada tipo de mensaje
+  const celdasMsg = MSG_ORDEN.map(key=>msgBotonCell(a, key, tieneTel, tieneSaldo)).join('');
 
   return `<tr>
     <td style="color:var(--text3);font-size:11px">${n}</td>
@@ -3329,7 +3343,7 @@ function msgFilaHtml(a, n){
     <td style="white-space:nowrap">${telCell}</td>
     <td style="min-width:140px;max-width:200px">${equiposCell}</td>
     <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue);white-space:nowrap">${a.pendiente?clp(a.pendiente):'—'}</td>
-    <td style="min-width:340px"><div style="display:flex;gap:5px;flex-wrap:wrap">${botones}</div></td>
+    ${celdasMsg}
   </tr>`;
 }
 
