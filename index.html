@@ -3143,44 +3143,44 @@ const MSG_PLANTILLAS = {
     label:'👋 Presentación',
     desc:'Lead de Facebook · saludo + detalle + cuenta',
     color:'#0071ce', bg:'rgba(0,113,206,.1)',
-    build:a=>`¡Hola ${primerNombre(a)}! 😄 Te saluda el equipo de *Akimel* ⚡, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n🎪 ${equiposTexto(a)}${a.fecha?`\n📅 ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n📍 ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n💲 Pendiente: ${clp(a.pendiente)}`:''}\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()} para ver más juegos y promos! 📸`
+    build:a=>`¡Hola ${primerNombre(a)}! 😀 Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n🎈 ${equiposTexto(a)}${a.fecha?`\n📅 ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n📍 ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n💰 Pendiente: ${clp(a.pendiente)}`:''}\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()} para ver más juegos y promos! 📸`
   },
   confirmacion: {
     label:'✅ Confirmar',
     desc:'1-2 días antes · confirmar que sigue en pie',
     color:'#128c3e', bg:'rgba(37,211,102,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! 👋 Te escribimos de *Akimel* ⚡ para confirmar tu arriendo de${a.dia?` el *${a.dia}*`:''}${a.fecha?` ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}.\n\n🎪 ${equiposTexto(a)}${a.direccion||a.comuna?`\n📍 ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}\n\n¿Confirmas que todo sigue en pie? 😊`
+    build:a=>`¡Hola ${primerNombre(a)}! 😀 Te escribimos de *Akimel* para confirmar tu arriendo de${a.dia?` el *${a.dia}*`:''}${a.fecha?` ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}.\n\n🎈 ${equiposTexto(a)}${a.direccion||a.comuna?`\n📍 ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}\n\n¿Confirmas que todo sigue en pie? 😊`
   },
   enCamino: {
     label:'🚚 En camino',
     desc:'El día · aviso de llegada para instalar',
     color:'#b45309', bg:'rgba(245,158,11,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! 🚚 Te avisamos de *Akimel* ⚡ que vamos en camino para instalar ${equiposTexto(a)}.\n\nLlegamos en aproximadamente 30 min. ¡Nos vemos! 🎉`
+    build:a=>`¡Hola ${primerNombre(a)}! 🚚 Te avisamos de *Akimel* que vamos en camino para instalar ${equiposTexto(a)}.\n\nLlegamos en aproximadamente 30 min. ¡Nos vemos! 🎉`
   },
   saldo: {
-    label:'💲 Cobro saldo',
+    label:'💰 Cobro saldo',
     desc:'Recordatorio de saldo pendiente',
     color:'#0071ce', bg:'rgba(0,113,206,.1)',
     soloConSaldo:true,
-    build:a=>`¡Hola ${primerNombre(a)}! 😊 Te recordamos de *Akimel* ⚡ que queda un saldo pendiente de *${clp(a.pendiente)}* por tu arriendo de ${equiposTexto(a)}.\n\nPuedes transferir a:\n🏦 [datos de la cuenta]\n\n¡Muchas gracias! 🙌`
+    build:a=>`¡Hola ${primerNombre(a)}! 😊 Te recordamos de *Akimel* que queda un saldo pendiente de *${clp(a.pendiente)}* por tu arriendo de ${equiposTexto(a)}.\n\nPuedes transferir a:\n🏦 [datos de la cuenta]\n\n¡Muchas gracias! 🙌`
   },
   retiro: {
     label:'📦 Retiro',
     desc:'Coordinar hora de retiro de los juegos',
     color:'#7c3aed', bg:'rgba(124,58,237,.12)',
-    build:a=>`¡Hola ${primerNombre(a)}! 😊 Te escribimos de *Akimel* ⚡ para coordinar el retiro de ${equiposTexto(a)}.\n\n¿A qué hora te queda cómodo que pasemos a retirar? 📦`
+    build:a=>`¡Hola ${primerNombre(a)}! 😊 Te escribimos de *Akimel* para coordinar el retiro de ${equiposTexto(a)}.\n\n¿A qué hora te queda cómodo que pasemos a retirar? 📦`
   },
   feedback: {
     label:'⭐ Feedback + IG',
     desc:'Post-arriendo · cómo estuvo + seguir en IG',
     color:'#128c3e', bg:'rgba(37,211,102,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! 👋 Aquí el equipo de *Akimel* ⚡\n\n¿Cómo lo pasaron con ${equiposTexto(a)}? Esperamos que haya sido una celebración increíble 🎉\n\nNos encantaría saber tu opinión, nos ayuda muchísimo a mejorar 🙏 Y si quedaron contentos, ¡síguenos en Instagram ${getHandleIG()} para ver novedades y promos! 📸`
+    build:a=>`¡Hola ${primerNombre(a)}! 👋 Aquí el equipo de *Akimel*.\n\n¿Cómo lo pasaron con ${equiposTexto(a)}? Esperamos que haya sido una celebración increíble 🎉\n\nNos encantaría saber tu opinión, nos ayuda muchísimo a mejorar 🙏 Y si quedaron contentos, ¡síguenos en Instagram ${getHandleIG()} para ver novedades y promos! 📸`
   },
   reactivacion: {
     label:'🔁 Reactivar',
     desc:'Cliente recurrente · ofrecer nueva fecha',
     color:'#b45309', bg:'rgba(245,158,11,.15)',
-    build:a=>`¡Hola ${primerNombre(a)}! 😄 Te saludamos de *Akimel* ⚡ ¿Se viene otro cumpleaños o celebración? 🎂\n\nTenemos nuevos juegos esta temporada y nos encantaría acompañarte de nuevo. ¿Te cotizamos? 🎪\n\nMira nuestras novedades en Instagram ${getHandleIG()} 📸`
+    build:a=>`¡Hola ${primerNombre(a)}! 😀 Te saludamos de *Akimel*. ¿Se viene otro cumpleaños o celebración? 🎂\n\nTenemos nuevos juegos esta temporada y nos encantaría acompañarte de nuevo. ¿Te cotizamos? 🎈\n\nMira nuestras novedades en Instagram ${getHandleIG()} 📸`
   },
 };
 
@@ -3280,42 +3280,41 @@ function msgCardHtml(a){
   const tieneTel = !!num;
   const tieneSaldo = (a.pendiente||0) > 0;
 
-  // Botones de mensaje
+  // Botones de mensaje (compactos, en una fila)
   const botones = MSG_ORDEN.map(key=>{
     const p = MSG_PLANTILLAS[key];
     // Saltar "cobro saldo" si no hay saldo pendiente
     if(p.soloConSaldo && !tieneSaldo) return '';
     if(!tieneTel){
-      return `<span style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:#f1f1f1;color:#bbb;border-radius:8px;font-size:11px;font-weight:700;cursor:not-allowed" title="Sin teléfono válido">${p.label}</span>`;
+      return `<span style="display:inline-flex;align-items:center;gap:3px;padding:5px 8px;background:#f1f1f1;color:#bbb;border-radius:7px;font-size:10px;font-weight:700;cursor:not-allowed;white-space:nowrap" title="Sin teléfono válido">${p.label}</span>`;
     }
     const url = urlWA(a, key);
     return `<a href="${url}" target="_blank" rel="noopener" title="${p.desc}"
-      style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:${p.bg};color:${p.color};border:1.5px solid ${p.color};border-radius:8px;font-size:11px;font-weight:700;text-decoration:none;font-family:'Sora',sans-serif;white-space:nowrap;transition:all .12s"
+      style="display:inline-flex;align-items:center;gap:3px;padding:5px 8px;background:${p.bg};color:${p.color};border:1.5px solid ${p.color};border-radius:7px;font-size:10px;font-weight:700;text-decoration:none;font-family:'Sora',sans-serif;white-space:nowrap;transition:all .12s"
       onmouseenter="this.style.background='${p.color}';this.style.color='#fff'"
       onmouseleave="this.style.background='${p.bg}';this.style.color='${p.color}'">${p.label}</a>`;
   }).filter(Boolean).join('');
 
   const telBadge = tieneTel
-    ? `<a href="tel:+${num}" style="font-size:11px;color:var(--blue);text-decoration:none;font-weight:700">📞 ${num}</a>`
-    : `<span style="font-size:11px;color:var(--red);font-weight:700">⚠️ Sin teléfono</span>`;
+    ? `<a href="tel:+${num}" style="font-size:10px;color:var(--blue);text-decoration:none;font-weight:700;white-space:nowrap">📞 ${num}</a>`
+    : `<span style="font-size:10px;color:var(--red);font-weight:700;white-space:nowrap">⚠️ Sin tel</span>`;
 
   const equipos = (a.equipos||'').split(',').map(e=>e.trim()).filter(Boolean);
+  const equiposCorto = equipos.join(' · ');
 
-  return `<div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow)">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-      <div style="flex:1;min-width:160px">
-        <div style="font-size:15px;font-weight:800;color:var(--blue3)">${a.cliente||'—'}</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">
-          ${a.hora?`🕐 ${a.hora} · `:''}${[a.direccion,a.comuna].filter(Boolean).join(', ')||'—'}
-        </div>
+  return `<div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:6px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <div style="min-width:200px;flex:0 0 auto">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px;font-weight:800;color:var(--blue3)">${a.cliente||'—'}</span>
+        ${a.hora?`<span style="font-size:11px;color:var(--text3);font-weight:600">🕐 ${a.hora}</span>`:''}
+        ${tieneSaldo?`<span style="font-size:11px;font-weight:800;color:var(--blue);font-family:'JetBrains Mono',monospace">${clp(a.pendiente)}</span>`:''}
       </div>
-      <div style="text-align:right">
-        ${telBadge}
-        ${tieneSaldo?`<div style="font-size:12px;font-weight:800;color:var(--blue);font-family:'JetBrains Mono',monospace;margin-top:2px">${clp(a.pendiente)}</div>`:''}
+      <div style="font-size:11px;color:var(--text3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px">
+        ${[a.direccion,a.comuna].filter(Boolean).join(', ')||'—'}${equiposCorto?` · <span style="color:var(--text2)">${equiposCorto}</span>`:''}
       </div>
     </div>
-    ${equipos.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">${equipos.map(e=>`<span style="font-size:10px;background:var(--bg3);color:var(--text2);padding:2px 8px;border-radius:12px">${e}</span>`).join('')}</div>`:''}
-    <div style="display:flex;flex-wrap:wrap;gap:6px">${botones}</div>
+    <div style="flex:0 0 auto">${telBadge}</div>
+    <div style="display:flex;gap:5px;flex:1;flex-wrap:wrap;justify-content:flex-end">${botones}</div>
   </div>`;
 }
 
