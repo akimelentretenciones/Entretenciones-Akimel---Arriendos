@@ -3217,10 +3217,69 @@ const MSG_PLANTILLAS = {
     color:'#128c3e', bg:'rgba(37,211,102,.15)',
     build:a=>`¡Hola ${primerNombre(a)}! Aquí el equipo de *Akimel*.\n\n¿Cómo lo pasaron con ${equiposTexto(a)}? Esperamos que haya sido una celebración increíble.\n\nNos encantaría saber tu opinión, nos ayuda muchísimo a mejorar. Y si quedaron contentos, ¡síguenos en Instagram ${getHandleIG()}!\n${getUrlIG()}`
   },
+  remate: {
+    label:'🔥 Remate',
+    desc:'Ofrecer juegos disponibles ese día a precio promocional',
+    color:'#dc2626', bg:'rgba(220,38,38,.1)',
+    build:a=>{
+      const dispo = remateDisponibleParaArriendo(a);
+      if(!dispo.length) return ''; // se manejará como deshabilitado
+      const lista = dispo.map(r=>`- ${r.nombre}: ${clp(r.precio)}`).join('\n');
+      return `¡Hola ${primerNombre(a)}! Te saluda el equipo de *Akimel*.\n\nAprovecha esta oportunidad: tenemos juegos disponibles para tu fecha (${a.fecha||'tu evento'}) a precios promocionales. Súmalos a tu arriendo y haz el evento aún más entretenido:\n\n${lista}\n\nLos cupos son limitados y se asignan por orden de llegada. ¿Te interesa agregar alguno?`;
+    }
+  },
 };
 
 // Orden de aparición de los botones en cada tarjeta
-const MSG_ORDEN = ['presentacion','confirmacion','feedback'];
+const MSG_ORDEN = ['presentacion','confirmacion','remate','feedback'];
+
+// ── REMATE: juegos electrónicos/interior a precio promocional ──
+// Stock viene de INVENTARIO (los total). Precios son promocionales tentativos.
+const REMATE = [
+  {nombre:'Taca Taca',            precio:17000},
+  {nombre:'Mesa de Hockey',       precio:17000},
+  {nombre:'Avioncitos Voladores', precio:60000},
+  {nombre:'Carrusel Pony',        precio:50000},
+  {nombre:'Moto',                 precio:25000},
+  {nombre:'Disparadores',         precio:20000},
+  {nombre:'Atrapa Ranita',        precio:20000},
+];
+
+// Total de cada juego según el inventario master (INVENTARIO está en el script principal)
+function stockTotal(nombre){
+  if(typeof INVENTARIO === 'undefined') return 99;
+  const i = INVENTARIO.find(x => x.nombre === nombre);
+  return i ? i.total : 99;
+}
+
+// Cuántas unidades de un juego están comprometidas en una fecha (excluyendo cancelados)
+function unidadesUsadasEnFecha(nombreJuego, fechaStr){
+  let count = 0;
+  (ARRIENDOS||[]).forEach(a=>{
+    if(a.fecha !== fechaStr) return;
+    if((a.estado||'').toLowerCase() === 'cancelado') return;
+    const eqs = (a.equipos||'').split(',').map(s=>s.trim().toLowerCase());
+    const nlow = nombreJuego.toLowerCase();
+    eqs.forEach(e=>{ if(e === nlow) count++; });
+  });
+  return count;
+}
+
+// Devuelve la lista de juegos en remate disponibles para ofrecer a este arriendo:
+// - quita los que el cliente ya tiene en SU arriendo
+// - quita los que ya no tienen unidades libres ese día
+function remateDisponibleParaArriendo(a){
+  const equiposDelCliente = (a.equipos||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const fecha = a.fecha;
+  return REMATE.filter(r=>{
+    // Si el cliente ya tiene este juego, no se lo ofrecemos
+    if(equiposDelCliente.includes(r.nombre.toLowerCase())) return false;
+    // Si no hay unidades libres ese día, tampoco
+    const total = stockTotal(r.nombre);
+    const usadas = unidadesUsadasEnFecha(r.nombre, fecha);
+    return (total - usadas) > 0;
+  });
+}
 
 // Construye la URL wa.me directa con el mensaje precompletado
 function urlWA(a, plantillaKey){
@@ -3293,7 +3352,7 @@ function renderMensajes(){
 
   // Construir encabezado: 11 columnas base + una por cada tipo de mensaje
   const thead = document.getElementById('msgThead');
-  const colsBase = ['#','Cliente','Dirección','Comuna','Fecha','Día','Sem.','Hora','Teléfono','Equipos','Monto'];
+  const colsBase = ['#','Cliente','Dirección','Comuna','Fecha','Hora','Teléfono','Equipos','Monto'];
   let theadHtml = colsBase.map(c=>`<th>${c}</th>`).join('');
   theadHtml += MSG_ORDEN.map(key=>`<th style="text-align:center;white-space:nowrap">${MSG_PLANTILLAS[key].label}</th>`).join('');
   thead.innerHTML = theadHtml;
@@ -3331,7 +3390,12 @@ function msgBotonCell(a, key, tieneTel, tieneSaldo){
   if(!tieneTel){
     return `<td style="text-align:center"><span style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#f1f1f1;color:#bbb;border-radius:6px;font-size:10px;font-weight:700;cursor:not-allowed;white-space:nowrap" title="Sin teléfono válido">${p.label}</span></td>`;
   }
-  const url = urlWA(a, key);
+  // Si el mensaje generado está vacío (ej: Remate sin juegos disponibles), deshabilitar
+  const texto = p.build(a);
+  if(!texto){
+    return `<td style="text-align:center"><span style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#f1f1f1;color:#bbb;border-radius:6px;font-size:10px;font-weight:700;cursor:not-allowed;white-space:nowrap" title="Sin juegos disponibles para ofrecer este día">${p.label}</span></td>`;
+  }
+  const url = `https://wa.me/${limpiarTelefono(a.telefono)}?text=${encodeURIComponent(texto)}`;
   return `<td style="text-align:center"><a href="${url}" target="_blank" rel="noopener" title="${p.desc}"
     style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:${p.bg};color:${p.color};border:1.5px solid ${p.color};border-radius:6px;font-size:10px;font-weight:700;text-decoration:none;font-family:'Sora',sans-serif;white-space:nowrap;transition:all .12s"
     onmouseenter="this.style.background='${p.color}';this.style.color='#fff'"
@@ -3343,7 +3407,6 @@ function msgFilaHtml(a, n){
   const num = limpiarTelefono(a.telefono);
   const tieneTel = !!num;
   const tieneSaldo = (a.pendiente||0) > 0;
-  const sem = a.semana || (parseFechaArr(a.fecha) ? isoWeek(parseFechaArr(a.fecha)) : '');
 
   // Teléfono badge
   const telCell = (()=>{
@@ -3366,8 +3429,6 @@ function msgFilaHtml(a, n){
     <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.direccion||'—'}</td>
     <td>${a.comuna||'—'}</td>
     <td style="white-space:nowrap">${a.fecha||'—'}</td>
-    <td>${a.dia||'—'}</td>
-    <td style="color:var(--text3);font-size:11px;font-weight:700">${sem||'—'}</td>
     <td>${a.hora||'—'}</td>
     <td style="white-space:nowrap">${telCell}</td>
     <td style="min-width:140px;max-width:200px">${equiposCell}</td>
