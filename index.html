@@ -666,11 +666,10 @@ select:focus{border-color:var(--blue)}
 
   <!-- Barra de control -->
   <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:6px">
-      <button class="btn btn-ghost btn-sm" onclick="msgSemana(-1)">← Ant</button>
-      <div style="font-size:13px;font-weight:700;color:var(--blue3);min-width:150px;text-align:center" id="msgRangoLabel">—</div>
-      <button class="btn btn-ghost btn-sm" onclick="msgSemana(1)">Sig →</button>
-      <button class="btn btn-ghost btn-sm" onclick="msgSemana(0)" title="Volver a esta semana">Hoy</button>
+    <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(0,113,206,.08);border:1.5px solid var(--blue);border-radius:8px">
+      <span style="font-size:14px">📅</span>
+      <span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Semana actual</span>
+      <span style="font-size:13px;font-weight:800;color:var(--blue3)" id="msgRangoLabel">—</span>
     </div>
     <input type="text" id="msgBuscar" placeholder="🔍 Buscar cliente..." oninput="renderMensajes()"
       style="flex:1;min-width:140px;font-size:13px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);outline:none;font-family:'Sora',sans-serif">
@@ -3156,8 +3155,8 @@ function actualizarResumenSemana(){
 
 // ═══════════════════════════════════════════════════
 // MENSAJERÍA WHATSAPP
+// La vista siempre muestra la semana actual (lunes a domingo).
 // ═══════════════════════════════════════════════════
-let MSG_WK_OFF = 0; // offset de semana (0 = actual)
 
 // Handle de Instagram (editable, persistente)
 const IG_HANDLE_DEFAULT = '@entretenciones_akimel';
@@ -3290,18 +3289,11 @@ function urlWA(a, plantillaKey){
   return `https://wa.me/${num}?text=${encodeURIComponent(p.build(a))}`;
 }
 
-// Navegación de semanas
-function msgSemana(dir){
-  if(dir===0) MSG_WK_OFF = 0;
-  else MSG_WK_OFF += dir;
-  renderMensajes();
-}
-
-// Devuelve [lunes, domingo] de la semana con el offset aplicado
+// Devuelve [lunes, domingo] de la semana actual (siempre)
 function msgRangoSemana(){
   const hoy = new Date();
   const diaSem = (hoy.getDay()+6)%7;
-  const lunes = new Date(hoy); lunes.setDate(hoy.getDate()-diaSem+MSG_WK_OFF*7); lunes.setHours(0,0,0,0);
+  const lunes = new Date(hoy); lunes.setDate(hoy.getDate()-diaSem); lunes.setHours(0,0,0,0);
   const domingo = new Date(lunes); domingo.setDate(lunes.getDate()+6); domingo.setHours(23,59,59,999);
   return [lunes,domingo];
 }
