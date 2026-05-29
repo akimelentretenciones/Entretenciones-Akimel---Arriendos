@@ -671,14 +671,6 @@ select:focus{border-color:var(--blue)}
       <span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Semana actual</span>
       <span style="font-size:13px;font-weight:800;color:var(--blue3)" id="msgRangoLabel">—</span>
     </div>
-    <input type="text" id="msgBuscar" placeholder="🔍 Buscar cliente..." oninput="renderMensajes()"
-      style="flex:1;min-width:140px;font-size:13px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);outline:none;font-family:'Sora',sans-serif">
-  </div>
-
-  <!-- Info handle Instagram -->
-  <div style="background:rgba(0,113,206,.06);border:1px dashed var(--blue);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:11px;color:var(--text2)">
-    💡 El usuario de Instagram aparece en los mensajes como <b id="igHandleLabel">@entretenciones_akimel</b>.
-    <a href="javascript:void(0)" onclick="cambiarHandleIG()" style="color:var(--blue);font-weight:700;text-decoration:none">Cambiar</a>
   </div>
 
   <div id="msgContenedor"></div>
@@ -3309,15 +3301,12 @@ function renderMensajes(){
   document.getElementById('msgSubtitulo').textContent =
     'Semana '+numSem+' · '+fmt(lunes)+' al '+fmt(domingo)+'/'+domingo.getFullYear();
 
-  const busca = (document.getElementById('msgBuscar').value||'').trim().toLowerCase();
-
   // Filtrar arriendos de la semana
   let arr = (ARRIENDOS||[]).filter(a=>{
     const dt = parseFechaArr(a.fecha);
     if(!dt) return false;
     return dt>=lunes && dt<=domingo;
   });
-  if(busca) arr = arr.filter(a=>(a.cliente||'').toLowerCase().includes(busca));
 
   // Ordenar por fecha y hora
   arr.sort((x,y)=>{
