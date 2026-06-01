@@ -1063,6 +1063,7 @@ const INVENTARIO = [
   {num:18,nombre:'Disparadores',            cat:'Electrónico', total:3, kw:'disparador,disparador 2,disparador 3'},
   {num:21,nombre:'Taca Taca',               cat:'Interior',    total:4, kw:'tacataca,taca taca,taka taka,tacataca 2,tacataca 3,tacataca 4'},
   {num:24,nombre:'Mesa de Hockey',          cat:'Interior',    total:4, kw:'hockey,mesa hockey,mesa de hockey,jockey,hokey,mesa jockey,air hockey,hockey 2,hockey 3,hockey 4'},
+  {num:22,nombre:'Jenga',                   cat:'Interior',    total:1, kw:'jenga,jenga gigante,yenga'},
   {num:25,nombre:'Generador',               cat:'Adicionales',  total:1, kw:'generador,generadores,gen'},
 ];
 
@@ -1465,7 +1466,7 @@ async function cargarArriendos(){
 const MESES={enero:'01',febrero:'02',marzo:'03',abril:'04',mayo:'05',junio:'06',julio:'07',agosto:'08',septiembre:'09',octubre:'10',noviembre:'11',diciembre:'12'};
 const MESES_C={ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',agos:'08',sep:'09',oct:'10',nov:'11',dic:'12'};
 const COMUNAS=['san bernardo','maipu','maipú','pudahuel','cerrillos','el bosque','estacion central','la cisterna','la florida','la granja','la pintana','la reina','las condes','lo barnechea','lo espejo','lo prado','macul','padre hurtado','penaflor','peñaflor','peñalolen','peñalolén','providencia','quilicura','quinta normal','renca','san joaquin','san joaquín','san miguel','san ramon','san ramón','talagante','vitacura','calera de tango','buin','paine','pirque','lampa','colina','pedro aguirre cerda','cerro navia','recoleta','conchali','conchalí','puente alto','nos','huechuraba','ñuñoa','independencia'];
-const EQ_RE=/tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|\bmoto\b|obst|mario|gold|\brobot\b|ferrari|\bdino\b|marvel|basket|arcade|m[aá]quina arcade|\brana\b|ranita|disparador|avion|\bdoble\b|talbot|\baire\b|basquet|jockey|\bjuego pro\b|\bpro\b|juego obst/i;
+const EQ_RE=/tobog|castillo|inflable|carrusel|tacataca|taca taca|hockey|\bmoto\b|obst|mario|gold|\brobot\b|ferrari|\bdino\b|marvel|basket|arcade|m[aá]quina arcade|\brana\b|ranita|disparador|avion|\bdoble\b|talbot|\baire\b|basquet|jockey|\bjuego pro\b|\bpro\b|juego obst|jenga|yenga/i;
 
 // Diccionario canónico de comunas (nombre oficial con tildes y mayúsculas correctas)
 const COMUNA_CANON={
