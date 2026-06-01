@@ -360,18 +360,20 @@ select:focus{border-color:var(--blue)}
 }
 
 /* ===== Vista Arriendos: ocultar columnas que sólo se usan en Trabajo Semana =====
-   Se ocultan: ✓ Pagado (14), Pago (15), 🙋 Trabajador (17), 💬 Equipo (18), Retiro (19)
+   En Arriendos se ocultan: WA (10), Instalación (13), Pagado (14), Copiar (16), Trabajador (17), Equipo (18). Estado se eliminó por completo.
    También ocultamos el botón "Marcar pasados como pagados" */
+#sec-arriendos table thead th:nth-child(10),
+#sec-arriendos table thead th:nth-child(13),
 #sec-arriendos table thead th:nth-child(14),
-#sec-arriendos table thead th:nth-child(15),
+#sec-arriendos table thead th:nth-child(16),
 #sec-arriendos table thead th:nth-child(17),
 #sec-arriendos table thead th:nth-child(18),
-#sec-arriendos table thead th:nth-child(19),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(10),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(13),
 #sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(14),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(15),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(16),
 #sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(17),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(18),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(19){
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(18){
   display:none !important;
 }
 /* Ocultar el botón "Marcar pasados como pagados" en todas las vistas */
@@ -620,8 +622,8 @@ select:focus{border-color:var(--blue)}
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Estado</th><th>Instalación</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th title="Trabajador asignado">🙋</th><th title="Pago registrado por el equipo">💬 Equipo</th><th title="Retiro">Retiro 🚚</th><th title="Abrir en Waze">🗺️ Waze</th><th></th></tr></thead>
-      <tbody id="tablaBody"><tr><td colspan="22" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
+      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Instalación</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th title="Trabajador asignado">🙋</th><th title="Pago registrado por el equipo">💬 Equipo</th><th title="Retiro">Retiro 🚚</th><th title="Abrir en Waze">🗺️ Waze</th><th></th></tr></thead>
+      <tbody id="tablaBody"><tr><td colspan="21" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
     </table>
   </div>
   <div class="pagination">
@@ -2119,7 +2121,7 @@ function renderTabla(){
   document.getElementById('paginaInfo').textContent=`${inicio+1}-${fin} de ${total}`;
   const tbody=document.getElementById('tablaBody');
   const pagina=FILTRADOS.slice(inicio,fin);
-  if(!pagina.length){tbody.innerHTML=`<tr><td colspan="22" style="text-align:center;padding:32px;color:var(--text3)">Sin resultados</td></tr>`;return;}
+  if(!pagina.length){tbody.innerHTML=`<tr><td colspan="21" style="text-align:center;padding:32px;color:var(--text3)">Sin resultados</td></tr>`;return;}
   const sumaTotal=FILTRADOS.reduce((s,a)=>s+(a.pendiente||0),0);
   const sumaPag=pagina.reduce((s,a)=>s+(a.pendiente||0),0);
   tbody.innerHTML=pagina.map((a,i)=>`<tr>
@@ -2150,14 +2152,6 @@ function renderTabla(){
     })()}</td>
     <td style="min-width:140px;max-width:200px">${(a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean).map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(0,113,206,0.06);white-space:nowrap">${e}</div>`).join('')}</td>
     <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue)">${a.pendiente?clp(a.pendiente):'—'}</td>
-    <td>
-      <select onchange="cambiarEstado('${a.id}',this.value)" 
-        style="font-size:10px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-family:'Sora',sans-serif;cursor:pointer;font-weight:600">
-        <option value="Pendiente" ${a.estado==='Pendiente'?'selected':''}>Pendiente</option>
-        <option value="Instalado" ${a.estado==='Instalado'?'selected':''}>Instalado</option>
-        <option value="Retirado" ${a.estado==='Retirado'?'selected':''}>Retirado</option>
-      </select>
-    </td>
     <td>
       <select onchange="cambiarInstalacion('${a.id}',this.value)" 
         style="font-size:10px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-family:'Sora',sans-serif;cursor:pointer;font-weight:600">
