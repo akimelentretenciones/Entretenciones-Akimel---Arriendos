@@ -664,13 +664,18 @@ select:focus{border-color:var(--blue)}
     </div>
   </div>
 
-  <!-- Barra de control -->
-  <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(0,113,206,.08);border:1.5px solid var(--blue);border-radius:8px">
-      <span style="font-size:14px">📅</span>
-      <span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Semana actual</span>
-      <span style="font-size:13px;font-weight:800;color:var(--blue3)" id="msgRangoLabel">—</span>
+  <!-- Barra de control: filtro por semana/mes (períodos actuales y futuros) -->
+  <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="display:inline-flex;background:var(--bg3);border-radius:8px;padding:3px;gap:2px">
+      <button id="msgModoSemana" onclick="msgSetModo('semana')" style="border:none;background:var(--blue);color:#fff;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;transition:all .12s">📅 Semana</button>
+      <button id="msgModoMes" onclick="msgSetModo('mes')" style="border:none;background:transparent;color:var(--text3);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;transition:all .12s">🗓️ Mes</button>
     </div>
+    <div style="display:inline-flex;align-items:center;gap:4px">
+      <button id="msgPrev" onclick="msgStep(-1)" title="Período anterior" style="border:1.5px solid var(--border);background:#fff;color:var(--blue3);font-size:13px;font-weight:800;width:32px;height:32px;border-radius:7px;cursor:pointer">◀</button>
+      <button id="msgNext" onclick="msgStep(1)" title="Período siguiente" style="border:1.5px solid var(--border);background:#fff;color:var(--blue3);font-size:13px;font-weight:800;width:32px;height:32px;border-radius:7px;cursor:pointer">▶</button>
+    </div>
+    <select id="msgPeriodoSelect" onchange="msgSetPeriodo(this.value)" style="flex:1;min-width:170px;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:var(--blue3);background:#fff;cursor:pointer"></select>
+    <span style="font-size:13px;font-weight:800;color:var(--blue3);white-space:nowrap" id="msgRangoLabel">—</span>
   </div>
 
   <div id="msgContenedor"></div>
@@ -1032,6 +1037,7 @@ try{
   }
 }catch(e){ console.warn('Chart.register falló:', e); }
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
+let MSG_MODO='semana', MSG_OFFSET=0; // Mensajería: filtro 'semana'|'mes', offset>=0 hacia el futuro
 
 // Colores y datos por trabajador (usado en dropdown 🙋 y filtro de la tabla)
 const TRABAJADORES_COLOR = {
@@ -3218,6 +3224,7 @@ const MSG_ORDEN = ['presentacion','confirmacion','remate','feedback'];
 const REMATE = [
   {nombre:'Taca Taca',            precio:17000},
   {nombre:'Mesa de Hockey',       precio:17000},
+  {nombre:'Jenga',                precio:17000},
   {nombre:'Avioncitos Voladores', precio:60000},
   {nombre:'Carrusel Pony',        precio:50000},
   {nombre:'Moto',                 precio:25000},
@@ -3279,22 +3286,107 @@ function msgRangoSemana(){
   return [lunes,domingo];
 }
 
+// ── Rango [inicio,fin] según modo ('semana'|'mes') y offset (>=0 hacia el futuro) ──
+function msgRango(modo, offset){
+  const hoy = new Date();
+  if(modo === 'mes'){
+    const ini = new Date(hoy.getFullYear(), hoy.getMonth()+offset, 1, 0,0,0,0);
+    const fin = new Date(hoy.getFullYear(), hoy.getMonth()+offset+1, 0, 23,59,59,999);
+    return [ini, fin];
+  }
+  const diaSem = (hoy.getDay()+6)%7;
+  const lunes = new Date(hoy); lunes.setDate(hoy.getDate()-diaSem+offset*7); lunes.setHours(0,0,0,0);
+  const domingo = new Date(lunes); domingo.setDate(lunes.getDate()+6); domingo.setHours(23,59,59,999);
+  return [lunes, domingo];
+}
+
+const MSG_MESES_F=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+// Rellena el dropdown con el período actual + los siguientes (solo futuro)
+function poblarMsgPeriodos(){
+  const sel = document.getElementById('msgPeriodoSelect');
+  if(!sel) return;
+  const fmt = d => String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+  const N = Math.max(12, MSG_OFFSET); // siempre incluye el período seleccionado
+  let html = '';
+  for(let o=0; o<=N; o++){
+    const [ini,fin] = msgRango(MSG_MODO, o);
+    let label;
+    if(MSG_MODO === 'mes'){
+      const base = MSG_MESES_F[ini.getMonth()]+' '+ini.getFullYear();
+      label = o===0 ? base+' (actual)' : (o===1 ? base+' (próximo)' : base);
+    }else{
+      const rango = fmt(ini)+' al '+fmt(fin);
+      const nom = o===0 ? 'Semana actual' : (o===1 ? 'Próxima semana' : 'Semana del '+fmt(ini));
+      label = nom+' · '+rango;
+    }
+    html += '<option value="'+o+'"'+(o===MSG_OFFSET?' selected':'')+'>'+label+'</option>';
+  }
+  sel.innerHTML = html;
+  sel.value = String(MSG_OFFSET);
+}
+
+// Resalta el botón del modo activo en el toggle
+function actualizarToggleMsg(){
+  const bS = document.getElementById('msgModoSemana');
+  const bM = document.getElementById('msgModoMes');
+  if(!bS || !bM) return;
+  const sem = MSG_MODO === 'semana';
+  bS.style.background = sem ? 'var(--blue)' : 'transparent';
+  bS.style.color      = sem ? '#fff' : 'var(--text3)';
+  bM.style.background = !sem ? 'var(--blue)' : 'transparent';
+  bM.style.color      = !sem ? '#fff' : 'var(--text3)';
+}
+
+window.msgSetModo = function(modo){
+  if(MSG_MODO === modo) return;
+  MSG_MODO = modo;
+  MSG_OFFSET = 0;
+  actualizarToggleMsg();
+  poblarMsgPeriodos();
+  renderMensajes();
+};
+window.msgStep = function(d){
+  const next = MSG_OFFSET + d;
+  if(next < 0) return; // no se permite ir al pasado
+  MSG_OFFSET = next;
+  poblarMsgPeriodos();
+  renderMensajes();
+};
+window.msgSetPeriodo = function(v){
+  MSG_OFFSET = Math.max(0, parseInt(v,10) || 0);
+  renderMensajes();
+};
+
 function renderMensajes(){
   const lbl = document.getElementById('igHandleLabel');
   if(lbl) lbl.textContent = getHandleIG();
 
-  const [lunes,domingo] = msgRangoSemana();
-  const fmt = d => String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
-  document.getElementById('msgRangoLabel').textContent = fmt(lunes)+' al '+fmt(domingo);
-  const numSem = (typeof isoWeek==='function') ? isoWeek(lunes) : '';
-  document.getElementById('msgSubtitulo').textContent =
-    'Semana '+numSem+' · '+fmt(lunes)+' al '+fmt(domingo)+'/'+domingo.getFullYear();
+  // Sincronizar UI del filtro
+  const _sel = document.getElementById('msgPeriodoSelect');
+  if(_sel && !_sel.options.length) poblarMsgPeriodos();
+  actualizarToggleMsg();
+  const btnPrev = document.getElementById('msgPrev');
+  if(btnPrev){ btnPrev.disabled = MSG_OFFSET<=0; btnPrev.style.opacity = MSG_OFFSET<=0?'.4':'1'; btnPrev.style.cursor = MSG_OFFSET<=0?'not-allowed':'pointer'; }
 
-  // Filtrar arriendos de la semana
+  const [ini,fin] = msgRango(MSG_MODO, MSG_OFFSET);
+  const fmt = d => String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+  if(MSG_MODO === 'mes'){
+    document.getElementById('msgRangoLabel').textContent = MSG_MESES_F[ini.getMonth()]+' '+ini.getFullYear();
+    document.getElementById('msgSubtitulo').textContent =
+      MSG_MESES_F[ini.getMonth()]+' '+ini.getFullYear()+' · '+fmt(ini)+' al '+fmt(fin);
+  }else{
+    document.getElementById('msgRangoLabel').textContent = fmt(ini)+' al '+fmt(fin);
+    const numSem = (typeof isoWeek==='function') ? isoWeek(ini) : '';
+    document.getElementById('msgSubtitulo').textContent =
+      'Semana '+numSem+' · '+fmt(ini)+' al '+fmt(fin)+'/'+fin.getFullYear();
+  }
+
+  // Filtrar arriendos del período seleccionado
   let arr = (ARRIENDOS||[]).filter(a=>{
     const dt = parseFechaArr(a.fecha);
     if(!dt) return false;
-    return dt>=lunes && dt<=domingo;
+    return dt>=ini && dt<=fin;
   });
 
   // Ordenar por fecha y hora
@@ -3314,7 +3406,7 @@ function renderMensajes(){
 
   if(!arr.length){
     wrap.style.display = 'none';
-    cont.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--text3)"><div style="font-size:40px;margin-bottom:10px">📭</div><div style="font-size:14px">Sin arriendos esta semana</div></div>';
+    cont.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--text3)"><div style="font-size:40px;margin-bottom:10px">📭</div><div style="font-size:14px">Sin arriendos '+(MSG_MODO==='mes'?'este mes':'esta semana')+'</div></div>';
     return;
   }
   cont.innerHTML = '';
