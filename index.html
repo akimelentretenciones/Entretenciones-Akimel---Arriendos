@@ -751,21 +751,12 @@ select:focus{border-color:var(--blue)}
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="procesarTexto()">⚡ Procesar Arriendo</button>
           <button class="btn btn-ghost" onclick="pegarPortapapeles()">📋 Pegar</button>
-          <button class="btn btn-ghost" onclick="document.getElementById('pasteArea').value=''">Limpiar</button>
+          <button class="btn btn-ghost" onclick="limpiarAgregar()">Limpiar</button>
         </div>
       </div>
       <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill"></div></div>
       <div class="log-box" id="logBox" style="display:none"></div>
-    </div>
-    <div class="section-card">
-      <div style="font-weight:700;color:var(--blue3);margin-bottom:10px">💡 ¿Cómo exportar el chat?</div>
-      <ol style="padding-left:18px;line-height:2.2;font-size:13px;color:var(--text2)">
-        <li>Abre el grupo semanal en WhatsApp</li>
-        <li>Toca ··· → Más → <strong>Exportar chat</strong></li>
-        <li>Selecciona <strong>Sin archivos multimedia</strong></li>
-        <li>Pega el texto aquí</li>
-      </ol>
-      <button class="btn btn-primary" style="background:#128c3e;width:100%;margin-top:16px" onclick="presentarDesdePaste()">👋 Presentación · enviar detalle por WhatsApp</button>
+      <button class="btn btn-primary" id="btnPresentacion" style="background:#128c3e;width:100%;margin-top:12px;display:none" onclick="presentarProcesado()">👋 Enviar presentación por WhatsApp</button>
     </div>
   </div>
 </div>
@@ -1049,6 +1040,7 @@ try{
   }
 }catch(e){ console.warn('Chart.register falló:', e); }
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
+let ultimosProcesados=[]; // arriendos recién procesados (habilitan el botón de presentación)
 let MSG_MODO='semana', MSG_OFFSET=0; // Mensajería: filtro 'semana'|'mes', offset>=0 hacia el futuro
 
 // Colores y datos por trabajador (usado en dropdown 🙋 y filtro de la tabla)
@@ -5227,6 +5219,9 @@ async function _guardarEnFirebase(arr, addLog, fill){
     fill.style.width = '100%';
     addLog(`🎉 ${nuevos} arriendos nuevos guardados (${arr.length-nuevos} duplicados omitidos)`, 'ok');
     toast(`✅ ${nuevos} arriendos guardados`, 'ok');
+    // Habilitar el botón de presentación SOLO ahora que el arriendo se procesó
+    ultimosProcesados = arr;
+    const _bpOk=document.getElementById('btnPresentacion'); if(_bpOk && arr.length) _bpOk.style.display='block';
 
     for(const a of arr){
       const k = (a.cliente||'').toLowerCase().trim() + '|' + (a.fecha||'');
@@ -5245,6 +5240,7 @@ async function _guardarEnFirebase(arr, addLog, fill){
 window.procesarTexto = async function(){
   const texto = document.getElementById('pasteArea').value.trim();
   if(!texto){ toast('Pega el texto primero', 'err'); return; }
+  const _bp=document.getElementById('btnPresentacion'); if(_bp) _bp.style.display='none'; ultimosProcesados=[];
   const log = document.getElementById('logBox');
   const bar = document.getElementById('progressBar');
   const fill = document.getElementById('progressFill');
@@ -5265,18 +5261,22 @@ window.procesarTexto = async function(){
   await guardarArriendos(arr);
 };
 
-// Enviar el mensaje de "Presentación" por WhatsApp usando el texto pegado arriba
-window.presentarDesdePaste = function(){
-  const texto = document.getElementById('pasteArea').value.trim();
-  if(!texto){ toast('Primero pega el detalle del arriendo arriba', 'err'); return; }
-  let arr;
-  try { arr = parsearChat(texto); }
-  catch(e){ toast('No pude leer el texto: '+e.message, 'err'); return; }
-  if(!arr || !arr.length){ toast('No detecté un arriendo en el texto', 'err'); return; }
-  if(arr.length > 1) toast('Se usa el primer arriendo del texto', 'ok');
-  const url = urlWA(arr[0], 'presentacion');
-  if(!url){ toast('Falta el teléfono del cliente en el texto', 'err'); return; }
+// Enviar el mensaje de "Presentación" por WhatsApp — SOLO del arriendo recién procesado
+window.presentarProcesado = function(){
+  if(!ultimosProcesados || !ultimosProcesados.length){ toast('Primero procesa el arriendo', 'err'); return; }
+  const url = urlWA(ultimosProcesados[0], 'presentacion');
+  if(!url){ toast('El arriendo no tiene teléfono para la presentación', 'err'); return; }
+  if(ultimosProcesados.length > 1) toast('Se envía la presentación del primer arriendo', 'ok');
   window.open(url, '_blank');
+};
+
+// Limpiar la vista de Agregar (texto, log, y ocultar el botón de presentación)
+window.limpiarAgregar = function(){
+  const ta=document.getElementById('pasteArea'); if(ta) ta.value='';
+  const bp=document.getElementById('btnPresentacion'); if(bp) bp.style.display='none';
+  ultimosProcesados=[];
+  const lb=document.getElementById('logBox'); if(lb){ lb.innerHTML=''; lb.style.display='none'; }
+  const pb=document.getElementById('progressBar'); if(pb) pb.style.display='none';
 };
 
 window.procesarArchivo = async function(file){
