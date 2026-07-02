@@ -502,7 +502,7 @@ select:focus{border-color:var(--blue)}
   <div class="chart-full"><div class="chart-title">Monto por Mes y Año</div><div class="chart-h-md" style="position:relative"><canvas id="cMensual"></canvas></div></div>
 
   <!-- 2b. Promedio de arriendo diario por mes -->
-  <div class="chart-full"><div class="chart-title">Promedio de arriendo diario por mes</div><div class="chart-h-md" style="position:relative"><canvas id="cPromDiaMes"></canvas></div></div>
+  <div class="chart-full"><div class="chart-title">Promedio de arriendo diario por mes · por fecha de carga</div><div class="chart-h-md" style="position:relative"><canvas id="cPromDiaMes"></canvas></div></div>
 
   <!-- 3. Monto por Año + Monto por día -->
   <div class="charts-row">
@@ -2608,6 +2608,16 @@ function parseFechaArr(f){
   return isNaN(dt)?null:dt;
 }
 
+// Fecha en que se GENERÓ/CARGÓ el arriendo (para métricas de ingreso, NO la fecha del evento).
+// Usa el timestamp de creación; si no existe (arriendos antiguos) cae a la fecha del evento
+// SOLO si ya ocurrió, para no crear meses futuros.
+function fechaIngreso(a){
+  if(a && a.timestamp){ const d=new Date(a.timestamp); if(!isNaN(d)) return d; }
+  const dt=parseFechaArr((a&&a.fecha)||'');
+  if(dt){ const hoy=new Date(); hoy.setHours(23,59,59,999); if(dt.getTime()<=hoy.getTime()) return dt; }
+  return null;
+}
+
 async function renderDashboard(){
   const anioFiltro=(document.getElementById('dashFiltroAnio')?.value||'').trim();
   const mesFiltro=(document.getElementById('dashFiltroMes')?.value||'').trim();
@@ -2638,20 +2648,31 @@ async function renderDashboard(){
   document.getElementById('k2').textContent=clp(ticket);
   document.getElementById('k3').textContent=act.length+can.length;document.getElementById('k3s').textContent=can.length+' cancelados';
 
-  // ── Arriendos de HOY (independiente de los filtros; se recalcula al editar/eliminar) ──
+  // ── MÉTRICAS DE INGRESO — por fecha en que se CARGÓ el arriendo (no por la fecha del evento).
+  // Independientes de los filtros de arriba (esos filtran por fecha de evento).
+  // Se recalculan solo al cargar/editar/eliminar (cargarArriendos → renderDashboard).
   const _h=new Date();
-  const hoyStr=String(_h.getDate()).padStart(2,'0')+'/'+String(_h.getMonth()+1).padStart(2,'0')+'/'+_h.getFullYear();
-  const arrHoy=ARRIENDOS.filter(a=>a.fecha===hoyStr&&a.estado!=='Cancelado');
-  const hoyMonto=arrHoy.reduce((s,a)=>s+(a.pendiente||0),0);
-  const elHM=document.getElementById('dashHoyMonto'); if(elHM) elHM.textContent=clp(hoyMonto);
-  const elHC=document.getElementById('dashHoyCount'); if(elHC) elHC.textContent=arrHoy.length+(arrHoy.length===1?' arriendo':' arriendos');
+  const ingMesPorAnio={}, ingDiasMesPorAnio={};
+  let ingTotal=0, ingHoyMonto=0, ingHoyCount=0;
+  const ingDiasTotal=new Set();
+  for(const a of ARRIENDOS){
+    if(a.estado==='Cancelado' || !(a.pendiente>0)) continue;
+    const d=fechaIngreso(a); if(!d) continue;
+    const y=String(d.getFullYear()), m=String(d.getMonth()+1).padStart(2,'0');
+    const dkey=y+'-'+m+'-'+String(d.getDate()).padStart(2,'0');
+    if(!ingMesPorAnio[y])ingMesPorAnio[y]={}; ingMesPorAnio[y][m]=(ingMesPorAnio[y][m]||0)+a.pendiente;
+    if(!ingDiasMesPorAnio[y])ingDiasMesPorAnio[y]={}; if(!ingDiasMesPorAnio[y][m])ingDiasMesPorAnio[y][m]=new Set(); ingDiasMesPorAnio[y][m].add(dkey);
+    ingTotal+=a.pendiente; ingDiasTotal.add(dkey);
+    if(d.getFullYear()===_h.getFullYear() && d.getMonth()===_h.getMonth() && d.getDate()===_h.getDate()){ ingHoyMonto+=a.pendiente; ingHoyCount++; }
+  }
+  // Tarjeta "Arriendos de hoy" (monto de lo cargado hoy)
+  const elHM=document.getElementById('dashHoyMonto'); if(elHM) elHM.textContent=clp(ingHoyMonto);
+  const elHC=document.getElementById('dashHoyCount'); if(elHC) elHC.textContent=ingHoyCount+(ingHoyCount===1?' arriendo':' arriendos');
   const elHF=document.getElementById('dashHoyFecha'); if(elHF) elHF.textContent=_h.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
-
-  // ── Promedio por día activo (según período filtrado) ──
-  const diasActivosSet=new Set(act.map(a=>a.fecha));
-  const promDia=diasActivosSet.size?Math.round(total/diasActivosSet.size):0;
+  // KPI "Promedio por día" (monto cargado / días con carga)
+  const promDia=ingDiasTotal.size?Math.round(ingTotal/ingDiasTotal.size):0;
   const elKP=document.getElementById('kProm'); if(elKP) elKP.textContent=clp(promDia);
-  const elKPs=document.getElementById('kProms'); if(elKPs) elKPs.textContent=diasActivosSet.size+' día'+(diasActivosSet.size===1?'':'s')+' con arriendos';
+  const elKPs=document.getElementById('kProms'); if(elKPs) elKPs.textContent=ingDiasTotal.size+' día'+(ingDiasTotal.size===1?'':'s')+' con carga';
 
   // ── Precargar costos desde Firestore según el período filtrado ──
   try{
@@ -2708,7 +2729,7 @@ async function renderDashboard(){
   const k5s=document.getElementById('k5s');
   if(k5s) k5s.textContent=margenPct+'% del ingreso';
   const meses={},diasPorAnio={},comunas={},eqC={};
-  const mesesPorAnio={},semanasPorAnio={},montosPorAnio={},diasMesPorAnio={};
+  const mesesPorAnio={},semanasPorAnio={},montosPorAnio={};
   // Usar arr (ya filtrado) para todos los gráficos
   for(const a of arr.filter(a=>a.estado!=='Cancelado'&&a.pendiente>0)){
     const anio=a.anio||'';
@@ -2722,8 +2743,6 @@ async function renderDashboard(){
     montosPorAnio[anio]=(montosPorAnio[anio]||0)+pend;
     // Por mes y año
     if(a.fecha){const m=a.fecha.split('/')[1];if(!mesesPorAnio[anio])mesesPorAnio[anio]={};mesesPorAnio[anio][m]=(mesesPorAnio[anio][m]||0)+pend;}
-    // Días activos distintos por mes y año (para promedio diario)
-    if(a.fecha){const m=a.fecha.split('/')[1];if(!diasMesPorAnio[anio])diasMesPorAnio[anio]={};if(!diasMesPorAnio[anio][m])diasMesPorAnio[anio][m]=new Set();diasMesPorAnio[anio][m].add(a.fecha);}
     // Por semana y año
     const dtSem=parseFechaArr(a.fecha||'');
     const sem=dtSem?isoWeek(dtSem):null;
@@ -2792,14 +2811,15 @@ async function renderDashboard(){
       datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
         formatter:v=>v>0?fmtM(v):''}}}});
 
-  // ── Promedio de arriendo diario por mes (ingreso del mes / días activos del mes, por año) ──
+  // ── Promedio de arriendo diario por mes (por fecha de CARGA: monto cargado en el mes / días con carga) ──
+  const aniosIngreso=Object.keys(ingMesPorAnio).sort();
   CHARTS.promDiaMes=new Chart(document.getElementById('cPromDiaMes'),{type:'bar',
-    data:{labels:mesOrd.map(m=>MESES_N[parseInt(m)]),datasets:aniosEnMes.map((anio,i)=>({
+    data:{labels:mesOrd.map(m=>MESES_N[parseInt(m)]),datasets:aniosIngreso.map((anio,i)=>({
       label:anio,
-      data:mesOrd.map(m=>{const rev=mesesPorAnio[anio]?.[m]||0;const nd=diasMesPorAnio[anio]?.[m]?.size||0;return nd?Math.round(rev/nd):0;}),
+      data:mesOrd.map(m=>{const rev=ingMesPorAnio[anio]?.[m]||0;const nd=ingDiasMesPorAnio[anio]?.[m]?.size||0;return nd?Math.round(rev/nd):0;}),
       backgroundColor:COLORES_ANIO[i]||'#7a93aa',borderRadius:3
     }))},
-    options:{...bO,plugins:{legend:{display:aniosEnMes.length>1,position:'top',labels:{font:{size:10},boxWidth:12}},
+    options:{...bO,plugins:{legend:{display:aniosIngreso.length>1,position:'top',labels:{font:{size:10},boxWidth:12}},
       datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
         formatter:v=>v>0?fmtM(v):''}}}});
 
