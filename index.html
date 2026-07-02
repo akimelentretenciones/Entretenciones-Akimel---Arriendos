@@ -744,11 +744,7 @@ select:focus{border-color:var(--blue)}
   <div style="max-width:640px;margin:0 auto">
     <div class="section-card">
       <div style="font-size:16px;font-weight:700;color:var(--blue3);margin-bottom:6px">Agregar Arriendo</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Pega el texto o sube el archivo .txt del chat semanal.</div>
-      <div class="upload-tabs">
-        <button class="upload-tab active" onclick="setUploadTab('pegar',this)">📋 Pegar texto</button>
-        <button class="upload-tab" onclick="setUploadTab('archivo',this)">📁 Subir archivo</button>
-      </div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Pega el texto del chat semanal.</div>
       <div id="panelPegar">
         <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Copia el chat completo de WhatsApp y pégalo aquí:</div>
         <textarea class="paste-area" id="pasteArea" placeholder="[01-04-26, 10:00:00 a.m.] Alamiro Maximiliano: Nombre Juan Pérez&#10;Rio illapel 44&#10;San Joaquín&#10;18 de abril&#10;15:00&#10;+56971978155&#10;Inflable Marvel&#10;Mesa jockey&#10;Taca Taca&#10;Pendiente: 124.000"></textarea>
@@ -756,14 +752,6 @@ select:focus{border-color:var(--blue)}
           <button class="btn btn-primary" onclick="procesarTexto()">⚡ Procesar Arriendo</button>
           <button class="btn btn-ghost" onclick="pegarPortapapeles()">📋 Pegar</button>
           <button class="btn btn-ghost" onclick="document.getElementById('pasteArea').value=''">Limpiar</button>
-        </div>
-      </div>
-      <div id="panelArchivo" style="display:none">
-        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
-          <div style="font-size:40px;margin-bottom:12px">📁</div>
-          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Arrastra el .txt aquí</div>
-          <div style="font-size:13px;color:var(--text3)">o haz clic para seleccionar</div>
-          <input type="file" id="fileInput" accept=".txt" style="display:none" onchange="procesarArchivo(this.files[0])">
         </div>
       </div>
       <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill"></div></div>
@@ -775,8 +763,9 @@ select:focus{border-color:var(--blue)}
         <li>Abre el grupo semanal en WhatsApp</li>
         <li>Toca ··· → Más → <strong>Exportar chat</strong></li>
         <li>Selecciona <strong>Sin archivos multimedia</strong></li>
-        <li>Pega el texto aquí o sube el archivo</li>
+        <li>Pega el texto aquí</li>
       </ol>
+      <button class="btn btn-primary" style="background:#128c3e;width:100%;margin-top:16px" onclick="presentarDesdePaste()">👋 Presentación · enviar detalle por WhatsApp</button>
     </div>
   </div>
 </div>
@@ -4825,8 +4814,8 @@ window.toast=function(msg,tipo='ok'){
 window.setUploadTab = function(tab, btn){
   document.querySelectorAll('.upload-tab').forEach(t=>t.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  document.getElementById('panelPegar').style.display   = tab==='pegar'   ? 'block':'none';
-  document.getElementById('panelArchivo').style.display = tab==='archivo' ? 'block':'none';
+  const pp=document.getElementById('panelPegar'); if(pp) pp.style.display = tab==='pegar' ? 'block':'none';
+  const pa=document.getElementById('panelArchivo'); if(pa) pa.style.display = tab==='archivo' ? 'block':'none';
 };
 
 // Drop de archivo .txt
@@ -5274,6 +5263,20 @@ window.procesarTexto = async function(){
   catch(e){ addLog('❌ Error: '+e.message, 'err'); return; }
   if(!arr.length){ addLog('⚠️ Sin arriendos detectados. ¿Está en formato WhatsApp?', 'warn'); return; }
   await guardarArriendos(arr);
+};
+
+// Enviar el mensaje de "Presentación" por WhatsApp usando el texto pegado arriba
+window.presentarDesdePaste = function(){
+  const texto = document.getElementById('pasteArea').value.trim();
+  if(!texto){ toast('Primero pega el detalle del arriendo arriba', 'err'); return; }
+  let arr;
+  try { arr = parsearChat(texto); }
+  catch(e){ toast('No pude leer el texto: '+e.message, 'err'); return; }
+  if(!arr || !arr.length){ toast('No detecté un arriendo en el texto', 'err'); return; }
+  if(arr.length > 1) toast('Se usa el primer arriendo del texto', 'ok');
+  const url = urlWA(arr[0], 'presentacion');
+  if(!url){ toast('Falta el teléfono del cliente en el texto', 'err'); return; }
+  window.open(url, '_blank');
 };
 
 window.procesarArchivo = async function(file){
