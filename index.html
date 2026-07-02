@@ -48,7 +48,7 @@ header{background:var(--blue3);padding:0 12px;padding-left:max(12px,env(safe-are
 .main{padding:24px;max-width:1400px;margin:0 auto;padding-bottom:max(24px,env(safe-area-inset-bottom))}
 .section{display:none}.section.active{display:block}
 
-.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
 .kpi{background:#fff;border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--blue)}
 .kpi.green{border-left-color:var(--green)}.kpi.yellow{border-left-color:var(--yellow)}.kpi.orange{border-left-color:var(--orange)}
 .worker-card{border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--bg3)}
@@ -481,7 +481,6 @@ select:focus{border-color:var(--blue)}
     <div class="kpi yellow"><div class="kpi-label">Total arriendos</div><div class="kpi-value" id="k3">—</div><div class="kpi-sub" id="k3s">—</div></div>
     <div class="kpi orange"><div class="kpi-label">Total costos</div><div class="kpi-value" id="k4">—</div><div class="kpi-sub" id="k4s">Personal + Bencina</div></div>
     <div class="kpi green"><div class="kpi-label">Margen neto</div><div class="kpi-value" id="k5">—</div><div class="kpi-sub" id="k5s">—</div></div>
-    <div class="kpi"><div class="kpi-label">Promedio por día</div><div class="kpi-value" id="kProm">—</div><div class="kpi-sub" id="kProms">por día activo</div></div>
   </div>
 
   <!-- 1. Ingresos vs Gastos por semana -->
@@ -501,8 +500,8 @@ select:focus{border-color:var(--blue)}
   <!-- 2. Monto por Mes y Año -->
   <div class="chart-full"><div class="chart-title">Monto por Mes y Año</div><div class="chart-h-md" style="position:relative"><canvas id="cMensual"></canvas></div></div>
 
-  <!-- 2b. Promedio de arriendo diario por mes -->
-  <div class="chart-full"><div class="chart-title">Promedio de arriendo diario por mes · por fecha de carga</div><div class="chart-h-md" style="position:relative"><canvas id="cPromDiaMes"></canvas></div></div>
+  <!-- 2b. Arriendos cargados por día (desde mayo) -->
+  <div class="chart-full"><div class="chart-title">Arriendos por día · monto cargado (desde mayo)</div><div class="chart-h-md" style="position:relative"><canvas id="cDiaCarga"></canvas></div></div>
 
   <!-- 3. Monto por Año + Monto por día -->
   <div class="charts-row">
@@ -2652,27 +2651,25 @@ async function renderDashboard(){
   // Independientes de los filtros de arriba (esos filtran por fecha de evento).
   // Se recalculan solo al cargar/editar/eliminar (cargarArriendos → renderDashboard).
   const _h=new Date();
-  const ingMesPorAnio={}, ingDiasMesPorAnio={};
-  let ingTotal=0, ingHoyMonto=0, ingHoyCount=0;
-  const ingDiasTotal=new Set();
+  const INICIO_DIARIO=new Date(2026,4,1,0,0,0,0); // 1 mayo 2026: desde aquí en adelante (deja fuera la carga masiva anterior)
+  const ingPorDia={}; // 'YYYY-MM-DD' -> {monto, cant}
+  let ingHoyMonto=0, ingHoyCount=0;
   for(const a of ARRIENDOS){
     if(a.estado==='Cancelado' || !(a.pendiente>0)) continue;
     const d=fechaIngreso(a); if(!d) continue;
-    const y=String(d.getFullYear()), m=String(d.getMonth()+1).padStart(2,'0');
-    const dkey=y+'-'+m+'-'+String(d.getDate()).padStart(2,'0');
-    if(!ingMesPorAnio[y])ingMesPorAnio[y]={}; ingMesPorAnio[y][m]=(ingMesPorAnio[y][m]||0)+a.pendiente;
-    if(!ingDiasMesPorAnio[y])ingDiasMesPorAnio[y]={}; if(!ingDiasMesPorAnio[y][m])ingDiasMesPorAnio[y][m]=new Set(); ingDiasMesPorAnio[y][m].add(dkey);
-    ingTotal+=a.pendiente; ingDiasTotal.add(dkey);
+    // Tarjeta "hoy"
     if(d.getFullYear()===_h.getFullYear() && d.getMonth()===_h.getMonth() && d.getDate()===_h.getDate()){ ingHoyMonto+=a.pendiente; ingHoyCount++; }
+    // Serie diaria (solo desde mayo en adelante)
+    if(d.getTime()>=INICIO_DIARIO.getTime()){
+      const dkey=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      if(!ingPorDia[dkey]) ingPorDia[dkey]={monto:0,cant:0};
+      ingPorDia[dkey].monto+=a.pendiente; ingPorDia[dkey].cant++;
+    }
   }
   // Tarjeta "Arriendos de hoy" (monto de lo cargado hoy)
   const elHM=document.getElementById('dashHoyMonto'); if(elHM) elHM.textContent=clp(ingHoyMonto);
   const elHC=document.getElementById('dashHoyCount'); if(elHC) elHC.textContent=ingHoyCount+(ingHoyCount===1?' arriendo':' arriendos');
   const elHF=document.getElementById('dashHoyFecha'); if(elHF) elHF.textContent=_h.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
-  // KPI "Promedio por día" (monto cargado / días con carga)
-  const promDia=ingDiasTotal.size?Math.round(ingTotal/ingDiasTotal.size):0;
-  const elKP=document.getElementById('kProm'); if(elKP) elKP.textContent=clp(promDia);
-  const elKPs=document.getElementById('kProms'); if(elKPs) elKPs.textContent=ingDiasTotal.size+' día'+(ingDiasTotal.size===1?'':'s')+' con carga';
 
   // ── Precargar costos desde Firestore según el período filtrado ──
   try{
@@ -2811,17 +2808,29 @@ async function renderDashboard(){
       datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
         formatter:v=>v>0?fmtM(v):''}}}});
 
-  // ── Promedio de arriendo diario por mes (por fecha de CARGA: monto cargado en el mes / días con carga) ──
-  const aniosIngreso=Object.keys(ingMesPorAnio).sort();
-  CHARTS.promDiaMes=new Chart(document.getElementById('cPromDiaMes'),{type:'bar',
-    data:{labels:mesOrd.map(m=>MESES_N[parseInt(m)]),datasets:aniosIngreso.map((anio,i)=>({
-      label:anio,
-      data:mesOrd.map(m=>{const rev=ingMesPorAnio[anio]?.[m]||0;const nd=ingDiasMesPorAnio[anio]?.[m]?.size||0;return nd?Math.round(rev/nd):0;}),
-      backgroundColor:COLORES_ANIO[i]||'#7a93aa',borderRadius:3
-    }))},
-    options:{...bO,plugins:{legend:{display:aniosIngreso.length>1,position:'top',labels:{font:{size:10},boxWidth:12}},
-      datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
-        formatter:v=>v>0?fmtM(v):''}}}});
+  // ── Gráfico: monto de arriendos cargados POR DÍA (desde mayo en adelante) ──
+  const _diasKeys=Object.keys(ingPorDia).sort();
+  const labelsDia=[], dataDia=[], countDia=[];
+  if(_diasKeys.length){
+    const [uy,um,ud]=_diasKeys[_diasKeys.length-1].split('-').map(Number);
+    let fin=new Date(uy,um-1,ud);
+    const hoy0=new Date(_h.getFullYear(),_h.getMonth(),_h.getDate());
+    if(hoy0.getTime()>fin.getTime()) fin=hoy0;
+    for(let dt=new Date(INICIO_DIARIO); dt.getTime()<=fin.getTime(); dt.setDate(dt.getDate()+1)){
+      const k=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+      labelsDia.push(String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0'));
+      dataDia.push(ingPorDia[k]?ingPorDia[k].monto:0);
+      countDia.push(ingPorDia[k]?ingPorDia[k].cant:0);
+    }
+  }
+  CHARTS.diaCarga=new Chart(document.getElementById('cDiaCarga'),{type:'bar',
+    data:{labels:labelsDia,datasets:[{data:dataDia,backgroundColor:'#0071ce',borderRadius:2,maxBarThickness:22}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},datalabels:{display:false},
+        tooltip:{callbacks:{label:c=>clp(c.parsed.y)+'  ·  '+(countDia[c.dataIndex]||0)+((countDia[c.dataIndex]||0)===1?' arriendo':' arriendos')}}},
+      scales:{x:{ticks:{font:{size:8},autoSkip:true,maxRotation:0,autoSkipPadding:8},grid:{display:false}},
+              y:{display:true,beginAtZero:true,ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,0.06)'}}},
+      layout:{padding:{top:8}}}});
 
   // ── Monto por Año ──
   const aniosDisp=Object.keys(montosPorAnio).sort();
