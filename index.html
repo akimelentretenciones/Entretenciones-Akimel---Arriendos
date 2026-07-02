@@ -48,7 +48,7 @@ header{background:var(--blue3);padding:0 12px;padding-left:max(12px,env(safe-are
 .main{padding:24px;max-width:1400px;margin:0 auto;padding-bottom:max(24px,env(safe-area-inset-bottom))}
 .section{display:none}.section.active{display:block}
 
-.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
 .kpi{background:#fff;border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--blue)}
 .kpi.green{border-left-color:var(--green)}.kpi.yellow{border-left-color:var(--yellow)}.kpi.orange{border-left-color:var(--orange)}
 .worker-card{border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--bg3)}
@@ -481,9 +481,13 @@ select:focus{border-color:var(--blue)}
     <div class="kpi yellow"><div class="kpi-label">Total arriendos</div><div class="kpi-value" id="k3">—</div><div class="kpi-sub" id="k3s">—</div></div>
     <div class="kpi orange"><div class="kpi-label">Total costos</div><div class="kpi-value" id="k4">—</div><div class="kpi-sub" id="k4s">Personal + Bencina</div></div>
     <div class="kpi green"><div class="kpi-label">Margen neto</div><div class="kpi-value" id="k5">—</div><div class="kpi-sub" id="k5s">—</div></div>
+    <div class="kpi orange"><div class="kpi-label">Arriendo prom. por día</div><div class="kpi-value" id="kPromDia">—</div><div class="kpi-sub" id="kPromDias">desde mayo</div></div>
   </div>
 
-  <!-- 1. Ingresos vs Gastos por semana -->
+  <!-- 1. Arriendos por día (con línea de promedio) -->
+  <div class="chart-full" style="margin-bottom:16px"><div class="chart-title">Arriendos por día</div><div class="chart-h-md" style="position:relative"><canvas id="cDiaCarga"></canvas></div></div>
+
+  <!-- 2. Ingresos vs Gastos por semana -->
   <div class="chart-full" style="margin-bottom:16px">
     <div style="margin-bottom:14px">
       <div class="chart-title" style="margin-bottom:0">📊 Ingresos vs Gastos por semana</div>
@@ -499,9 +503,6 @@ select:focus{border-color:var(--blue)}
 
   <!-- 2. Monto por Mes y Año -->
   <div class="chart-full"><div class="chart-title">Monto por Mes y Año</div><div class="chart-h-md" style="position:relative"><canvas id="cMensual"></canvas></div></div>
-
-  <!-- 2b. Arriendos cargados por día (desde mayo) -->
-  <div class="chart-full"><div class="chart-title">Arriendos por día · monto cargado (desde mayo)</div><div class="chart-h-md" style="position:relative"><canvas id="cDiaCarga"></canvas></div></div>
 
   <!-- 3. Monto por Año + Monto por día -->
   <div class="charts-row">
@@ -2670,6 +2671,12 @@ async function renderDashboard(){
   const elHM=document.getElementById('dashHoyMonto'); if(elHM) elHM.textContent=clp(ingHoyMonto);
   const elHC=document.getElementById('dashHoyCount'); if(elHC) elHC.textContent=ingHoyCount+(ingHoyCount===1?' arriendo':' arriendos');
   const elHF=document.getElementById('dashHoyFecha'); if(elHF) elHF.textContent=_h.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  // Promedio por día CON CARGA (desde mayo) — mismo valor que la línea del gráfico
+  const _diasCargaKeys=Object.keys(ingPorDia);
+  const _montoDesdeMayo=_diasCargaKeys.reduce((s,k)=>s+ingPorDia[k].monto,0);
+  const promDiaActivo=_diasCargaKeys.length?Math.round(_montoDesdeMayo/_diasCargaKeys.length):0;
+  const elKPD=document.getElementById('kPromDia'); if(elKPD) elKPD.textContent=clp(promDiaActivo);
+  const elKPDs=document.getElementById('kPromDias'); if(elKPDs) elKPDs.textContent=_diasCargaKeys.length+' día'+(_diasCargaKeys.length===1?'':'s')+' con carga';
 
   // ── Precargar costos desde Firestore según el período filtrado ──
   try{
@@ -2824,10 +2831,13 @@ async function renderDashboard(){
     }
   }
   CHARTS.diaCarga=new Chart(document.getElementById('cDiaCarga'),{type:'bar',
-    data:{labels:labelsDia,datasets:[{data:dataDia,backgroundColor:'#0071ce',borderRadius:2,maxBarThickness:22}]},
+    data:{labels:labelsDia,datasets:[
+      {label:'Cargado por día',data:dataDia,backgroundColor:'#0071ce',borderRadius:2,maxBarThickness:22},
+      {type:'line',label:'Promedio ('+clp(promDiaActivo)+')',data:labelsDia.map(()=>promDiaActivo),borderColor:'#fa6400',backgroundColor:'#fa6400',borderWidth:2,borderDash:[6,4],pointRadius:0,pointHoverRadius:0,tension:0,fill:false}
+    ]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},datalabels:{display:false},
-        tooltip:{callbacks:{label:c=>clp(c.parsed.y)+'  ·  '+(countDia[c.dataIndex]||0)+((countDia[c.dataIndex]||0)===1?' arriendo':' arriendos')}}},
+      plugins:{legend:{display:true,position:'top',labels:{font:{size:10},boxWidth:14,padding:12}},datalabels:{display:false},
+        tooltip:{filter:i=>i.datasetIndex===0,callbacks:{label:c=>clp(c.parsed.y)+'  ·  '+(countDia[c.dataIndex]||0)+((countDia[c.dataIndex]||0)===1?' arriendo':' arriendos')}}},
       scales:{x:{ticks:{font:{size:8},autoSkip:true,maxRotation:0,autoSkipPadding:8},grid:{display:false}},
               y:{display:true,beginAtZero:true,ticks:{font:{size:9},callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,0.06)'}}},
       layout:{padding:{top:8}}}});
