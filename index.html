@@ -48,7 +48,7 @@ header{background:var(--blue3);padding:0 12px;padding-left:max(12px,env(safe-are
 .main{padding:24px;max-width:1400px;margin:0 auto;padding-bottom:max(24px,env(safe-area-inset-bottom))}
 .section{display:none}.section.active{display:block}
 
-.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
 .kpi{background:#fff;border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--blue)}
 .kpi.green{border-left-color:var(--green)}.kpi.yellow{border-left-color:var(--yellow)}.kpi.orange{border-left-color:var(--orange)}
 .worker-card{border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--bg3)}
@@ -63,6 +63,13 @@ header{background:var(--blue3);padding:0 12px;padding-left:max(12px,env(safe-are
 .kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:8px}
 .kpi-value{font-size:22px;font-weight:800;color:var(--text)}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.hoy-card{display:flex;align-items:center;justify-content:space-between;gap:16px;background:linear-gradient(135deg,var(--blue) 0%,var(--blue2) 100%);color:#fff;border-radius:var(--radius);padding:16px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+.hoy-card .hc-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;opacity:.92}
+.hoy-card .hc-date{font-size:12px;opacity:.85;margin-top:2px;text-transform:capitalize}
+.hoy-card .hc-r{text-align:right}
+.hoy-card .hc-monto{font-size:26px;font-weight:800;line-height:1}
+.hoy-card .hc-count{font-size:12px;opacity:.9;margin-top:4px}
+@media(max-width:480px){.hoy-card{padding:14px 16px}.hoy-card .hc-monto{font-size:22px}}
 
 .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .chart-card{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
@@ -458,12 +465,23 @@ select:focus{border-color:var(--blue)}
     <input type="hidden" id="dashFiltroFechaLabel">
     <div id="dashFiltroFechaWrap" style="display:none"><div id="dashFiltroFechaPanel"></div><div id="dashFiltroFechaTree"></div></div>
   </div>
+  <div class="hoy-card">
+    <div class="hc-l">
+      <div class="hc-label">⚡ Arriendos de hoy</div>
+      <div class="hc-date" id="dashHoyFecha">—</div>
+    </div>
+    <div class="hc-r">
+      <div class="hc-monto" id="dashHoyMonto">$0</div>
+      <div class="hc-count" id="dashHoyCount">0 arriendos</div>
+    </div>
+  </div>
   <div class="kpi-grid">
     <div class="kpi"><div class="kpi-label">Total Ingresos</div><div class="kpi-value" id="k1">—</div><div class="kpi-sub" id="k1s">—</div></div>
     <div class="kpi green"><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="k2">—</div><div class="kpi-sub">por arriendo</div></div>
     <div class="kpi yellow"><div class="kpi-label">Total arriendos</div><div class="kpi-value" id="k3">—</div><div class="kpi-sub" id="k3s">—</div></div>
     <div class="kpi orange"><div class="kpi-label">Total costos</div><div class="kpi-value" id="k4">—</div><div class="kpi-sub" id="k4s">Personal + Bencina</div></div>
     <div class="kpi green"><div class="kpi-label">Margen neto</div><div class="kpi-value" id="k5">—</div><div class="kpi-sub" id="k5s">—</div></div>
+    <div class="kpi"><div class="kpi-label">Promedio por día</div><div class="kpi-value" id="kProm">—</div><div class="kpi-sub" id="kProms">por día activo</div></div>
   </div>
 
   <!-- 1. Ingresos vs Gastos por semana -->
@@ -482,6 +500,9 @@ select:focus{border-color:var(--blue)}
 
   <!-- 2. Monto por Mes y Año -->
   <div class="chart-full"><div class="chart-title">Monto por Mes y Año</div><div class="chart-h-md" style="position:relative"><canvas id="cMensual"></canvas></div></div>
+
+  <!-- 2b. Promedio de arriendo diario por mes -->
+  <div class="chart-full"><div class="chart-title">Promedio de arriendo diario por mes</div><div class="chart-h-md" style="position:relative"><canvas id="cPromDiaMes"></canvas></div></div>
 
   <!-- 3. Monto por Año + Monto por día -->
   <div class="charts-row">
@@ -1067,7 +1088,7 @@ const INVENTARIO = [
   {num:13,nombre:'Carrusel Pony',           cat:'Electrónico', total:1, kw:'carrusel pony,carrusel grande,carrusel'},
   {num:14,nombre:'Atrapa Ranita',           cat:'Electrónico', total:2, kw:'ranita,rana,atrapa ranita,ranita 2'},
   {num:16,nombre:'Moto',                    cat:'Electrónico', total:2, kw:'moto verde,moto,moto 2'},
-  {num:17,nombre:'Arcade',                  cat:'Electrónico', total:2, kw:'arcade,maquina arcade,máquina arcade,maquinas arcade'},
+  {num:17,nombre:'Arcade',                  cat:'Electrónico', total:3, kw:'arcade,maquina arcade,máquina arcade,maquinas arcade'},
   {num:18,nombre:'Disparadores',            cat:'Electrónico', total:3, kw:'disparador,disparador 2,disparador 3'},
   {num:21,nombre:'Taca Taca',               cat:'Interior',    total:4, kw:'tacataca,taca taca,taka taka,tacataca 2,tacataca 3,tacataca 4'},
   {num:24,nombre:'Mesa de Hockey',          cat:'Interior',    total:4, kw:'hockey,mesa hockey,mesa de hockey,jockey,hokey,mesa jockey,air hockey,hockey 2,hockey 3,hockey 4'},
@@ -2617,6 +2638,21 @@ async function renderDashboard(){
   document.getElementById('k2').textContent=clp(ticket);
   document.getElementById('k3').textContent=act.length+can.length;document.getElementById('k3s').textContent=can.length+' cancelados';
 
+  // ── Arriendos de HOY (independiente de los filtros; se recalcula al editar/eliminar) ──
+  const _h=new Date();
+  const hoyStr=String(_h.getDate()).padStart(2,'0')+'/'+String(_h.getMonth()+1).padStart(2,'0')+'/'+_h.getFullYear();
+  const arrHoy=ARRIENDOS.filter(a=>a.fecha===hoyStr&&a.estado!=='Cancelado');
+  const hoyMonto=arrHoy.reduce((s,a)=>s+(a.pendiente||0),0);
+  const elHM=document.getElementById('dashHoyMonto'); if(elHM) elHM.textContent=clp(hoyMonto);
+  const elHC=document.getElementById('dashHoyCount'); if(elHC) elHC.textContent=arrHoy.length+(arrHoy.length===1?' arriendo':' arriendos');
+  const elHF=document.getElementById('dashHoyFecha'); if(elHF) elHF.textContent=_h.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+
+  // ── Promedio por día activo (según período filtrado) ──
+  const diasActivosSet=new Set(act.map(a=>a.fecha));
+  const promDia=diasActivosSet.size?Math.round(total/diasActivosSet.size):0;
+  const elKP=document.getElementById('kProm'); if(elKP) elKP.textContent=clp(promDia);
+  const elKPs=document.getElementById('kProms'); if(elKPs) elKPs.textContent=diasActivosSet.size+' día'+(diasActivosSet.size===1?'':'s')+' con arriendos';
+
   // ── Precargar costos desde Firestore según el período filtrado ──
   try{
     // Obtener semanas únicas de los arriendos filtrados
@@ -2672,7 +2708,7 @@ async function renderDashboard(){
   const k5s=document.getElementById('k5s');
   if(k5s) k5s.textContent=margenPct+'% del ingreso';
   const meses={},diasPorAnio={},comunas={},eqC={};
-  const mesesPorAnio={},semanasPorAnio={},montosPorAnio={};
+  const mesesPorAnio={},semanasPorAnio={},montosPorAnio={},diasMesPorAnio={};
   // Usar arr (ya filtrado) para todos los gráficos
   for(const a of arr.filter(a=>a.estado!=='Cancelado'&&a.pendiente>0)){
     const anio=a.anio||'';
@@ -2686,6 +2722,8 @@ async function renderDashboard(){
     montosPorAnio[anio]=(montosPorAnio[anio]||0)+pend;
     // Por mes y año
     if(a.fecha){const m=a.fecha.split('/')[1];if(!mesesPorAnio[anio])mesesPorAnio[anio]={};mesesPorAnio[anio][m]=(mesesPorAnio[anio][m]||0)+pend;}
+    // Días activos distintos por mes y año (para promedio diario)
+    if(a.fecha){const m=a.fecha.split('/')[1];if(!diasMesPorAnio[anio])diasMesPorAnio[anio]={};if(!diasMesPorAnio[anio][m])diasMesPorAnio[anio][m]=new Set();diasMesPorAnio[anio][m].add(a.fecha);}
     // Por semana y año
     const dtSem=parseFechaArr(a.fecha||'');
     const sem=dtSem?isoWeek(dtSem):null;
@@ -2748,6 +2786,17 @@ async function renderDashboard(){
     data:{labels:mesOrd.map(m=>MESES_N[parseInt(m)]),datasets:aniosEnMes.map((anio,i)=>({
       label:anio,
       data:mesOrd.map(m=>mesesPorAnio[anio]?.[m]||0),
+      backgroundColor:COLORES_ANIO[i]||'#7a93aa',borderRadius:3
+    }))},
+    options:{...bO,plugins:{legend:{display:aniosEnMes.length>1,position:'top',labels:{font:{size:10},boxWidth:12}},
+      datalabels:{display:true,anchor:'end',align:'top',font:{size:7,weight:'600'},color:'#041e42',
+        formatter:v=>v>0?fmtM(v):''}}}});
+
+  // ── Promedio de arriendo diario por mes (ingreso del mes / días activos del mes, por año) ──
+  CHARTS.promDiaMes=new Chart(document.getElementById('cPromDiaMes'),{type:'bar',
+    data:{labels:mesOrd.map(m=>MESES_N[parseInt(m)]),datasets:aniosEnMes.map((anio,i)=>({
+      label:anio,
+      data:mesOrd.map(m=>{const rev=mesesPorAnio[anio]?.[m]||0;const nd=diasMesPorAnio[anio]?.[m]?.size||0;return nd?Math.round(rev/nd):0;}),
       backgroundColor:COLORES_ANIO[i]||'#7a93aa',borderRadius:3
     }))},
     options:{...bO,plugins:{legend:{display:aniosEnMes.length>1,position:'top',labels:{font:{size:10},boxWidth:12}},
