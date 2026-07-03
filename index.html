@@ -2620,7 +2620,9 @@ function fechaIngreso(a){
   return null;
 }
 
-const COSTO_ESTIMADO_PCT = 0.18; // Semanas SIN datos de costo se estiman al 18% del ingreso
+const COSTO_BENCINA_PCT = 0.08;   // Estimación de bencina para semanas SIN datos de costo
+const COSTO_PERSONAL_PCT = 0.10;  // Estimación de trabajadores para semanas SIN datos de costo
+const COSTO_ESTIMADO_PCT = COSTO_BENCINA_PCT + COSTO_PERSONAL_PCT; // 18% total (8% + 10%)
 // Costo REAL de una semana desde el cache (personal + bencina). Devuelve 0 si no hay datos cargados.
 function costoRealSemana(d){
   if(!d) return 0;
@@ -4427,13 +4429,15 @@ async function _renderCostosChartEn(canvasId, rangoSelectId, onClickFn, nFijo){
     }).reduce((s,a) => s+(a.pendiente||0), 0);
     const d = _costosCache[key] || {};
     const ben = d.bencina || {};
-    const totalBen = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
+    let totalBen = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
     const pers = d.personal || {};
     let totalPers = 0;
     Object.values(pers).forEach(dia => {
       (dia.trabajadores||[]).forEach(tid => { const t=TRABAJADORES.find(x=>x.id===tid); if(t) totalPers+=t.monto; });
       totalPers += (dia.otro||0);
     });
+    // Semana sin datos de costo: estimar 8% bencina + 10% trabajadores del ingreso
+    if(totalBen===0 && totalPers===0 && ingSem>0){ totalBen=Math.round(COSTO_BENCINA_PCT*ingSem); totalPers=Math.round(COSTO_PERSONAL_PCT*ingSem); }
     dataIngresos.push(ingSem); dataPersonal.push(totalPers);
     dataBencina.push(totalBen); dataMargen.push(ingSem - totalPers - totalBen);
     esEstimado.push(!!d._estimado);
@@ -4635,13 +4639,15 @@ window.renderCostosChartDash = async function(){
 
     const d = _costosCache[key] || {};
     const ben = d.bencina || {};
-    const totalBen = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
+    let totalBen = (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
     const pers = d.personal || {};
     let totalPers = 0;
     Object.values(pers).forEach(dia => {
       (dia.trabajadores||[]).forEach(tid => { const t=TRABAJADORES.find(x=>x.id===tid); if(t) totalPers+=t.monto; });
       totalPers += (dia.otro||0);
     });
+    // Semana sin datos de costo: estimar 8% bencina + 10% trabajadores del ingreso
+    if(totalBen===0 && totalPers===0 && ingSem>0){ totalBen=Math.round(COSTO_BENCINA_PCT*ingSem); totalPers=Math.round(COSTO_PERSONAL_PCT*ingSem); }
 
     dataIngresos.push(ingSem);
     dataPersonal.push(totalPers);
