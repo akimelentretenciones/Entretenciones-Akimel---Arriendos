@@ -670,6 +670,13 @@ select:focus{border-color:var(--blue)}
       <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:4px 10px"><span style="color:var(--text3)">Total:</span> <b id="semanaTotalMonto" style="color:var(--green)">$0</b></div>
     </div>
   </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <span style="font-size:11px;color:var(--text3);font-weight:600">Ver:</span>
+    <div style="display:inline-flex;background:var(--bg3);border-radius:8px;padding:3px;gap:2px">
+      <button id="semVerSemana" onclick="trabajoVer('semana')" style="border:none;background:var(--blue);color:#fff;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;transition:all .12s">Semana completa</button>
+      <button id="semVerHoy" onclick="trabajoVer('hoy')" style="border:none;background:transparent;color:var(--text3);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;transition:all .12s">📆 Día de hoy</button>
+    </div>
+  </div>
   <div id="semanaContenedor"><!-- Aquí se monta la tabla de arriendos filtrada --></div>
 </div>
 
@@ -2068,7 +2075,7 @@ window.filtrar=function(){
   // (se maneja en filtrarSemanaActual y limpiarFiltroFecha)
   FILTRADOS=ARRIENDOS.filter(a=>{
     if(q&&!`${a.cliente} ${a.comuna} ${a.equipos} ${a.direccion}`.toLowerCase().includes(q)) return false;
-    if(dia&&a.dia!==dia) return false;
+    if(dia){ const _sd=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); if(_sd(a.dia)!==_sd(dia)) return false; }
     // Multi-selección de fecha
     if(seleccionFecha.size>0){
       if(!a.fecha) return false;
@@ -2257,6 +2264,7 @@ function renderTabla(){
     actualizarResumenSemana();
     if(typeof actualizarOpcionesDiaSemana==='function') actualizarOpcionesDiaSemana();
     insertarSeparadoresDia();
+    if(typeof sincronizarToggleHoy==='function') sincronizarToggleHoy();
   }
   
   // Verificar cambios en estadoInstalacion cada 10 segundos (sin recargar la tabla completa)
@@ -3088,6 +3096,9 @@ function actualizarOpcionesDiaSemana(){
     const d = normalizar(a.dia);
     if(d) diasPresentes.add(d);
   });
+  // "Hoy" siempre disponible como opción (aunque no tenga arriendos), para el filtro Día de hoy
+  const _nd=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  diasPresentes.add(_nd[new Date().getDay()]);
   // Preservar selección actual
   const seleccionPrevia = select.value;
   // Reconstruir opciones: siempre "Todos los días" + solo los días con arriendos
@@ -3124,6 +3135,28 @@ function activarTrabajoSemana(){
   forzarFiltroSemanaActual();
   // Actualizar subtítulo con rango de la semana + KPIs
   actualizarResumenSemana();
+}
+
+// Toggle "Semana completa" / "Día de hoy" en la vista Trabajo Semana.
+// Usa el filtro por día existente (#filtroDia) con el nombre del día de hoy.
+window.trabajoVer = function(modo){
+  const sel = document.getElementById('filtroDia');
+  if(sel){
+    const nd=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    sel.value = (modo==='hoy') ? nd[new Date().getDay()] : '';
+  }
+  if(typeof filtrar==='function') filtrar(); // filtrar() llama a sincronizarToggleHoy()
+};
+
+// Refleja en los botones del toggle si el filtro está en "hoy" o en toda la semana.
+function sincronizarToggleHoy(){
+  const bS=document.getElementById('semVerSemana'), bH=document.getElementById('semVerHoy');
+  if(!bS||!bH) return;
+  const sel=document.getElementById('filtroDia');
+  const nd=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const esHoy = !!sel && sel.value===nd[new Date().getDay()];
+  bH.style.background = esHoy?'var(--blue)':'transparent'; bH.style.color = esHoy?'#fff':'var(--text3)';
+  bS.style.background = esHoy?'transparent':'var(--blue)'; bS.style.color = esHoy?'var(--text3)':'#fff';
 }
 
 // Fuerza los valores de los inputs de filtro a la semana actual y ejecuta filtrar().
@@ -3294,6 +3327,7 @@ const REMATE = [
   {nombre:'Moto',                 precio:25000},
   {nombre:'Disparadores',         precio:20000},
   {nombre:'Atrapa Ranita',        precio:20000},
+  {nombre:'Arcade',               precio:30000},
 ];
 
 // Total de cada juego según el inventario master (INVENTARIO está en el script principal)
