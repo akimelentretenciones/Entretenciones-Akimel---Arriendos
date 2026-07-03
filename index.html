@@ -635,6 +635,7 @@ select:focus{border-color:var(--blue)}
         <option value="leo" style="color:#5fb446">Leo</option>
         <option value="cristofer" style="color:#fa6400">Cristófer</option>
         <option value="martin" style="color:#a855f7">Martín</option>
+        <option value="alamiro" style="color:#0891b2">Alamiro</option>
         <option value="__sin">— Sin asignar</option>
       </select>
       <input type="hidden" id="filtroEstado" value="">
@@ -810,6 +811,15 @@ select:focus{border-color:var(--blue)}
       <div class="kpi orange"><div class="kpi-label">Costos personal</div><div class="kpi-value" id="kc-per">—</div></div>
       <div class="kpi" style="border-left-color:var(--yellow)"><div class="kpi-label">Costos bencina</div><div class="kpi-value" id="kc-ben">—</div></div>
       <div class="kpi green"><div class="kpi-label">Margen neto</div><div class="kpi-value" id="kc-mar">—</div><div class="kpi-sub" id="kc-mar-pct">—</div></div>
+    </div>
+
+    <!-- Comparación vs estimado 18% -->
+    <div style="background:#fff;border-radius:var(--radius);padding:14px 18px;box-shadow:var(--shadow);margin-bottom:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <div style="font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.6px">📊 Comparación vs 18%</div>
+      <div><div style="font-size:10px;color:var(--text3)">Costo real</div><div style="font-size:15px;font-weight:800;color:var(--orange)" id="kc-real">—</div></div>
+      <div><div style="font-size:10px;color:var(--text3)">Costo real %</div><div style="font-size:15px;font-weight:800" id="kc-real-pct">—</div></div>
+      <div><div style="font-size:10px;color:var(--text3)">Estimado (18%)</div><div style="font-size:15px;font-weight:800;color:var(--text2)" id="kc-est">—</div></div>
+      <div><div style="font-size:10px;color:var(--text3)">Desviación</div><div style="font-size:15px;font-weight:800" id="kc-desv">—</div></div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -1004,6 +1014,7 @@ select:focus{border-color:var(--blue)}
           <option value="leo">Leo</option>
           <option value="cristofer">Cristófer</option>
           <option value="martin">Martín</option>
+          <option value="alamiro">Alamiro</option>
         </select>
       </div>
     </div>
@@ -1056,6 +1067,7 @@ const TRABAJADORES_COLOR = {
   leo:       {nombre:'Leo',       color:'#5fb446', bg:'rgba(95,180,70,.14)'},   // verde
   cristofer: {nombre:'Cristófer', color:'#fa6400', bg:'rgba(250,100,0,.12)'},   // naranjo
   martin:    {nombre:'Martín',    color:'#a855f7', bg:'rgba(168,85,247,.12)'},  // morado
+  alamiro:   {nombre:'Alamiro',   color:'#0891b2', bg:'rgba(8,145,178,.12)'},   // cyan (dueño)
 };
 let CAL_YEAR=new Date().getFullYear(), CAL_MONTH=new Date().getMonth(), CAL_DIA_SEL=null;
 let MODO_TRABAJO_SEMANA=false;
@@ -2204,6 +2216,7 @@ function renderTabla(){
           <option value="leo" ${t==='leo'?'selected':''}>Leo</option>
           <option value="cristofer" ${t==='cristofer'?'selected':''}>Cristófer</option>
           <option value="martin" ${t==='martin'?'selected':''}>Martín</option>
+          <option value="alamiro" ${t==='alamiro'?'selected':''}>Alamiro</option>
         </select>`;
       })()}
     </td>
@@ -2607,6 +2620,21 @@ function fechaIngreso(a){
   return null;
 }
 
+const COSTO_ESTIMADO_PCT = 0.18; // Semanas SIN datos de costo se estiman al 18% del ingreso
+// Costo REAL de una semana desde el cache (personal + bencina). Devuelve 0 si no hay datos cargados.
+function costoRealSemana(d){
+  if(!d) return 0;
+  let c=0;
+  const ben=d.bencina||{};
+  c += (ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
+  const pers=d.personal||{};
+  Object.values(pers).forEach(dia=>{
+    (dia.trabajadores||[]).forEach(tid=>{ const t=TRABAJADORES.find(x=>x.id===tid); if(t) c+=t.monto; });
+    c += (dia.otro||0);
+  });
+  return c;
+}
+
 async function renderDashboard(){
   const anioFiltro=(document.getElementById('dashFiltroAnio')?.value||'').trim();
   const mesFiltro=(document.getElementById('dashFiltroMes')?.value||'').trim();
@@ -2690,33 +2718,29 @@ async function renderDashboard(){
     }
   }catch(e){ console.warn('precargar costos dashboard:',e); }
 
-  // Costos: ahora el cache está poblado con las semanas relevantes
+  // Costos: costo REAL por semana; si una semana no tiene datos cargados, se estima al 18% del ingreso
   let totalCostos=0;
+  let hayEstimado18=false;
   try{
-    // Filtrar el cache solo a las semanas que corresponden al período seleccionado
     const semanasDelPeriodo=new Set();
+    const ingresoSemana={};
     arr.filter(a=>a.estado!=='Cancelado').forEach(a=>{
       const dt=parseFechaArr(a.fecha);
       if(!dt) return;
-      semanasDelPeriodo.add(dt.getFullYear()+'-W'+String(isoWeek(dt)).padStart(2,'0'));
+      const k=dt.getFullYear()+'-W'+String(isoWeek(dt)).padStart(2,'0');
+      semanasDelPeriodo.add(k);
+      ingresoSemana[k]=(ingresoSemana[k]||0)+(a.pendiente||0);
     });
-    const cacheFiltrado=semanasDelPeriodo.size>0
-      ? Object.fromEntries(Object.entries(_costosCache).filter(([k])=>semanasDelPeriodo.has(k)))
-      : _costosCache;
-    Object.values(cacheFiltrado).forEach(d=>{
-      const ben=d.bencina||{};
-      totalCostos+=(ben.foton1||0)+(ben.foton2||0)+(ben.brillance||0);
-      const pers=d.personal||{};
-      Object.values(pers).forEach(dia=>{
-        (dia.trabajadores||[]).forEach(tid=>{const t=TRABAJADORES.find(x=>x.id===tid);if(t)totalCostos+=t.monto;});
-        totalCostos+=(dia.otro||0);
-      });
+    semanasDelPeriodo.forEach(k=>{
+      const real=costoRealSemana(_costosCache[k]);
+      if(real>0){ totalCostos+=real; }
+      else { totalCostos+=Math.round(COSTO_ESTIMADO_PCT*(ingresoSemana[k]||0)); if((ingresoSemana[k]||0)>0) hayEstimado18=true; }
     });
   }catch(e){}
   const margen=total-totalCostos;
   const margenPct=total>0?Math.round((margen/total)*100):0;
   document.getElementById('k4').textContent=clp(totalCostos);
-  document.getElementById('k4s').textContent='Personal + Bencina';
+  document.getElementById('k4s').textContent = hayEstimado18 ? 'Real + estimado 18%' : 'Personal + Bencina';
   const k5=document.getElementById('k5');
   if(k5){k5.textContent=clp(margen);k5.style.color=margen>=0?'var(--green)':'var(--red)';}
   const k5s=document.getElementById('k5s');
@@ -3327,7 +3351,7 @@ const REMATE = [
   {nombre:'Moto',                 precio:25000},
   {nombre:'Disparadores',         precio:20000},
   {nombre:'Atrapa Ranita',        precio:20000},
-  {nombre:'Arcade',               precio:30000},
+  {nombre:'Arcade',               precio:20000},
 ];
 
 // Total de cada juego según el inventario master (INVENTARIO está en el script principal)
@@ -4178,6 +4202,25 @@ function renderCostosKpis(ingresos, totalPersonal, totalBencina){
   document.getElementById('kc-mar').textContent = '$'+margen.toLocaleString('es-CL');
   document.getElementById('kc-mar').style.color = margen>=0?'var(--green)':'var(--red)';
   document.getElementById('kc-mar-pct').textContent = pct+'% del ingreso';
+  // Comparación vs estimado 18%
+  const costoReal = totalCostos;
+  const est18 = Math.round(COSTO_ESTIMADO_PCT * ingresos);
+  const elReal=document.getElementById('kc-real');
+  const elRPct=document.getElementById('kc-real-pct');
+  const elEst=document.getElementById('kc-est');
+  const elDesv=document.getElementById('kc-desv');
+  if(elEst) elEst.textContent = '$'+est18.toLocaleString('es-CL');
+  if(costoReal>0){
+    const realPct = ingresos>0 ? (costoReal/ingresos*100) : 0;
+    const desv = costoReal - est18;
+    if(elReal){ elReal.textContent = '$'+costoReal.toLocaleString('es-CL'); elReal.style.color='var(--orange)'; }
+    if(elRPct){ elRPct.textContent = realPct.toFixed(1)+'%'; elRPct.style.color = realPct<=COSTO_ESTIMADO_PCT*100?'var(--green)':'var(--red)'; }
+    if(elDesv){ elDesv.textContent = (desv>=0?'+':'−')+'$'+Math.abs(desv).toLocaleString('es-CL'); elDesv.style.color = desv<=0?'var(--green)':'var(--red)'; }
+  } else {
+    if(elReal){ elReal.textContent='Sin datos'; elReal.style.color='var(--text3)'; }
+    if(elRPct){ elRPct.textContent='—'; elRPct.style.color='var(--text3)'; }
+    if(elDesv){ elDesv.textContent='—'; elDesv.style.color='var(--text3)'; }
+  }
 }
 
 function renderCostosResumen(detalleDias, ben){
