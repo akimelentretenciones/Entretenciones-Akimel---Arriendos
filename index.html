@@ -1199,6 +1199,33 @@ const CATALOGO_PAGINAS_B64 = new Proxy({}, {
 });
 window.CATALOGO_PAGINAS_B64 = CATALOGO_PAGINAS_B64;
 
+// ===== VIDEOS DE JUEGOS (Firebase Storage) =====
+// Nombre del juego (igual que en INVENTARIO) -> URL del video con música
+const VIDEOS_JUEGO = {
+  'Tobogán Dinopoder':   'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Dinosaurio_musica.mp4?alt=media&token=72837f41-8b81-4686-913a-b49aa9c53ead',
+  'Tobogán Mario Bross': 'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Mario_musica.mp4?alt=media&token=a1e461b6-202a-450b-80ba-db4ec9c16009',
+  'Tobogán Marvel':      'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Marvel_musica.mp4?alt=media&token=8b45f6a9-3f2f-463d-96bb-d879f2d5b7b4',
+  'Tobogán Pirata':      'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Pirata_musica.mp4?alt=media&token=ca7d033d-dbec-4f52-8e42-71f438ccc37a',
+};
+const _videoCache = {}; // nombre -> Promise<File|null>
+function _slugVid(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'_'); }
+// Descarga (y cachea) el video de un juego como File. Devuelve Promise<File|null>.
+function precargarVideo(nombre){
+  if(!VIDEOS_JUEGO[nombre]) return Promise.resolve(null);
+  if(_videoCache[nombre]) return _videoCache[nombre];
+  const p = fetch(VIDEOS_JUEGO[nombre])
+    .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
+    .then(b => new File([b], _slugVid(nombre)+'.mp4', {type:'video/mp4'}))
+    .catch(() => { delete _videoCache[nombre]; return null; });
+  _videoCache[nombre] = p;
+  return p;
+}
+// Pre-carga en segundo plano los videos de los juegos disponibles (para que el envío sea instantáneo)
+function precargarVideosDisponibles(nombres){
+  (nombres||[]).forEach(n => { if(VIDEOS_JUEGO[n]) precargarVideo(n); });
+}
+window.VIDEOS_JUEGO = VIDEOS_JUEGO;
+
 const MESES_N=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MESES_FULL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DIAS_ORD=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
@@ -1690,6 +1717,7 @@ window.mostrarInventarioDia = function(dia){
     btn.setAttribute('data-paginas', JSON.stringify(paginasLibres));
     btn.setAttribute('data-fecha',   fechaStr);
     btn.setAttribute('data-dianom',  diaNom);
+    precargarVideosDisponibles(paginasLibres); // descarga los videos en segundo plano
   }
 
   // Mostrar/ocultar botón catálogo completo (siempre visible si hay arriendos ese día)
@@ -1822,23 +1850,39 @@ window.generarCatalogoPDF = async function(){
     const pdfBlob  = doc.output('blob');
     const file     = new File([pdfBlob], filename, {type:'application/pdf'});
 
+    // Recolectar los videos (ya pre-cargados) de los juegos disponibles que tengan video
+    const files = [file];
+    const conVideo = paginasLibres.filter(n => VIDEOS_JUEGO[n]);
+    if(conVideo.length){
+      btn.innerHTML = '⏳ Cargando videos...';
+      const vids = await Promise.all(conVideo.map(n => precargarVideo(n)));
+      vids.forEach(v => { if(v) files.push(v); });
+    }
     btn.innerHTML = '📄 Catálogo disponible';
     btn.style.pointerEvents = 'auto';
 
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-      try{
-        // Compartir PDF con el mensaje de disponibles en el texto
-        await navigator.share({
-          files: [file],
-          title: 'Catálogo Akimel',
-          text:  mensaje
-        });
-      }catch(e){
-        if(e.name !== 'AbortError'){ doc.save(filename); toast('PDF descargado','ok'); }
+    // Enviar solo el catálogo (respaldo)
+    const soloPdf = () => {
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        return navigator.share({files:[file], title:'Catálogo Akimel', text:mensaje});
       }
+      doc.save(filename); toast('PDF descargado — adjúntalo en WhatsApp','ok');
+      return Promise.resolve();
+    };
+
+    if(navigator.canShare && navigator.canShare({files})){
+      // Catálogo + videos juntos
+      try{
+        await navigator.share({ files, title:'Catálogo Akimel', text:mensaje });
+      }catch(e){
+        if(e.name !== 'AbortError'){ try{ await soloPdf(); }catch(_){} }
+      }
+    } else if(files.length > 1){
+      // El teléfono no dejó agrupar catálogo + videos → enviar solo catálogo y avisar
+      toast('Tu teléfono no adjuntó los videos junto al catálogo','err');
+      try{ await soloPdf(); }catch(e){ if(e.name!=='AbortError'){ doc.save(filename); } }
     } else {
-      doc.save(filename);
-      toast('PDF descargado — adjúntalo en WhatsApp','ok');
+      try{ await soloPdf(); }catch(e){ if(e.name!=='AbortError'){ doc.save(filename); toast('PDF descargado','ok'); } }
     }
   }catch(err){
     console.error('generarCatalogoPDF:', err);
