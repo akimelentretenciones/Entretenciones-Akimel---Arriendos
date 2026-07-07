@@ -1203,11 +1203,18 @@ const CATALOGO_PAGINAS_B64 = new Proxy({}, {
 window.CATALOGO_PAGINAS_B64 = CATALOGO_PAGINAS_B64;
 
 // ===== MEDIA DE JUEGOS (Firebase Storage) =====
-// Nombre del juego (igual que en INVENTARIO) -> URL del video (.mp4) o foto (.jpg) del juego.
-// El orden aquí sigue el del inventario/captura; el envío respeta ese orden.
+// Nombre del juego (igual que en INVENTARIO) -> URL, o ARRAY de URLs (video(s)/foto(s)).
+// El orden sigue el del inventario (inflables → electrónicos → interior); el envío respeta ese orden.
 const VIDEOS_JUEGO = {
-  'Tobogán Obstáculo Danger': 'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Danger_15s.mp4?alt=media&token=6fee4d4c-dbfa-47a9-bb75-e6aba1080848',
-  'Tobogán Obstáculo Robot':  'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Robot_20s.mp4?alt=media&token=c49de48c-cae8-4358-a3b0-e85a6820a109',
+  // --- Inflables (Danger y Robot: video + foto) ---
+  'Tobogán Obstáculo Danger': [
+    'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Danger_15s.mp4?alt=media&token=6fee4d4c-dbfa-47a9-bb75-e6aba1080848',
+    'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2Fobstaculo_3_marcado.jpg?alt=media&token=136cee93-41f5-4dfb-be0c-35c16e31a6f2'
+  ],
+  'Tobogán Obstáculo Robot': [
+    'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Robot_20s.mp4?alt=media&token=c49de48c-cae8-4358-a3b0-e85a6820a109',
+    'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2Frobot_obstaculo_1_marcado.jpg?alt=media&token=d77c2e8b-f63b-40a9-9616-abcbcc043d86'
+  ],
   'Tobogán Pirata':      'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Pirata_musica.mp4?alt=media&token=ca7d033d-dbec-4f52-8e42-71f438ccc37a',
   'Tobogán Dinopoder':   'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Dinosaurio_musica.mp4?alt=media&token=72837f41-8b81-4686-913a-b49aa9c53ead',
   'Tobogán Marvel':      'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Marvel_musica.mp4?alt=media&token=8b45f6a9-3f2f-463d-96bb-d879f2d5b7b4',
@@ -1216,23 +1223,40 @@ const VIDEOS_JUEGO = {
   'Tobogán Pro':         'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2Fpro_02_cancha_frente_AKIMEL.jpg?alt=media&token=518dccb1-9bb4-482b-9257-a772e1c7499b',
   'Tobogán Gold':        'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2Fgold_03_tacataca_AKIMEL.jpg?alt=media&token=ae9b4630-9886-45f8-8371-ef116295f67d',
   'Tobogán Doble Castillo': 'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2Fdoble_castillo_1_marcado.jpg?alt=media&token=2bb4ef25-62cf-4266-af60-5e9f260442b0',
+  // --- Electrónicos (videos) ---
+  'Avioncitos Voladores':'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FAviones_9s%5B1%5D.mp4?alt=media&token=e034af0f-ee19-4f17-ab70-9818ec91f372',
+  'Carrusel Pony':       'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FCarrusel_8s%5B1%5D.mp4?alt=media&token=d773cee9-d212-447f-b932-8cd6f8c60ad1',
+  'Atrapa Ranita':       'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FAtrapa_Ranita%5B1%5D.mp4?alt=media&token=be1e2c65-2168-4a1e-b858-93b107a443a4',
+  'Moto':                'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FMoto_8s%5B1%5D.mp4?alt=media&token=07f42154-6acf-4f9f-9d0e-76cf2d4f51fa',
+  'Arcade':              'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FArcade_8s%5B1%5D.mp4?alt=media&token=23293fc3-4746-4864-b540-5135f8a777eb',
+  'Disparadores':        'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FDisparador_8s%5B1%5D.mp4?alt=media&token=fda8a305-6f38-4cbc-8dcd-1cf79a4cec2e',
+  // --- Interior (fotos) ---
+  'Taca Taca':           'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2Ftacataca_2_marcado.jpg?alt=media&token=a4f3c079-26d0-436f-92b4-d31dc7e27f26',
+  'Mesa de Hockey':      'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FMesa%20de%20Hockey.jpeg?alt=media&token=66e10e15-86d8-4a6a-b4c2-474b959dc126',
+  'Jenga':               'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FJenga.jpeg?alt=media&token=95caadb1-2611-472f-9548-8fc611d53886',
 };
-const _videoCache = {}; // nombre -> Promise<File|null>
-function _slugVid(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'_'); }
-// Descarga (y cachea) el video/foto de un juego como File. Devuelve Promise<File|null>.
-function precargarVideo(nombre){
-  const url = VIDEOS_JUEGO[nombre];
+const _mediaCache = {}; // url -> Promise<File|null>
+// Descarga (y cachea) UNA url (video/foto) como File.
+function _cargarMedia(url){
   if(!url) return Promise.resolve(null);
-  if(_videoCache[nombre]) return _videoCache[nombre];
-  // Detectar si es video o imagen por la extensión de la URL (antes del ?)
-  const ext = ((url.split('?')[0].match(/\.(mp4|jpg|jpeg|png|webp)$/i) || [,'mp4'])[1]).toLowerCase();
+  if(_mediaCache[url]) return _mediaCache[url];
+  const ext  = ((url.split('?')[0].match(/\.(mp4|jpg|jpeg|png|webp)$/i) || [,'mp4'])[1]).toLowerCase();
   const tipo = ext==='mp4' ? 'video/mp4' : ('image/' + (ext==='jpg' ? 'jpeg' : ext));
+  let base;
+  try{ base = decodeURIComponent(url.split('?')[0].split('%2F').pop()) || ('media.'+ext); }
+  catch(e){ base = 'media.'+ext; }
   const p = fetch(url)
     .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
-    .then(b => new File([b], _slugVid(nombre)+'.'+ext, {type: tipo}))
-    .catch(() => { delete _videoCache[nombre]; return null; });
-  _videoCache[nombre] = p;
+    .then(b => new File([b], base, {type: tipo}))
+    .catch(() => { delete _mediaCache[url]; return null; });
+  _mediaCache[url] = p;
   return p;
+}
+// Devuelve Promise<File[]> con TODA la media (uno o varios archivos) de un juego, en orden.
+function precargarVideo(nombre){
+  const v = VIDEOS_JUEGO[nombre];
+  const urls = Array.isArray(v) ? v : (v ? [v] : []);
+  return Promise.all(urls.map(_cargarMedia)).then(arr => arr.filter(Boolean));
 }
 // Pre-carga en segundo plano los videos de los juegos disponibles (para que el envío sea instantáneo)
 function precargarVideosDisponibles(nombres){
@@ -1905,7 +1929,7 @@ window.enviarVideosDisponibles = async function(){
   btn.innerHTML = '⏳ Cargando videos...';
   btn.style.pointerEvents = 'none';
   try{
-    const vids = (await Promise.all(conVideo.map(n => precargarVideo(n)))).filter(Boolean);
+    const vids = (await Promise.all(conVideo.map(n => precargarVideo(n)))).flat();
     btn.innerHTML = orig;
     btn.style.pointerEvents = 'auto';
     if(!vids.length){ toast('No se pudieron cargar los videos','err'); return; }
