@@ -1202,23 +1202,34 @@ const CATALOGO_PAGINAS_B64 = new Proxy({}, {
 });
 window.CATALOGO_PAGINAS_B64 = CATALOGO_PAGINAS_B64;
 
-// ===== VIDEOS DE JUEGOS (Firebase Storage) =====
-// Nombre del juego (igual que en INVENTARIO) -> URL del video con música
+// ===== MEDIA DE JUEGOS (Firebase Storage) =====
+// Nombre del juego (igual que en INVENTARIO) -> URL del video (.mp4) o foto (.jpg) del juego.
+// El orden aquí sigue el del inventario/captura; el envío respeta ese orden.
 const VIDEOS_JUEGO = {
-  'Tobogán Dinopoder':   'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Dinosaurio_musica.mp4?alt=media&token=72837f41-8b81-4686-913a-b49aa9c53ead',
-  'Tobogán Mario Bross': 'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Mario_musica.mp4?alt=media&token=a1e461b6-202a-450b-80ba-db4ec9c16009',
-  'Tobogán Marvel':      'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Marvel_musica.mp4?alt=media&token=8b45f6a9-3f2f-463d-96bb-d879f2d5b7b4',
+  'Tobogán Obstáculo Danger': 'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Danger_15s.mp4?alt=media&token=6fee4d4c-dbfa-47a9-bb75-e6aba1080848',
+  'Tobogán Obstáculo Robot':  'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Robot_20s.mp4?alt=media&token=c49de48c-cae8-4358-a3b0-e85a6820a109',
   'Tobogán Pirata':      'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Pirata_musica.mp4?alt=media&token=ca7d033d-dbec-4f52-8e42-71f438ccc37a',
+  'Tobogán Dinopoder':   'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Dinosaurio_musica.mp4?alt=media&token=72837f41-8b81-4686-913a-b49aa9c53ead',
+  'Tobogán Marvel':      'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Marvel_musica.mp4?alt=media&token=8b45f6a9-3f2f-463d-96bb-d879f2d5b7b4',
+  'Tobogán Mario Bross': 'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Mario_musica.mp4?alt=media&token=a1e461b6-202a-450b-80ba-db4ec9c16009',
+  'Tobogán F1':          'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2FTobogan_Ferrari_musica.mp4?alt=media&token=f7c3441e-2c49-4a6f-9ef7-12f7a58baa3e',
+  'Tobogán Pro':         'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2Fpro_02_cancha_frente_AKIMEL.jpg?alt=media&token=518dccb1-9bb4-482b-9257-a772e1c7499b',
+  'Tobogán Gold':        'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2Fgold_03_tacataca_AKIMEL.jpg?alt=media&token=ae9b4630-9886-45f8-8371-ef116295f67d',
+  'Tobogán Doble Castillo': 'https://firebasestorage.googleapis.com/v0/b/entretenciones-akimel.firebasestorage.app/o/Videos%2Fdoble_castillo_1_marcado.jpg?alt=media&token=2bb4ef25-62cf-4266-af60-5e9f260442b0',
 };
 const _videoCache = {}; // nombre -> Promise<File|null>
 function _slugVid(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'_'); }
-// Descarga (y cachea) el video de un juego como File. Devuelve Promise<File|null>.
+// Descarga (y cachea) el video/foto de un juego como File. Devuelve Promise<File|null>.
 function precargarVideo(nombre){
-  if(!VIDEOS_JUEGO[nombre]) return Promise.resolve(null);
+  const url = VIDEOS_JUEGO[nombre];
+  if(!url) return Promise.resolve(null);
   if(_videoCache[nombre]) return _videoCache[nombre];
-  const p = fetch(VIDEOS_JUEGO[nombre])
+  // Detectar si es video o imagen por la extensión de la URL (antes del ?)
+  const ext = ((url.split('?')[0].match(/\.(mp4|jpg|jpeg|png|webp)$/i) || [,'mp4'])[1]).toLowerCase();
+  const tipo = ext==='mp4' ? 'video/mp4' : ('image/' + (ext==='jpg' ? 'jpeg' : ext));
+  const p = fetch(url)
     .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
-    .then(b => new File([b], _slugVid(nombre)+'.mp4', {type:'video/mp4'}))
+    .then(b => new File([b], _slugVid(nombre)+'.'+ext, {type: tipo}))
     .catch(() => { delete _videoCache[nombre]; return null; });
   _videoCache[nombre] = p;
   return p;
