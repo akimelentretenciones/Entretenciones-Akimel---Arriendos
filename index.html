@@ -561,6 +561,9 @@ select:focus{border-color:var(--blue)}
           <button id="btnCompartirCatalogo" onclick="generarCatalogoPDF()" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 14px;background:#25d366;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(37,211,102,.35)">
             📄 Catálogo disponible
           </button>
+          <button id="btnEnviarVideos" onclick="enviarVideosDisponibles()" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 14px;background:#8b5cf6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(139,92,246,.35)">
+            🎥 Enviar videos
+          </button>
         </div>
       </div>
       <div class="inv-categorias" id="invCategorias"></div>
@@ -1720,6 +1723,14 @@ window.mostrarInventarioDia = function(dia){
     precargarVideosDisponibles(paginasLibres); // descarga los videos en segundo plano
   }
 
+  // Botón de videos: mostrar solo si hay juegos disponibles CON video
+  const btnVid = document.getElementById('btnEnviarVideos');
+  if(btnVid){
+    const conVid = paginasLibres.filter(n => VIDEOS_JUEGO[n]);
+    btnVid.style.display = conVid.length > 0 ? 'inline-flex' : 'none';
+    btnVid.setAttribute('data-videos', JSON.stringify(conVid));
+  }
+
   // Mostrar/ocultar botón catálogo completo (siempre visible si hay arriendos ese día)
   const btnCompleto = document.getElementById('btnCompartirCatalogoCompleto');
   if(btnCompleto){
@@ -1850,39 +1861,18 @@ window.generarCatalogoPDF = async function(){
     const pdfBlob  = doc.output('blob');
     const file     = new File([pdfBlob], filename, {type:'application/pdf'});
 
-    // Recolectar los videos (ya pre-cargados) de los juegos disponibles que tengan video
-    const files = [file];
-    const conVideo = paginasLibres.filter(n => VIDEOS_JUEGO[n]);
-    if(conVideo.length){
-      btn.innerHTML = '⏳ Cargando videos...';
-      const vids = await Promise.all(conVideo.map(n => precargarVideo(n)));
-      vids.forEach(v => { if(v) files.push(v); });
-    }
     btn.innerHTML = '📄 Catálogo disponible';
     btn.style.pointerEvents = 'auto';
 
-    // Enviar solo el catálogo (respaldo)
-    const soloPdf = () => {
-      if(navigator.canShare && navigator.canShare({files:[file]})){
-        return navigator.share({files:[file], title:'Catálogo Akimel', text:mensaje});
-      }
-      doc.save(filename); toast('PDF descargado — adjúntalo en WhatsApp','ok');
-      return Promise.resolve();
-    };
-
-    if(navigator.canShare && navigator.canShare({files})){
-      // Catálogo + videos juntos
+    if(navigator.canShare && navigator.canShare({files:[file]})){
       try{
-        await navigator.share({ files, title:'Catálogo Akimel', text:mensaje });
+        await navigator.share({ files:[file], title:'Catálogo Akimel', text:mensaje });
       }catch(e){
-        if(e.name !== 'AbortError'){ try{ await soloPdf(); }catch(_){} }
+        if(e.name !== 'AbortError'){ doc.save(filename); toast('PDF descargado','ok'); }
       }
-    } else if(files.length > 1){
-      // El teléfono no dejó agrupar catálogo + videos → enviar solo catálogo y avisar
-      toast('Tu teléfono no adjuntó los videos junto al catálogo','err');
-      try{ await soloPdf(); }catch(e){ if(e.name!=='AbortError'){ doc.save(filename); } }
     } else {
-      try{ await soloPdf(); }catch(e){ if(e.name!=='AbortError'){ doc.save(filename); toast('PDF descargado','ok'); } }
+      doc.save(filename);
+      toast('PDF descargado — adjúntalo en WhatsApp','ok');
     }
   }catch(err){
     console.error('generarCatalogoPDF:', err);
@@ -1892,7 +1882,38 @@ window.generarCatalogoPDF = async function(){
   }
 };
 
+// ===== ENVIAR VIDEOS (solo videos, sin PDF: así WhatsApp los muestra como video con miniatura) =====
+window.enviarVideosDisponibles = async function(){
+  const btn = document.getElementById('btnEnviarVideos');
+  if(!btn) return;
+  const juegos   = JSON.parse(btn.getAttribute('data-videos') || '[]');
+  const conVideo = juegos.filter(n => VIDEOS_JUEGO[n]);
+  if(!conVideo.length){ toast('No hay videos para los juegos disponibles','err'); return; }
 
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ Cargando videos...';
+  btn.style.pointerEvents = 'none';
+  try{
+    const vids = (await Promise.all(conVideo.map(n => precargarVideo(n)))).filter(Boolean);
+    btn.innerHTML = orig;
+    btn.style.pointerEvents = 'auto';
+    if(!vids.length){ toast('No se pudieron cargar los videos','err'); return; }
+
+    if(navigator.canShare && navigator.canShare({ files: vids })){
+      try{
+        await navigator.share({ files: vids }); // solo archivos de video (sin texto ni PDF)
+      }catch(e){
+        if(e.name !== 'AbortError'){ toast('No se pudo compartir los videos','err'); }
+      }
+    } else {
+      toast('Tu teléfono no permite compartir los videos','err');
+    }
+  }catch(err){
+    btn.innerHTML = orig;
+    btn.style.pointerEvents = 'auto';
+    toast('Error: '+err.message,'err');
+  }
+};
 
 // ===== CATÁLOGO COMPLETO =====
 window.generarCatalogoCompletoPDF = async function(){
