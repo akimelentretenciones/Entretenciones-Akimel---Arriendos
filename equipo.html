@@ -93,6 +93,10 @@ tr:hover td{background:var(--bg3)}
 .badge-ok{background:rgba(95,180,70,.12);color:var(--green)}
 .badge-canc{background:rgba(222,28,36,.1);color:var(--red)}
 
+/* Badges solo lectura (Lugar / Superficie) */
+.badge-ro{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap;border:1px solid transparent;cursor:default;user-select:none}
+.ro-vacio{color:var(--text3);font-size:11px}
+
 /* Pago inline */
 .pago-row{display:flex;gap:4px}
 .pago-btn{padding:5px 9px;border-radius:6px;border:1.5px solid var(--border);background:#fff;color:var(--text3);font-size:14px;cursor:pointer;transition:all .2s;line-height:1}
@@ -189,6 +193,33 @@ const EMAIL_NOMBRE = {
   'cristofer@akimel.cl':'cristofer',
   'martin@akimel.cl':'martin'
 };
+
+// ── Lugar de instalación y Superficie (SOLO LECTURA para el equipo) ──
+// Los valores se editan únicamente desde la app del administrador.
+const LUGAR_COLOR = {
+  'Casa propia': {color:'#0071ce', bg:'rgba(0,113,206,.10)'},   // azul
+  'Sede':        {color:'#a855f7', bg:'rgba(168,85,247,.10)'},  // morado
+  'Club house':  {color:'#0891b2', bg:'rgba(8,145,178,.10)'},   // cyan
+};
+const SUPERFICIE_COLOR = {
+  'Pasto':    {color:'#5fb446', bg:'rgba(95,180,70,.12)'},   // verde
+  'Cemento':  {color:'#7a93aa', bg:'rgba(122,147,170,.14)'}, // gris
+  'Gravilla': {color:'#fa6400', bg:'rgba(250,100,0,.10)'},   // naranjo
+  'Tierra':   {color:'#a16207', bg:'rgba(161,98,7,.10)'},    // café
+};
+const LUGAR_ICONO = {'Casa propia':'&#127968;','Sede':'&#127970;','Club house':'&#127963;&#65039;'};
+const SUPERFICIE_ICONO = {'Pasto':'&#127807;','Cemento':'&#129521;','Gravilla':'&#129704;','Tierra':'&#127756;'};
+
+// Devuelve un badge de solo lectura (o un guion si el dato no está cargado)
+function badgeRO(valor, mapaColor, mapaIcono) {
+  var v = (valor || '').trim();
+  if(!v) return '<span class="ro-vacio">&mdash;</span>';
+  var c = mapaColor[v];
+  if(!c) return '<span class="ro-vacio">'+v+'</span>';
+  var ico = mapaIcono[v] || '';
+  return '<span class="badge-ro" style="color:'+c.color+';background:'+c.bg+';border-color:'+c.color+'33">'
+    + (ico ? ico+' ' : '') + v + '</span>';
+}
 
 let currentWorkerKey = null;
 let unsubArriendos = null;
@@ -349,6 +380,8 @@ function renderFila(a, num) {
     + '<td style="font-weight:600">'+(a.hora||'&mdash;')+'</td>'
     + '<td>'+telLink+'</td>'
     + '<td><div class="equipos-cell">'+(etags||'&mdash;')+'</div></td>'
+    + '<td>'+badgeRO(a.lugar, LUGAR_COLOR, LUGAR_ICONO)+'</td>'
+    + '<td>'+badgeRO(a.superficie, SUPERFICIE_COLOR, SUPERFICIE_ICONO)+'</td>'
     + '<td><span class="badge '+bc+'">'+(a.estado||'Pendiente')+'</span></td>'
     + '<td><select class="fi" id="instalacion-'+id+'" onchange="cambiarInstalacion(\''+id+'\',this.value)" style="font-size:10px;padding:4px 8px;font-weight:600;cursor:pointer">'
     +   '<option value="No instalado" '+(a.estadoInstalacion==='No instalado'?'selected':'')+'">No instalado</option>'
@@ -411,7 +444,9 @@ function renderApp(porDia, dias, totalSemana, nombre) {
         + '<div class="table-wrap" style="border-radius:0 0 var(--radius) var(--radius);box-shadow:none">'
         + '<table><thead><tr>'
         + '<th>#</th><th>Cliente</th><th>Direcci&oacute;n</th><th>Hora</th>'
-        + '<th>Tel&eacute;fono</th><th>Equipos</th><th>Estado</th><th>Instalaci&oacute;n</th>'
+        + '<th>Tel&eacute;fono</th><th>Equipos</th>'
+        + '<th title="Solo lectura">&#127968; Lugar</th><th title="Solo lectura">&#127807; Superficie</th>'
+        + '<th>Estado</th><th>Instalaci&oacute;n</th>'
         + '<th>Pago</th><th>Retiro &#128666;</th><th title="Abrir en Waze">&#128506;&#65039; Waze</th>'
         + '</tr></thead><tbody>';
 
