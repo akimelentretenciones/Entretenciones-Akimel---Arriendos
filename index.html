@@ -367,22 +367,28 @@ select:focus{border-color:var(--blue)}
 }
 
 /* ===== Vista Arriendos: ocultar columnas que sólo se usan en Trabajo Semana =====
-   En Arriendos se ocultan: WA (10), Instalación (13), Pagado (14), Copiar (16), Trabajador (17), Equipo (18). Estado se eliminó por completo.
+   Orden de columnas: 1 # · 2 Cliente · 3 Dirección · 4 Comuna · 5 Fecha · 6 Día · 7 Sem · 8 Hora ·
+   9 Teléfono · 10 WA · 11 Equipos · 12 LUGAR · 13 SUPERFICIE · 14 Monto · 15 Instalación · 16 Pagado ·
+   17 Pago · 18 Copiar · 19 Trabajador · 20 Equipo · 21 Retiro · 22 Waze · 23 Acciones
+   En Arriendos se ocultan: WA (10), Instalación (15), Pagado (16), Copiar (18), Trabajador (19), Equipo (20).
+   Lugar y Superficie se muestran en AMBAS vistas.
    También ocultamos el botón "Marcar pasados como pagados" */
 #sec-arriendos table thead th:nth-child(10),
-#sec-arriendos table thead th:nth-child(13),
-#sec-arriendos table thead th:nth-child(14),
+#sec-arriendos table thead th:nth-child(15),
 #sec-arriendos table thead th:nth-child(16),
-#sec-arriendos table thead th:nth-child(17),
 #sec-arriendos table thead th:nth-child(18),
+#sec-arriendos table thead th:nth-child(19),
+#sec-arriendos table thead th:nth-child(20),
 #sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(10),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(13),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(14),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(15),
 #sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(16),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(17),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(18){
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(18),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(19),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(20){
   display:none !important;
 }
+/* Selects compactos de Lugar / Superficie dentro de la tabla */
+.sel-tabla{font-size:10px;padding:3px 6px;border-radius:6px;font-family:'Sora',sans-serif;cursor:pointer;font-weight:700;max-width:110px;outline:none}
 /* Ocultar el botón "Marcar pasados como pagados" en todas las vistas */
 .table-header button[onclick*="marcarPasadosPagados"]{
   display:none !important;
@@ -647,8 +653,8 @@ select:focus{border-color:var(--blue)}
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th>Monto</th><th>Instalación</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th title="Trabajador asignado">🙋</th><th title="Pago registrado por el equipo">💬 Equipo</th><th title="Retiro">Retiro 🚚</th><th title="Abrir en Waze">🗺️ Waze</th><th></th></tr></thead>
-      <tbody id="tablaBody"><tr><td colspan="21" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
+      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th title="¿Dónde se instala? Casa propia / Sede / Club house">🏠 Lugar</th><th title="Superficie donde se instala el inflable">🌱 Superficie</th><th>Monto</th><th>Instalación</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th title="Trabajador asignado">🙋</th><th title="Pago registrado por el equipo">💬 Equipo</th><th title="Retiro">Retiro 🚚</th><th title="Abrir en Waze">🗺️ Waze</th><th></th></tr></thead>
+      <tbody id="tablaBody"><tr><td colspan="23" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
     </table>
   </div>
   <div class="pagination">
@@ -998,6 +1004,27 @@ select:focus{border-color:var(--blue)}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="edit-field">
+        <label class="edit-label">🏠 Lugar de instalación</label>
+        <select class="edit-input" id="editLugar">
+          <option value="">— Sin definir —</option>
+          <option value="Casa propia">Casa propia</option>
+          <option value="Sede">Sede</option>
+          <option value="Club house">Club house</option>
+        </select>
+      </div>
+      <div class="edit-field">
+        <label class="edit-label">🌱 Superficie</label>
+        <select class="edit-input" id="editSuperficie">
+          <option value="">— Sin definir —</option>
+          <option value="Pasto">Pasto</option>
+          <option value="Cemento">Cemento</option>
+          <option value="Gravilla">Gravilla</option>
+          <option value="Tierra">Tierra</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="edit-field">
         <label class="edit-label">Monto ($)</label>
         <input class="edit-input" type="number" id="editPendiente" placeholder="85000">
       </div>
@@ -1074,6 +1101,93 @@ const TRABAJADORES_COLOR = {
 };
 let CAL_YEAR=new Date().getFullYear(), CAL_MONTH=new Date().getMonth(), CAL_DIA_SEL=null;
 let MODO_TRABAJO_SEMANA=false;
+
+// ═══════════════════════════════════════════════════
+// LUGAR DE INSTALACIÓN + SUPERFICIE
+// Campos opcionales: los arriendos antiguos quedan en blanco ('')
+// y se completan editando o desde el chat de agendamiento.
+// ═══════════════════════════════════════════════════
+const LUGARES = ['Casa propia','Sede','Club house'];
+const SUPERFICIES = ['Pasto','Cemento','Gravilla','Tierra'];
+
+const LUGAR_COLOR = {
+  'Casa propia': {color:'#0071ce', bg:'rgba(0,113,206,.10)'},   // azul
+  'Sede':        {color:'#a855f7', bg:'rgba(168,85,247,.10)'},  // morado
+  'Club house':  {color:'#0891b2', bg:'rgba(8,145,178,.10)'},   // cyan
+};
+const SUPERFICIE_COLOR = {
+  'Pasto':    {color:'#5fb446', bg:'rgba(95,180,70,.12)'},   // verde
+  'Cemento':  {color:'#7a93aa', bg:'rgba(122,147,170,.14)'}, // gris
+  'Gravilla': {color:'#fa6400', bg:'rgba(250,100,0,.10)'},   // naranjo
+  'Tierra':   {color:'#a16207', bg:'rgba(161,98,7,.10)'},    // café
+};
+
+// Sinónimos aceptados al leer el chat de agendamiento
+const LUGAR_KW = {
+  'casa propia':'Casa propia', 'casa':'Casa propia', 'domicilio':'Casa propia',
+  'mi casa':'Casa propia', 'su casa':'Casa propia', 'patio':'Casa propia', 'casa particular':'Casa propia',
+  'sede':'Sede', 'sede social':'Sede', 'sede vecinal':'Sede', 'junta de vecinos':'Sede', 'sede junta de vecinos':'Sede',
+  'club house':'Club house', 'clubhouse':'Club house', 'club-house':'Club house',
+  'quincho del condominio':'Club house', 'condominio':'Club house', 'salon condominio':'Club house',
+};
+const SUPERFICIE_KW = {
+  'pasto':'Pasto', 'cesped':'Pasto', 'césped':'Pasto', 'pastito':'Pasto', 'pasto sintetico':'Pasto', 'pasto sintético':'Pasto',
+  'cemento':'Cemento', 'concreto':'Cemento', 'hormigon':'Cemento', 'hormigón':'Cemento',
+  'pavimento':'Cemento', 'radier':'Cemento', 'baldosa':'Cemento', 'baldosas':'Cemento', 'ceramica':'Cemento', 'cerámica':'Cemento',
+  'gravilla':'Gravilla', 'grava':'Gravilla', 'ripio':'Gravilla', 'maicillo':'Gravilla',
+  'tierra':'Tierra', 'terreno de tierra':'Tierra', 'suelo de tierra':'Tierra',
+};
+
+// Quita tildes y pasa a minúsculas para comparar
+function _sinTilde(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+}
+
+// Devuelve un valor canónico de LUGARES o '' si no reconoce nada
+function normalizarLugar(v){
+  const t = _sinTilde(v).replace(/[.*_]+$/,'').trim();
+  if(!t) return '';
+  for(const canon of LUGARES){ if(_sinTilde(canon) === t) return canon; }
+  // De la clave más larga a la más corta para que "casa propia" gane sobre "casa"
+  const keys = Object.keys(LUGAR_KW).sort((a,b)=>b.length-a.length);
+  for(const k of keys){
+    const re = new RegExp('(?:^|\\s)'+_sinTilde(k).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|$)');
+    if(re.test(t)) return LUGAR_KW[k];
+  }
+  return '';
+}
+
+// Devuelve un valor canónico de SUPERFICIES o '' si no reconoce nada
+function normalizarSuperficie(v){
+  const t = _sinTilde(v).replace(/[.*_]+$/,'').trim();
+  if(!t) return '';
+  for(const canon of SUPERFICIES){ if(_sinTilde(canon) === t) return canon; }
+  const keys = Object.keys(SUPERFICIE_KW).sort((a,b)=>b.length-a.length);
+  for(const k of keys){
+    const re = new RegExp('(?:^|\\s)'+_sinTilde(k).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|$)');
+    if(re.test(t)) return SUPERFICIE_KW[k];
+  }
+  return '';
+}
+
+// Valores que, solos en una línea, son inequívocamente lugar o superficie.
+// Se usa para NO confundirlos con el nombre del cliente o la dirección.
+// Ojo: "casa" a secas NO está aquí a propósito (aparece en direcciones: "Los Aromos 123, casa 12").
+const _VALORES_PUROS = new Set([
+  ...LUGARES.map(_sinTilde), ...SUPERFICIES.map(_sinTilde),
+  'casa propia','casa particular','sede','sede social','sede vecinal','junta de vecinos',
+  'club house','clubhouse','condominio',
+  'pasto','cesped','pasto sintetico','cemento','concreto','hormigon','pavimento','radier',
+  'gravilla','grava','ripio','maicillo','tierra',
+]);
+
+// ¿Esta línea es una declaración de Lugar o Superficie? (etiqueta explícita o valor puro)
+function esLineaLugarSuperficie(l){
+  const t = _sinTilde(l);
+  if(/(?:lugar|superficie|tipo\s*de\s*(?:lugar|superficie|piso|suelo)|se\s*instala\s*en|donde\s*se\s*instala)\s*[:=]/.test(t)) return true;
+  const limpio = t.replace(/[^a-z\s]/g,' ').replace(/\s+/g,' ').trim();
+  return _VALORES_PUROS.has(limpio);
+}
 
 // Inventario completo con cantidades
 const INVENTARIO = [
@@ -1359,9 +1473,15 @@ function mostrarValidacion(arriendos, problemas, conflictosInv, onConfirmar){
         </div>
       </div>`;
     } else {
+      const _ls = [a.lugar?`🏠 ${a.lugar}`:'', a.superficie?`🌱 ${a.superficie}`:''].filter(Boolean).join(' · ');
+      const _falta = [!a.lugar?'lugar':'', !a.superficie?'superficie':''].filter(Boolean).join(' y ');
       html+=`<div class="val-item">
         <span class="val-ok">✅</span>
-        <div style="flex:1"><strong>${a.cliente}</strong> · ${a.fecha} · ${a.equipos}</div>
+        <div style="flex:1">
+          <strong>${a.cliente}</strong> · ${a.fecha} · ${a.equipos}
+          ${_ls?`<div style="color:var(--text2);font-size:11px;margin-top:2px">${_ls}</div>`:''}
+          ${_falta?`<div style="color:var(--text3);font-size:11px;margin-top:2px">Sin ${_falta} — se guarda en blanco, lo puedes completar editando</div>`:''}
+        </div>
       </div>`;
     }
   }
@@ -1422,6 +1542,8 @@ window.abrirEdicion=function(id){
   document.getElementById('editHora').value=a.hora||'';
   document.getElementById('editTelefono').value=a.telefono||'';
   document.getElementById('editEquipos').value=a.equipos||'';
+  document.getElementById('editLugar').value=a.lugar||'';
+  document.getElementById('editSuperficie').value=a.superficie||'';
   document.getElementById('editPendiente').value=a.pendiente||'';
   document.getElementById('editEstado').value=a.estado||'Pendiente';
   document.getElementById('editTrabajador').value=a.trabajadorAsignado||'';
@@ -1472,6 +1594,8 @@ window.guardarEdicion=async function(){
       hora:document.getElementById('editHora').value.trim(),
       telefono,
       equipos,
+      lugar:document.getElementById('editLugar').value,
+      superficie:document.getElementById('editSuperficie').value,
       pendiente:parseInt(document.getElementById('editPendiente').value)||0,
       estado:document.getElementById('editEstado').value,
       trabajadorAsignado:document.getElementById('editTrabajador').value,
@@ -2243,7 +2367,7 @@ function renderTabla(){
   document.getElementById('paginaInfo').textContent=`${inicio+1}-${fin} de ${total}`;
   const tbody=document.getElementById('tablaBody');
   const pagina=FILTRADOS.slice(inicio,fin);
-  if(!pagina.length){tbody.innerHTML=`<tr><td colspan="21" style="text-align:center;padding:32px;color:var(--text3)">Sin resultados</td></tr>`;return;}
+  if(!pagina.length){tbody.innerHTML=`<tr><td colspan="23" style="text-align:center;padding:32px;color:var(--text3)">Sin resultados</td></tr>`;return;}
   const sumaTotal=FILTRADOS.reduce((s,a)=>s+(a.pendiente||0),0);
   const sumaPag=pagina.reduce((s,a)=>s+(a.pendiente||0),0);
   tbody.innerHTML=pagina.map((a,i)=>`<tr>
@@ -2273,6 +2397,36 @@ function renderTabla(){
       return `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:3px 8px;background:rgba(37,211,102,.15);color:#128c3e;border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="WhatsApp">💬 WA</a>`;
     })()}</td>
     <td style="min-width:140px;max-width:200px">${(a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean).map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(0,113,206,0.06);white-space:nowrap">${e}</div>`).join('')}</td>
+    <td style="text-align:center">
+      ${(()=>{
+        const v = a.lugar||'';
+        const info = LUGAR_COLOR[v];
+        const color  = info ? info.color : 'var(--text3)';
+        const bg     = info ? info.bg    : '#fff';
+        const border = info ? info.color : 'var(--border)';
+        return `<select onchange="cambiarLugar('${a.id}',this.value)" class="sel-tabla"
+          title="¿Dónde se instala el juego?"
+          style="border:1.5px solid ${border};background:${bg};color:${color};font-weight:${v?'700':'400'}">
+          <option value="" ${!v?'selected':''}>—</option>
+          ${LUGARES.map(l=>`<option value="${l}" ${v===l?'selected':''}>${l}</option>`).join('')}
+        </select>`;
+      })()}
+    </td>
+    <td style="text-align:center">
+      ${(()=>{
+        const v = a.superficie||'';
+        const info = SUPERFICIE_COLOR[v];
+        const color  = info ? info.color : 'var(--text3)';
+        const bg     = info ? info.bg    : '#fff';
+        const border = info ? info.color : 'var(--border)';
+        return `<select onchange="cambiarSuperficie('${a.id}',this.value)" class="sel-tabla"
+          title="Superficie donde se instala el inflable"
+          style="border:1.5px solid ${border};background:${bg};color:${color};font-weight:${v?'700':'400'}">
+          <option value="" ${!v?'selected':''}>—</option>
+          ${SUPERFICIES.map(s=>`<option value="${s}" ${v===s?'selected':''}>${s}</option>`).join('')}
+        </select>`;
+      })()}
+    </td>
     <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue)">${a.pendiente?clp(a.pendiente):'—'}</td>
     <td>
       <select onchange="cambiarInstalacion('${a.id}',this.value)" 
@@ -2359,11 +2513,11 @@ function renderTabla(){
     </td>
   </tr>`).join('')+`
   <tr style="background:var(--bg3);font-weight:700">
-    <td colspan="11" style="padding:10px 14px;font-size:12px;color:var(--text3)">
+    <td colspan="13" style="padding:10px 14px;font-size:12px;color:var(--text3)">
       TOTAL ${total} registros ${total>POR_PAGINA?'· Pág: '+clp(sumaPag):''}
     </td>
     <td style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:var(--blue)">${clp(sumaTotal)}</td>
-    <td colspan="5"></td>
+    <td colspan="9"></td>
   </tr>`;
   // Mostrar banner si hay arriendos de la semana actual
   const banner = document.getElementById('bannerConfirmacion');
@@ -2480,6 +2634,8 @@ window.copiarParaWA=function(a){
     `📅 ${[dia+' '+fecha,hora].filter(Boolean).join(' · ')}`,
     ubicacion?`📍 ${ubicacion}`:'',
     equipos?`🎮 ${equipos}`:'',
+    a.lugar?`🏠 ${a.lugar}`:'',
+    a.superficie?`🌱 Superficie: ${a.superficie}`:'',
     telefono?`📞 ${telefono}`:'',
   ].filter(Boolean).join('\n');
   navigator.clipboard.writeText(lineas).then(()=>toast('✓ Copiado para WhatsApp','ok')).catch(()=>toast('Error al copiar','err'));
@@ -2543,6 +2699,30 @@ window.cambiarInstalacion=async function(id,valor){
   try{
     const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db,'arriendos',id),{estadoInstalacion:valor});
+    renderTabla();
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+window.cambiarLugar=async function(id,valor){
+  const a=ARRIENDOS.find(x=>x.id===id);
+  if(!a) return;
+  a.lugar=valor;
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',id),{lugar:valor});
+    toast(valor?'🏠 Lugar: '+valor:'🏠 Lugar removido','ok');
+    renderTabla();
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+window.cambiarSuperficie=async function(id,valor){
+  const a=ARRIENDOS.find(x=>x.id===id);
+  if(!a) return;
+  a.superficie=valor;
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',id),{superficie:valor});
+    toast(valor?'🌱 Superficie: '+valor:'🌱 Superficie removida','ok');
     renderTabla();
   }catch(e){toast('Error: '+e.message,'err');}
 };
@@ -2982,7 +3162,7 @@ async function renderDashboard(){
 window.exportarCSV=function(){
   const arr=FILTRADOS.length?FILTRADOS:ARRIENDOS;
   if(!arr.length){toast('Sin datos','err');return;}
-  let csv=['Año;#;Cliente;Dirección;Comuna;Fecha;Día;Semana;Hora;Teléfono;Equipos;Pendiente;Estado'].concat(arr.map((a,i)=>[a.anio,i+1,a.cliente,a.direccion,a.comuna,a.fecha,a.dia,a.semana,a.hora,a.telefono,a.equipos,a.pendiente||0,a.estado].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(';'))).join('\n');
+  let csv=['Año;#;Cliente;Dirección;Comuna;Fecha;Día;Semana;Hora;Teléfono;Equipos;Lugar;Superficie;Pendiente;Estado'].concat(arr.map((a,i)=>[a.anio,i+1,a.cliente,a.direccion,a.comuna,a.fecha,a.dia,a.semana,a.hora,a.telefono,a.equipos,a.lugar,a.superficie,a.pendiente||0,a.estado].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(';'))).join('\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='Base_Arriendos_Akimel.csv';a.click();
@@ -3412,7 +3592,7 @@ const MSG_PLANTILLAS = {
     label:'👋 Presentación',
     desc:'Lead de Facebook · saludo + detalle + cuenta',
     color:'#0071ce', bg:'rgba(0,113,206,.1)',
-    build:a=>`¡Hola ${primerNombre(a)}! Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n- ${equiposTexto(a)}${a.fecha?`\n- ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n- Pendiente: ${clp(a.pendiente)}`:''}\n\nEl pago se debe realizar cuando el juego ya esté instalado a la siguiente cuenta:\n\nKimberli Javiera Ávila Herrera\nRUT: 192275873\nMercado Pago\nCuenta Vista\nNúmero de cuenta: 1055705946\navila.kimberly95@gmail.com\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()}!\n${getUrlIG()}`
+    build:a=>`¡Hola ${primerNombre(a)}! Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n- ${equiposTexto(a)}${a.lugar?`\n- Lugar de instalación: ${a.lugar}`:''}${a.superficie?`\n- Superficie: ${a.superficie}`:''}${a.fecha?`\n- ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n- Pendiente: ${clp(a.pendiente)}`:''}\n\nEl pago se debe realizar cuando el juego ya esté instalado a la siguiente cuenta:\n\nKimberli Javiera Ávila Herrera\nRUT: 192275873\nMercado Pago\nCuenta Vista\nNúmero de cuenta: 1055705946\navila.kimberly95@gmail.com\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()}!\n${getUrlIG()}`
   },
   confirmacion: {
     label:'✅ Confirmar',
@@ -5064,7 +5244,7 @@ function parsearChat(texto){
     const estado = /cancel/i.test(bloque) ? 'Cancelado' : 'Pendiente';
 
     // Normalizar etiquetas que vengan pegadas en una sola línea
-    const campos = ['Dirección','Direccion','Comuna','Fecha de evento','Fecha evento','Hora de evento','Hora evento','Número de celular','Número celular','Numero de celular','Numero celular','Número','Celular','Juegos','Juego','Pendiente'];
+    const campos = ['Dirección','Direccion','Comuna','Fecha de evento','Fecha evento','Hora de evento','Hora evento','Número de celular','Número celular','Numero de celular','Numero celular','Número','Celular','Juegos','Juego','Lugar de instalación','Lugar de instalacion','Lugar','Superficie','Pendiente'];
     for(const c of campos){
       bloque = bloque.replace(new RegExp('(\\s+)('+c+')','gi'), '\n$2');
     }
@@ -5077,7 +5257,8 @@ function parsearChat(texto){
     if(!cliente){
       for(const l of lineas){
         if(l.length < 3 || /^\+?\d[\d\s-]{6,}$/.test(l) || /\d{4,}/.test(l)
-           || /pendiente|fecha|hora|juego|comuna|direcci|celular|numero/i.test(l)) continue;
+           || /pendiente|fecha|hora|juego|comuna|direcci|celular|numero/i.test(l)
+           || esLineaLugarSuperficie(l)) continue;
         if(/^[A-ZÁÉÍÓÚÑa-záéíóúñ][a-záéíóúñA-ZÁÉÍÓÚÑ\s\-\.]+$/.test(l)){
           cliente = l.replace(/^[-*.]+|[-*.]+$/g,'').trim();
           break;
@@ -5093,6 +5274,7 @@ function parsearChat(texto){
     if(!dir){
       for(const l of lineas){
         if(l === cliente || /^\+?\d[\d\s]{6,}$/.test(l) || EQ_RE.test(l)
+           || esLineaLugarSuperficie(l)
            || /pendiente|hora de evento|fecha de evento|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|sabado|domingo|lunes|martes|miercoles|jueves|viernes/i.test(l)) continue;
         if(/\d/.test(l) || l.split(' ').length >= 3){ dir = l; break; }
       }
@@ -5278,6 +5460,40 @@ function parsearChat(texto){
     }
     equipos = estandarizar(equipos);
 
+    // ── LUGAR DE INSTALACIÓN (casa propia / sede / club house) — OPCIONAL ──
+    // Si el cliente no lo informa, queda en blanco y se completa después editando.
+    let lugar = '';
+    const lgm = bloque.match(/lugar(?:\s*de\s*instalaci[oó]n)?[:\s=.*-]+(.+)/i)
+             || bloque.match(/(?:se\s*instala\s*en|d[oó]nde\s*se\s*instala|tipo\s*de\s*lugar)[:\s=.*-]+(.+)/i);
+    if(lgm) lugar = normalizarLugar(lgm[1].split('\n')[0]);
+    if(!lugar){
+      // Sin etiqueta: buscar una línea que sea SÓLO el valor (ej: una línea que diga "Sede")
+      for(const l of lineas){
+        if(l === cliente || l === dir) continue;
+        const limpio = _sinTilde(l).replace(/[^a-z\s]/g,' ').replace(/\s+/g,' ').trim();
+        if(_VALORES_PUROS.has(limpio)){
+          const v = normalizarLugar(limpio);
+          if(v){ lugar = v; break; }
+        }
+      }
+    }
+
+    // ── SUPERFICIE (pasto / cemento / gravilla / tierra) — OPCIONAL ──
+    let superficie = '';
+    const spm = bloque.match(/superficie[:\s=.*-]+(.+)/i)
+             || bloque.match(/tipo\s*de\s*(?:superficie|piso|suelo|terreno)[:\s=.*-]+(.+)/i);
+    if(spm) superficie = normalizarSuperficie(spm[1].split('\n')[0]);
+    if(!superficie){
+      for(const l of lineas){
+        if(l === cliente || l === dir) continue;
+        const limpio = _sinTilde(l).replace(/[^a-z\s]/g,' ').replace(/\s+/g,' ').trim();
+        if(_VALORES_PUROS.has(limpio)){
+          const v = normalizarSuperficie(limpio);
+          if(v){ superficie = v; break; }
+        }
+      }
+    }
+
     let pendiente = 0;
     const pStr = (pm[1] || pm[2] || '').replace(/\./g,'').replace(/,/g,'');
     try { pendiente = parseInt(pStr); if(pendiente < 1000) pendiente *= 1000; } catch(e){}
@@ -5292,6 +5508,8 @@ function parsearChat(texto){
       hora,
       telefono: tel,
       equipos,
+      lugar,
+      superficie,
       pendiente,
       estado,
       anio: fecha ? fecha.split('/')[2] : anioGrupo,
