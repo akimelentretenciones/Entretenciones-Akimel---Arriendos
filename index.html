@@ -1219,6 +1219,51 @@ for(const item of INVENTARIO){
     const k=kw.trim().toLowerCase(); if(k) MAPEO[k]=item.nombre;
   }
 }
+
+// ═══════════════════════════════════════════════════
+// REGLA DE LA LONA
+// Un juego inflable sobre superficie dura (cemento / gravilla / tierra) necesita LONA.
+// Sobre pasto NO lleva lona, porque se ancla con estacas.
+// La lista de inflables se deriva del INVENTARIO: si mañana agregas un tobogán
+// nuevo con cat:'Inflable', la regla lo toma solo, sin tocar este código.
+// ═══════════════════════════════════════════════════
+const INFLABLES_SET = new Set(
+  INVENTARIO.filter(i => i.cat === 'Inflable').map(i => _sinTilde(i.nombre))
+);
+
+function esInflable(nombreEquipo){
+  const e = _sinTilde(nombreEquipo);
+  if(!e) return false;
+  if(INFLABLES_SET.has(e)) return true;
+  return e.includes('tobogan');   // red de seguridad para variantes escritas a mano
+}
+
+// Devuelve 'si' | 'no' | 'falta'
+//   'si'    -> hay inflable y la superficie NO es pasto   -> lleva lona
+//   'no'    -> no hay inflable, o la superficie es pasto  -> sin lona
+//   'falta' -> hay inflable pero no sabemos la superficie -> hay que confirmar
+function estadoLona(equiposStr, superficie){
+  const lista = (equiposStr||'').split(',').map(x=>x.trim()).filter(Boolean);
+  if(!lista.some(esInflable)) return 'no';
+  const sup = _sinTilde(superficie);
+  if(!sup) return 'falta';
+  if(sup === 'pasto') return 'no';
+  return 'si';
+}
+
+// Chips que se agregan a la celda de Equipos (solo visual, no se guarda en la BD)
+const CHIP_LONA  = `<div style="display:inline-block;margin-top:3px;font-size:10px;font-weight:800;color:#fa6400;background:rgba(250,100,0,.12);border:1px solid rgba(250,100,0,.45);border-radius:5px;padding:2px 6px;white-space:nowrap" title="Inflable sobre superficie dura: hay que llevar lona">🟦 Lona</div>`;
+const CHIP_FALTA = `<div style="display:inline-block;margin-top:3px;font-size:10px;font-weight:800;color:#de1c24;background:rgba(222,28,36,.10);border:1px solid rgba(222,28,36,.40);border-radius:5px;padding:2px 6px;white-space:nowrap" title="Falta la superficie: confirmar con el cliente si necesita lona">⚠️ ¿Lona?</div>`;
+
+// Devuelve el chip que corresponde (o '' si no lleva nada)
+function chipLona(a){
+  const lista = (a.equipos||'').split(',').map(e=>e.trim()).filter(Boolean);
+  if(lista.some(e => _sinTilde(e) === 'lona')) return '';   // ya viene escrita: no duplicar
+  const est = estadoLona(a.equipos, a.superficie);
+  if(est === 'si')    return CHIP_LONA;
+  if(est === 'falta') return CHIP_FALTA;
+  return '';
+}
 // Alias adicionales para el parser
 MAPEO['disparador']='Disparadores';
 MAPEO['disparadores']='Disparadores';
@@ -2396,7 +2441,7 @@ function renderTabla(){
       }
       return `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:3px 8px;background:rgba(37,211,102,.15);color:#128c3e;border-radius:6px;font-size:10px;font-weight:700;text-decoration:none" title="WhatsApp">💬 WA</a>`;
     })()}</td>
-    <td style="min-width:140px;max-width:200px">${(a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean).map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(0,113,206,0.06);white-space:nowrap">${e}</div>`).join('')}</td>
+    <td style="min-width:140px;max-width:200px">${(a.equipos||'—').split(',').map(e=>e.trim()).filter(Boolean).map(e=>`<div style="font-size:11px;color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(0,113,206,0.06);white-space:nowrap">${e}</div>`).join('')}${chipLona(a)}</td>
     <td style="text-align:center">
       ${(()=>{
         const v = a.lugar||'';
