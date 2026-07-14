@@ -597,6 +597,11 @@ select:focus{border-color:var(--blue)}
       title="Marcar como pagados todos los arriendos anteriores a hoy">
       ✓ Marcar pasados como pagados
     </button>
+    <button class="btn btn-ghost btn-sm" onclick="revisarInventario()"
+      style="background:rgba(250,100,0,.1);color:var(--orange);border:1px solid rgba(250,100,0,.35)"
+      title="Buscar juegos mal escritos y fechas con el mismo juego arrendado 2 veces">
+      🔍 Revisar inventario
+    </button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <input class="search-box" placeholder="Buscar..." id="searchInput" oninput="filtrar()">
@@ -1050,7 +1055,7 @@ select:focus{border-color:var(--blue)}
     </div>
     <div id="editError" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none;background:rgba(222,28,36,.06);padding:10px 12px;border-radius:8px;border-left:3px solid var(--red)"></div>
     <div style="display:flex;gap:10px">
-      <button onclick="guardarEdicion()" style="flex:1;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">💾 Guardar cambios</button>
+      <button id="btnGuardarEdit" onclick="guardarEdicion()" style="flex:1;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif">💾 Guardar cambios</button>
       <button onclick="cerrarModalEdit()" style="padding:13px 20px;background:var(--bg3);color:var(--text2);border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif">Cancelar</button>
     </div>
   </div>
@@ -1214,9 +1219,15 @@ const INVENTARIO = [
 ];
 
 const MAPEO={};
+// MAPEO_NORM: las mismas claves pero SIN TILDES. Sirve para que "Fórmula 1"
+// (como lo escribe el cliente) reconozca la palabra clave "formula".
+// Antes esto fallaba: la 'ó' no es una 'o', así que el juego quedaba sin
+// reconocer y se guardaba el texto crudo, rompiendo el control de stock.
+const MAPEO_NORM={};
 for(const item of INVENTARIO){
   for(const kw of item.kw.split(',')){
-    const k=kw.trim().toLowerCase(); if(k) MAPEO[k]=item.nombre;
+    const k=kw.trim().toLowerCase();
+    if(k){ MAPEO[k]=item.nombre; MAPEO_NORM[_sinTilde(k)]=item.nombre; }
   }
 }
 
@@ -1235,7 +1246,12 @@ function esInflable(nombreEquipo){
   const e = _sinTilde(nombreEquipo);
   if(!e) return false;
   if(INFLABLES_SET.has(e)) return true;
-  return e.includes('tobogan');   // red de seguridad para variantes escritas a mano
+  if(e.includes('tobogan')) return true;
+  // El equipo puede venir mal escrito en la BD ("Fórmula 1" en vez de "Tobogán F1").
+  // Lo pasamos por el mismo motor que usa el resto de la app antes de descartarlo,
+  // si no, un inflable mal escrito se quedaba sin su aviso de Lona.
+  const canon = _sinTilde(estandarizar(nombreEquipo));
+  return INFLABLES_SET.has(canon);
 }
 
 // Devuelve 'si' | 'no' | 'falta'
@@ -1254,6 +1270,55 @@ function estadoLona(equiposStr, superficie){
 // Chips que se agregan a la celda de Equipos (solo visual, no se guarda en la BD)
 const CHIP_LONA  = `<div style="display:inline-block;margin-top:3px;font-size:10px;font-weight:800;color:#fa6400;background:rgba(250,100,0,.12);border:1px solid rgba(250,100,0,.45);border-radius:5px;padding:2px 6px;white-space:nowrap" title="Inflable sobre superficie dura: hay que llevar lona">🟦 Lona</div>`;
 const CHIP_FALTA = `<div style="display:inline-block;margin-top:3px;font-size:10px;font-weight:800;color:#de1c24;background:rgba(222,28,36,.10);border:1px solid rgba(222,28,36,.40);border-radius:5px;padding:2px 6px;white-space:nowrap" title="Falta la superficie: confirmar con el cliente si necesita lona">⚠️ ¿Lona?</div>`;
+
+// ═══════════════════════════════════════════════════
+// CONTROL DE DISPONIBILIDAD AL GUARDAR
+// Devuelve los juegos que quedarían SOBRE-AGENDADOS si se guarda este arriendo.
+// Normaliza siempre los nombres, para que un "Fórmula 1" mal escrito en la base
+// se cuente igual que un "Tobogán F1" y no se escape del control de stock.
+// ═══════════════════════════════════════════════════
+function conflictosDe(idExcluir, fechaStr, equiposStr){
+  const pedidos = estandarizar(equiposStr||'').split(',').map(e=>e.trim()).filter(Boolean);
+  if(!pedidos.length || !fechaStr) return [];
+
+  // Cuánto de cada juego ya está tomado ese día (sin contar este mismo arriendo)
+  const usados = {};
+  for(const a of ARRIENDOS){
+    if(a.id === idExcluir) continue;
+    if(a.fecha !== fechaStr) continue;
+    if(a.estado === 'Cancelado') continue;
+    for(const e of estandarizar(a.equipos||'').split(',')){
+      const n = e.trim();
+      if(n) usados[n] = (usados[n]||0) + 1;
+    }
+  }
+
+  const choques = [];
+  const pedidoCount = {};
+  for(const j of pedidos){
+    pedidoCount[j] = (pedidoCount[j]||0) + 1;
+    const inv = INVENTARIO.find(i=>i.nombre===j);
+    if(!inv) continue;                       // texto no reconocido: no bloqueamos
+    const totalUsado = (usados[j]||0) + pedidoCount[j];
+    if(totalUsado > inv.total && !choques.some(c=>c.juego===j)){
+      choques.push({
+        juego: j,
+        stock: inv.total,
+        yaTomado: usados[j]||0,
+        quedaria: totalUsado,
+        // Quiénes lo tienen ese día (para poder llamarlos)
+        clientes: ARRIENDOS.filter(a =>
+          a.id !== idExcluir && a.fecha === fechaStr && a.estado !== 'Cancelado' &&
+          estandarizar(a.equipos||'').split(',').map(x=>x.trim()).includes(j)
+        ).map(a => a.cliente || '(sin nombre)')
+      });
+    }
+  }
+  return choques;
+}
+
+// Bandera: se activa cuando el usuario ya vio la advertencia y decide guardar igual
+let _sobrecupoConfirmado = false;
 
 // Devuelve el chip que corresponde (o '' si no lleva nada)
 function chipLona(a){
@@ -1510,11 +1575,16 @@ function mostrarValidacion(arriendos, problemas, conflictosInv, onConfirmar){
         </div>
       </div>`;
     } else if(confInv){
+      const _sinStock = confInv.juegos.filter(j=>!j.desconocido);
+      const _descon   = confInv.juegos.filter(j=>j.desconocido);
+      const _msgs = [];
+      if(_sinStock.length) _msgs.push(`Sin stock: ${_sinStock.map(j=>`${j.juego} (${j.reservados}/${j.total} reservados)`).join(', ')}`);
+      if(_descon.length)   _msgs.push(`Juego no reconocido: ${_descon.map(j=>`"${j.juego}"`).join(', ')} — no se pudo revisar el stock`);
       html+=`<div class="val-item">
         <span style="color:var(--red);font-size:16px">🚫</span>
         <div style="flex:1">
           <strong>${a.cliente}</strong> · ${a.fecha}
-          <div style="color:var(--red);font-size:11px">Sin stock: ${confInv.juegos.map(j=>`${j.juego} (${j.reservados}/${j.total} reservados)`).join(', ')}</div>
+          <div style="color:var(--red);font-size:11px">${_msgs.join('<br>')}</div>
         </div>
       </div>`;
     } else {
@@ -1593,6 +1663,10 @@ window.abrirEdicion=function(id){
   document.getElementById('editEstado').value=a.estado||'Pendiente';
   document.getElementById('editTrabajador').value=a.trabajadorAsignado||'';
   document.getElementById('editError').style.display='none';
+  // Resetear el aviso de sobrecupo: cada arriendo se evalúa de cero
+  _sobrecupoConfirmado = false;
+  const btnG=document.getElementById('btnGuardarEdit');
+  if(btnG){ btnG.textContent='💾 Guardar cambios'; btnG.style.background='var(--blue)'; }
   document.getElementById('modalEdit').classList.add('show');
 };
 
@@ -1606,7 +1680,11 @@ window.guardarEdicion=async function(){
   const direccion=document.getElementById('editDireccion').value.trim();
   const fecha=document.getElementById('editFecha').value.trim();
   const telefono=document.getElementById('editTelefono').value.trim();
-  const equipos=document.getElementById('editEquipos').value.trim();
+  const equiposRaw=document.getElementById('editEquipos').value.trim();
+  // Normalizar SIEMPRE antes de guardar: si entra texto crudo ("Fórmula 1"),
+  // el juego se escapa del control de stock. Esto causó el doble agendamiento
+  // del Tobogán F1 el sábado 18.
+  const equipos=estandarizar(equiposRaw);
   const errEl=document.getElementById('editError');
 
   // Validar campos obligatorios
@@ -1625,6 +1703,29 @@ window.guardarEdicion=async function(){
       const el=document.getElementById(f);
       el.classList.toggle('error',!el.value.trim());
     });
+    return;
+  }
+
+  // ── CONTROL DE DISPONIBILIDAD ──
+  // Avisar si algún juego quedaría agendado más veces de las que hay en stock.
+  // No bloquea: el usuario puede guardar igual (a veces se arrienda algo prestado),
+  // pero tiene que verlo y confirmarlo a propósito.
+  const choques = conflictosDe(id, fecha, equipos);
+  if(choques.length && !_sobrecupoConfirmado){
+    const detalle = choques.map(c =>
+      `<div style="margin-top:6px">`
+      + `<b>${c.juego}</b> — tienes <b>${c.stock}</b>, quedarían <b>${c.quedaria}</b> ese día.`
+      + (c.clientes.length ? `<br><span style="opacity:.85">Ya lo tiene: ${c.clientes.join(', ')}</span>` : '')
+      + `</div>`
+    ).join('');
+    errEl.innerHTML =
+      `<div style="font-weight:800">⚠️ Ese día el juego ya está tomado</div>`
+      + detalle
+      + `<div style="margin-top:8px;opacity:.85">Si igual quieres guardarlo, vuelve a tocar el botón.</div>`;
+    errEl.style.display='block';
+    const btn=document.getElementById('btnGuardarEdit');
+    if(btn){ btn.textContent='⚠️ Guardar de todas formas'; btn.style.background='var(--orange)'; }
+    _sobrecupoConfirmado = true;   // el próximo clic sí guarda
     return;
   }
 
@@ -1851,21 +1952,21 @@ function estandarizar(equipos){
   if(!equipos) return equipos;
   equipos=equipos.replace(/\s+y\s+/gi,',').replace(/\s*\+\s*/g,',');
   const partes=equipos.split(/[,\/]/);
-  // Keys de más largo a más corto — garantiza que "juego pro" gana sobre "pro"
-  const keysOrdenados=Object.keys(MAPEO).sort((a,b)=>b.length-a.length);
+  // Keys SIN TILDES, de más largo a más corto — garantiza que "juego pro" gana sobre "pro"
+  const keysOrdenados=Object.keys(MAPEO_NORM).sort((a,b)=>b.length-a.length);
   const res=[];
   for(let p of partes){
     p=p.trim();if(!p) continue;
-    const pl=p.toLowerCase().trim();
+    const pl=_sinTilde(p);   // el texto del cliente, también sin tildes
     let found=null;
     // Buscar en orden de más largo a más corto
     for(const k of keysOrdenados){
-      if(pl===k){found=MAPEO[k];break;}
+      if(pl===k){found=MAPEO_NORM[k];break;}
     }
     if(!found){
       for(const k of keysOrdenados){
         const re=new RegExp('(?:^|\\s)'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|$)','i');
-        if(re.test(pl)){found=MAPEO[k];break;}
+        if(re.test(pl)){found=MAPEO_NORM[k];break;}
       }
     }
     if(found) res.push(found);
@@ -2746,6 +2847,210 @@ window.cambiarInstalacion=async function(id,valor){
     await updateDoc(docFn(db,'arriendos',id),{estadoInstalacion:valor});
     renderTabla();
   }catch(e){toast('Error: '+e.message,'err');}
+};
+
+
+// ═══════════════════════════════════════════════════════════
+// 🔍 REVISOR DE INVENTARIO
+// Busca dos problemas en los arriendos YA GUARDADOS:
+//   1. Juegos escritos con un nombre que no existe en el INVENTARIO
+//      (ej: "Fórmula 1" en vez de "Tobogán F1"). Estos son peligrosos
+//      porque el control de stock los ignora.
+//   2. Fechas donde un mismo juego está arrendado más veces que las
+//      unidades que tienes.
+// ═══════════════════════════════════════════════════════════
+function _hoyISO(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function _fechaObj(f){
+  const p=(f||'').split('/');
+  if(p.length!==3) return null;
+  return new Date(+p[2], +p[1]-1, +p[0]);
+}
+
+function auditarInventario(soloFuturos){
+  const hoy=_hoyISO();
+  const noReconocidos=[];   // juegos que no existen en el INVENTARIO
+  const porFechaJuego={};   // "fecha||juego" -> [arriendos]
+
+  for(const a of ARRIENDOS){
+    if(!a.equipos || !a.fecha) continue;
+    if(a.estado==='Cancelado') continue;
+    const f=_fechaObj(a.fecha);
+    if(soloFuturos && f && f<hoy) continue;
+
+    for(const raw of a.equipos.split(',')){
+      const juego=raw.trim();
+      if(!juego) continue;
+
+      // ⚠️ BUG HISTÓRICO (sáb 18/07): antes bastaba con que el nombre no calzara
+      // EXACTO con el inventario para hacer "continue" y sacarlo del conteo. Un juego
+      // mal escrito ("Fórmula 1" en vez de "Tobogán F1") se volvía INVISIBLE para el
+      // control de stock y se podía agendar dos veces sin ninguna alerta.
+      // Ahora: si el texto no calza exacto, lo normalizamos. Si lo reconocemos,
+      // CUENTA IGUAL para el stock (y además se reporta para que lo corrijas).
+      let inv = INVENTARIO.find(i=>i.nombre===juego);
+      let nombreCanon = juego;
+
+      if(!inv){
+        const sugerido = estandarizar(juego);
+        const invSug = (sugerido && sugerido!==juego)
+          ? INVENTARIO.find(i=>i.nombre===sugerido) : null;
+
+        if(invSug){
+          // Mal escrito PERO reconocido -> se cuenta para el stock igual
+          inv = invSug;
+          nombreCanon = sugerido;
+          noReconocidos.push({
+            id:a.id, cliente:a.cliente, fecha:a.fecha, escrito:juego, sugerido
+          });
+        } else {
+          // No se parece a nada del inventario: no podemos contarlo
+          noReconocidos.push({
+            id:a.id, cliente:a.cliente, fecha:a.fecha, escrito:juego, sugerido:null
+          });
+          continue;
+        }
+      }
+      const k=a.fecha+'||'+nombreCanon;
+      (porFechaJuego[k]=porFechaJuego[k]||[]).push(a);
+    }
+  }
+
+  // Sobre-agendamientos
+  const sobrecupos=[];
+  for(const k in porFechaJuego){
+    const [fecha,juego]=k.split('||');
+    const lista=porFechaJuego[k];
+    const inv=INVENTARIO.find(i=>i.nombre===juego);
+    if(inv && lista.length>inv.total){
+      sobrecupos.push({ fecha, juego, usados:lista.length, total:inv.total, arriendos:lista });
+    }
+  }
+  sobrecupos.sort((a,b)=>{
+    const fa=_fechaObj(a.fecha), fb=_fechaObj(b.fecha);
+    return (fa&&fb) ? fa-fb : 0;
+  });
+
+  return { noReconocidos, sobrecupos };
+}
+
+window.revisarInventario=function(){
+  const { noReconocidos, sobrecupos } = auditarInventario(false);
+
+  let html='';
+
+  if(!noReconocidos.length && !sobrecupos.length){
+    html=`<div style="text-align:center;padding:28px 12px">
+      <div style="font-size:40px;margin-bottom:8px">✅</div>
+      <div style="font-size:15px;font-weight:800;color:var(--green)">Todo en orden</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:6px">
+        No hay juegos mal escritos ni fechas con un juego arrendado más veces de las que tienes.
+      </div>
+    </div>`;
+  } else {
+    // ── Sobrecupos (lo más grave) ──
+    if(sobrecupos.length){
+      html+=`<div style="font-size:14px;font-weight:800;color:var(--red);margin-bottom:8px">
+        🚫 ${sobrecupos.length} ${sobrecupos.length===1?'fecha con sobrecupo':'fechas con sobrecupo'}
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">
+        El mismo juego está arrendado más veces que las unidades que tienes.
+      </div>
+      <div class="val-box" style="max-height:220px;overflow-y:auto;margin-bottom:18px">`;
+      for(const s of sobrecupos){
+        const clientes=s.arriendos.map(a=>a.cliente||'—').join(' · ');
+        html+=`<div class="val-item">
+          <span style="color:var(--red);font-size:16px">🚫</span>
+          <div style="flex:1">
+            <strong>${s.fecha}</strong> — ${s.juego}
+            <div style="color:var(--red);font-size:11px;font-weight:700">
+              ${s.usados} arriendos y solo tienes ${s.total} ${s.total===1?'unidad':'unidades'}
+            </div>
+            <div style="color:var(--text3);font-size:11px">${clientes}</div>
+          </div>
+        </div>`;
+      }
+      html+=`</div>`;
+    }
+
+    // ── Juegos no reconocidos ──
+    if(noReconocidos.length){
+      const corregibles=noReconocidos.filter(n=>n.sugerido);
+      html+=`<div style="font-size:14px;font-weight:800;color:var(--orange);margin-bottom:8px">
+        ⚠️ ${noReconocidos.length} ${noReconocidos.length===1?'juego no reconocido':'juegos no reconocidos'}
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">
+        Estos nombres no existen en tu inventario, así que la app <strong>no revisa su stock</strong>.
+        Por eso se pudo agendar dos veces el mismo juego.
+      </div>
+      <div class="val-box" style="max-height:220px;overflow-y:auto;margin-bottom:14px">`;
+      for(const n of noReconocidos){
+        html+=`<div class="val-item">
+          <span style="color:var(--orange);font-size:16px">⚠️</span>
+          <div style="flex:1">
+            <strong>${n.cliente||'—'}</strong> · ${n.fecha}
+            <div style="font-size:11px;color:var(--text2)">
+              Dice <strong style="color:var(--red)">"${n.escrito}"</strong>
+              ${n.sugerido?` → debería ser <strong style="color:var(--green)">"${n.sugerido}"</strong>`:' — no se parece a ningún juego del inventario'}
+            </div>
+          </div>
+        </div>`;
+      }
+      html+=`</div>`;
+
+      if(corregibles.length){
+        html+=`<button class="btn btn-primary" style="width:100%" onclick="corregirNombresJuegos()">
+          ✏️ Corregir ${corregibles.length} ${corregibles.length===1?'nombre':'nombres'} automáticamente
+        </button>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center">
+          Solo cambia el nombre del juego. No toca ningún otro dato del arriendo.
+        </div>`;
+      }
+    }
+  }
+
+  const m=document.getElementById('modalGenerico');
+  if(m){
+    document.getElementById('modalGenericoTitulo').textContent='Revisión de inventario';
+    document.getElementById('modalGenericoBody').innerHTML=html;
+    m.classList.add('show');
+  } else {
+    alert('No se encontró el modal genérico');
+  }
+};
+
+window.corregirNombresJuegos=async function(){
+  const { noReconocidos } = auditarInventario(false);
+  const corregibles=noReconocidos.filter(n=>n.sugerido);
+  if(!corregibles.length){ toast('No hay nada que corregir','ok'); return; }
+
+  if(!confirm(`Se van a corregir ${corregibles.length} nombre(s) de juego. ¿Continuar?`)) return;
+
+  try{
+    const {updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    // Agrupar por arriendo (uno puede tener varios juegos mal escritos)
+    const porArriendo={};
+    for(const c of corregibles){
+      (porArriendo[c.id]=porArriendo[c.id]||[]).push(c);
+    }
+    let n=0;
+    for(const id in porArriendo){
+      const a=ARRIENDOS.find(x=>x.id===id);
+      if(!a) continue;
+      let equipos=a.equipos;
+      for(const c of porArriendo[id]){
+        equipos=equipos.split(',').map(e=>e.trim()===c.escrito ? c.sugerido : e.trim()).join(', ');
+      }
+      await updateDoc(docFn(db,'arriendos',id),{equipos});
+      a.equipos=equipos;
+      n++;
+    }
+    toast(`✅ ${n} arriendo(s) corregido(s)`,'ok');
+    cerrarModalGenerico();
+    filtrar();
+    setTimeout(()=>window.revisarInventario(),400);   // volver a revisar
+  }catch(e){
+    toast('Error: '+e.message,'err');
+  }
 };
 
 window.cambiarLugar=async function(id,valor){
@@ -5581,7 +5886,13 @@ function validarInventario(arr){
     const juegosConflicto = [];
     for(const juego of juegos){
       const inv = INVENTARIO.find(item => item.nombre === juego);
-      if(!inv) continue;
+      if(!inv){
+        // Juego NO reconocido (mal escrito o nuevo). Antes se ignoraba en silencio,
+        // y eso hacía que NO se revisara el stock — así se agendó 2 veces el mismo
+        // tobogán. Ahora se avisa para que lo corrijas.
+        juegosConflicto.push({ juego, desconocido: true });
+        continue;
+      }
       const reservados = ARRIENDOS.filter(ex =>
         ex.fecha === a.fecha &&
         ex.estado !== 'Cancelado' &&
