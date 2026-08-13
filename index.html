@@ -999,9 +999,21 @@ select:focus{border-color:var(--blue)}
         <input class="edit-input" id="editHora" placeholder="15:00">
       </div>
       <div class="edit-field">
-        <label class="edit-label">Teléfono *</label>
-        <input class="edit-input" id="editTelefono" placeholder="+56912345678">
+        <label class="edit-label">⏱️ Turno</label>
+        <select class="edit-input" id="editTurno">
+          <option value="">☀️ Todo el día</option>
+          <option value="Mañana">🌅 Sólo mañana</option>
+          <option value="Tarde">🌇 Sólo tarde</option>
+        </select>
       </div>
+    </div>
+    <div id="editTurnoHint" style="font-size:11px;color:var(--text3);margin:-8px 0 12px;line-height:1.45">
+      Deja <b>Todo el día</b> salvo que el mismo juego salga dos veces esa fecha.
+      En ese caso marca un arriendo como <b>mañana</b> y el otro como <b>tarde</b>.
+    </div>
+    <div class="edit-field">
+      <label class="edit-label">Teléfono *</label>
+      <input class="edit-input" id="editTelefono" placeholder="+56912345678">
     </div>
     <div class="edit-field">
       <label class="edit-label">Equipos *</label>
@@ -1272,24 +1284,111 @@ const CHIP_LONA  = `<div style="display:inline-block;margin-top:3px;font-size:10
 const CHIP_FALTA = `<div style="display:inline-block;margin-top:3px;font-size:10px;font-weight:800;color:#de1c24;background:rgba(222,28,36,.10);border:1px solid rgba(222,28,36,.40);border-radius:5px;padding:2px 6px;white-space:nowrap" title="Falta la superficie: confirmar con el cliente si necesita lona">⚠️ ¿Lona?</div>`;
 
 // ═══════════════════════════════════════════════════
+// TURNOS: MAÑANA / TARDE
+// En fechas de alta demanda un mismo juego puede salir dos veces el mismo día:
+// un evento en la mañana y otro en la tarde. El turno parte el día en dos
+// franjas, y dos arriendos del mismo juego sólo chocan si sus franjas se cruzan.
+//
+//   (sin turno) = "Todo el día" → ocupa mañana Y tarde   ← comportamiento de siempre
+//   Mañana                     → ocupa sólo la franja am
+//   Tarde                      → ocupa sólo la franja pm
+//
+// IMPORTANTE: el valor por defecto es "todo el día". Un arriendo antiguo, que no
+// tiene el campo turno, sigue bloqueando el juego el día completo. No cambia nada
+// hasta que marcas los turnos a propósito, y hay que marcar LOS DOS arriendos.
+// ═══════════════════════════════════════════════════
+const TURNOS      = ['Mañana','Tarde'];
+const TURNO_ICONO = { 'Mañana':'🌅', 'Tarde':'🌇' };
+const TURNO_COLOR = {
+  'Mañana': { color:'#b45309', bg:'#fffbeb' },
+  'Tarde':  { color:'#6d28d9', bg:'#f5f3ff' },
+};
+const TURNO_CORTE = 14;   // hora que separa mañana de tarde (sólo para sugerir)
+
+// Devuelve 'Mañana' | 'Tarde' | ''  ('' = todo el día)
+function normalizarTurno(v){
+  const t = _sinTilde(v).replace(/[.*_]+$/,'').trim();
+  if(!t) return '';
+  if(t === 'am' || t.startsWith('manana')) return 'Mañana';
+  if(t === 'pm' || t.startsWith('tarde'))  return 'Tarde';
+  return '';   // "todo el día" o cualquier texto raro → día completo
+}
+
+// Franjas del día que ocupa un arriendo. Sin turno ocupa las dos.
+function franjasDe(turno){
+  const t = normalizarTurno(turno);
+  if(t === 'Mañana') return ['am'];
+  if(t === 'Tarde')  return ['pm'];
+  return ['am','pm'];
+}
+
+// ¿Dos arriendos se pisan en el tiempo?
+function turnosChocan(t1, t2){
+  const f2 = franjasDe(t2);
+  return franjasDe(t1).some(f => f2.includes(f));
+}
+
+// Turno que sugiere la hora de instalación. Sólo para proponer en pantalla:
+// nunca se guarda solo, porque muchas veces se instala en la mañana un evento
+// que parte en la tarde y ahí el juego SÍ ocupa el día completo.
+function turnoSegunHora(hora){
+  const m = String(hora||'').match(/(\d{1,2})\s*[:.h]?\s*(\d{2})?/);
+  if(!m) return '';
+  const h = parseInt(m[1],10);
+  if(isNaN(h) || h > 23) return '';
+  return h < TURNO_CORTE ? 'Mañana' : 'Tarde';
+}
+
+// Chip visual del turno (vacío si es día completo)
+function chipTurno(turno, inline){
+  const t = normalizarTurno(turno);
+  if(!t) return '';
+  const c = TURNO_COLOR[t];
+  return `<span style="display:inline-block;${inline?'margin-left:5px':'margin-top:3px'};font-size:10px;font-weight:800;color:${c.color};background:${c.bg};border:1px solid ${c.color}66;border-radius:5px;padding:1px 5px;white-space:nowrap" title="Turno ${t.toLowerCase()}: el juego queda libre en la otra mitad del día">${TURNO_ICONO[t]} ${t}</span>`;
+}
+
+// Detalle mañana/tarde de un juego en un día concreto.
+// Devuelve null cuando el juego ocupa igual las dos franjas (el caso normal),
+// para que las vistas de siempre no cambien en los días sin turnos.
+function detalleTurnoJuego(item, porFranja){
+  const pf = porFranja && porFranja[item.nombre];
+  if(!pf || pf.am === pf.pm) return null;
+  const libreAm = Math.max(0, item.total - pf.am);
+  const librePm = Math.max(0, item.total - pf.pm);
+  return {
+    libreAm, librePm,
+    badge: item.total === 1
+      ? `🌅 ${libreAm>0?'Libre':'Lleno'} · 🌇 ${librePm>0?'Libre':'Lleno'}`
+      : `🌅 ${libreAm} · 🌇 ${librePm}`,
+    dcls: (libreAm>0 || librePm>0) ? 'yellow' : 'red',
+  };
+}
+
+// ═══════════════════════════════════════════════════
 // CONTROL DE DISPONIBILIDAD AL GUARDAR
 // Devuelve los juegos que quedarían SOBRE-AGENDADOS si se guarda este arriendo.
 // Normaliza siempre los nombres, para que un "Fórmula 1" mal escrito en la base
 // se cuente igual que un "Tobogán F1" y no se escape del control de stock.
 // ═══════════════════════════════════════════════════
-function conflictosDe(idExcluir, fechaStr, equiposStr){
+function conflictosDe(idExcluir, fechaStr, equiposStr, turnoStr){
   const pedidos = estandarizar(equiposStr||'').split(',').map(e=>e.trim()).filter(Boolean);
   if(!pedidos.length || !fechaStr) return [];
 
-  // Cuánto de cada juego ya está tomado ese día (sin contar este mismo arriendo)
-  const usados = {};
+  const franjasPedidas = franjasDe(turnoStr);
+
+  // Cuánto de cada juego ya está tomado ese día, FRANJA POR FRANJA
+  // (sin contar este mismo arriendo)
+  const usados = {};                    // juego -> {am:n, pm:n}
   for(const a of ARRIENDOS){
     if(a.id === idExcluir) continue;
     if(a.fecha !== fechaStr) continue;
     if(a.estado === 'Cancelado') continue;
+    const fr = franjasDe(a.turno);
     for(const e of estandarizar(a.equipos||'').split(',')){
       const n = e.trim();
-      if(n) usados[n] = (usados[n]||0) + 1;
+      if(!n) continue;
+      usados[n] = usados[n] || {am:0, pm:0};
+      for(const f of fr) usados[n][f]++;
     }
   }
 
@@ -1299,18 +1398,25 @@ function conflictosDe(idExcluir, fechaStr, equiposStr){
     pedidoCount[j] = (pedidoCount[j]||0) + 1;
     const inv = INVENTARIO.find(i=>i.nombre===j);
     if(!inv) continue;                       // texto no reconocido: no bloqueamos
-    const totalUsado = (usados[j]||0) + pedidoCount[j];
-    if(totalUsado > inv.total && !choques.some(c=>c.juego===j)){
+    const u = usados[j] || {am:0, pm:0};
+    // Sólo miramos las franjas que este arriendo realmente ocupa: si es de
+    // mañana, da lo mismo cuántas veces esté tomado en la tarde.
+    const quedaria = Math.max(...franjasPedidas.map(f => u[f] + pedidoCount[j]));
+    if(quedaria > inv.total && !choques.some(c=>c.juego===j)){
+      // Arriendos concretos que se pisan con este (mismo juego + franja cruzada)
+      const choquesCon = ARRIENDOS.filter(a =>
+        a.id !== idExcluir && a.fecha === fechaStr && a.estado !== 'Cancelado' &&
+        estandarizar(a.equipos||'').split(',').map(x=>x.trim()).includes(j) &&
+        turnosChocan(a.turno, turnoStr)
+      );
       choques.push({
         juego: j,
         stock: inv.total,
-        yaTomado: usados[j]||0,
-        quedaria: totalUsado,
+        yaTomado: Math.max(...franjasPedidas.map(f => u[f])),
+        quedaria,
+        choquesCon,
         // Quiénes lo tienen ese día (para poder llamarlos)
-        clientes: ARRIENDOS.filter(a =>
-          a.id !== idExcluir && a.fecha === fechaStr && a.estado !== 'Cancelado' &&
-          estandarizar(a.equipos||'').split(',').map(x=>x.trim()).includes(j)
-        ).map(a => a.cliente || '(sin nombre)')
+        clientes: choquesCon.map(a => a.cliente || '(sin nombre)')
       });
     }
   }
@@ -1655,6 +1761,7 @@ window.abrirEdicion=function(id){
   document.getElementById('editComuna').value=a.comuna||'';
   document.getElementById('editFecha').value=a.fecha||'';
   document.getElementById('editHora').value=a.hora||'';
+  document.getElementById('editTurno').value=normalizarTurno(a.turno);
   document.getElementById('editTelefono').value=a.telefono||'';
   document.getElementById('editEquipos').value=a.equipos||'';
   document.getElementById('editLugar').value=a.lugar||'';
@@ -1663,6 +1770,7 @@ window.abrirEdicion=function(id){
   document.getElementById('editEstado').value=a.estado||'Pendiente';
   document.getElementById('editTrabajador').value=a.trabajadorAsignado||'';
   document.getElementById('editError').style.display='none';
+  _errEditRojo();
   // Resetear el aviso de sobrecupo: cada arriendo se evalúa de cero
   _sobrecupoConfirmado = false;
   const btnG=document.getElementById('btnGuardarEdit');
@@ -1672,6 +1780,45 @@ window.abrirEdicion=function(id){
 
 window.cerrarModalEdit=function(){
   document.getElementById('modalEdit').classList.remove('show');
+};
+
+// Deja el cuadro de error con su look normal (rojo)
+function _errEditRojo(){
+  const e=document.getElementById('editError');
+  e.style.background='rgba(222,28,36,.06)';
+  e.style.borderLeft='3px solid var(--red)';
+  e.style.color='var(--red)';
+}
+
+// Reparte un juego que choca entre dos arriendos del mismo día: deja el OTRO
+// arriendo en un turno y este formulario en el otro. No guarda este arriendo,
+// sólo deja todo listo para que confirmes tú con "Guardar cambios".
+window.repartirTurnos = async function(otroId, turnoOtro, turnoEste){
+  const errEl = document.getElementById('editError');
+  const otro  = ARRIENDOS.find(a => a.id === otroId);
+  if(!otro){ toast('No encontré el otro arriendo','err'); return; }
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',otroId),{turno:turnoOtro});
+    otro.turno = turnoOtro;
+    document.getElementById('editTurno').value = turnoEste;
+    _sobrecupoConfirmado = false;   // se vuelve a validar con los turnos nuevos
+    errEl.style.background='rgba(34,197,94,.08)';
+    errEl.style.borderLeft='3px solid var(--green)';
+    errEl.style.color='var(--text)';
+    errEl.innerHTML =
+      `<div style="font-weight:800;color:var(--green)">✅ Turnos repartidos</div>`
+      + `<div style="margin-top:4px">${otro.cliente||'El otro arriendo'} quedó en <b>${TURNO_ICONO[turnoOtro]} ${turnoOtro}</b> `
+      + `y este en <b>${TURNO_ICONO[turnoEste]} ${turnoEste}</b>. Toca <b>Guardar cambios</b> para confirmar.</div>`;
+    errEl.style.display='block';
+    const btn=document.getElementById('btnGuardarEdit');
+    if(btn){ btn.textContent='💾 Guardar cambios'; btn.style.background='var(--blue)'; }
+    renderTabla();
+  }catch(e){
+    _errEditRojo();
+    errEl.textContent='No se pudo actualizar el otro arriendo: '+e.message;
+    errEl.style.display='block';
+  }
 };
 
 window.guardarEdicion=async function(){
@@ -1685,6 +1832,7 @@ window.guardarEdicion=async function(){
   // el juego se escapa del control de stock. Esto causó el doble agendamiento
   // del Tobogán F1 el sábado 18.
   const equipos=estandarizar(equiposRaw);
+  const turno=normalizarTurno(document.getElementById('editTurno').value);
   const errEl=document.getElementById('editError');
 
   // Validar campos obligatorios
@@ -1710,18 +1858,47 @@ window.guardarEdicion=async function(){
   // Avisar si algún juego quedaría agendado más veces de las que hay en stock.
   // No bloquea: el usuario puede guardar igual (a veces se arrienda algo prestado),
   // pero tiene que verlo y confirmarlo a propósito.
-  const choques = conflictosDe(id, fecha, equipos);
+  const choques = conflictosDe(id, fecha, equipos, turno);
   if(choques.length && !_sobrecupoConfirmado){
+    const franjaTxt = turno ? ` en la ${turno.toLowerCase()}` : ' ese día';
     const detalle = choques.map(c =>
       `<div style="margin-top:6px">`
-      + `<b>${c.juego}</b> — tienes <b>${c.stock}</b>, quedarían <b>${c.quedaria}</b> ese día.`
-      + (c.clientes.length ? `<br><span style="opacity:.85">Ya lo tiene: ${c.clientes.join(', ')}</span>` : '')
+      + `<b>${c.juego}</b> — tienes <b>${c.stock}</b>, quedarían <b>${c.quedaria}</b>${franjaTxt}.`
+      + (c.choquesCon.length
+          ? `<br><span style="opacity:.85">Ya lo tiene: ${c.choquesCon.map(a =>
+              (a.cliente||'(sin nombre)') + (a.hora?` ${a.hora}`:'') +
+              ` (${normalizarTurno(a.turno) || 'todo el día'})`).join(' · ')}</span>`
+          : '')
       + `</div>`
     ).join('');
+
+    // ── Atajo: si el choque es contra UN solo arriendo y separarlos en dos
+    // turnos lo resuelve, ofrecemos hacerlo de una vez en lugar de obligar a
+    // editar los dos arriendos a mano. Igual hay que confirmar guardando.
+    let botonTurnos = '';
+    const otrosIds = [...new Set(choques.flatMap(c => c.choquesCon.map(a => a.id)))];
+    const separable = otrosIds.length === 1 && choques.every(c => c.quedaria === c.stock + 1);
+    if(separable){
+      const otro = ARRIENDOS.find(a => a.id === otrosIds[0]);
+      if(otro){
+        let tEste = turnoSegunHora(document.getElementById('editHora').value.trim());
+        let tOtro = turnoSegunHora(otro.hora);
+        if(!tEste || !tOtro || tEste === tOtro){ tOtro = 'Mañana'; tEste = 'Tarde'; }
+        botonTurnos =
+          `<button type="button" onclick="repartirTurnos('${otro.id}','${tOtro}','${tEste}')"
+            style="margin-top:10px;width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;line-height:1.4">
+            🌅🌇 Son eventos distintos del mismo día<br>
+            <span style="font-weight:500;opacity:.9">${otro.cliente||'el otro'} → ${tOtro} · este → ${tEste}</span>
+          </button>`;
+      }
+    }
+
     errEl.innerHTML =
-      `<div style="font-weight:800">⚠️ Ese día el juego ya está tomado</div>`
+      `<div style="font-weight:800">⚠️ Ese juego ya está tomado${turno?` en la ${turno.toLowerCase()}`:' ese día'}</div>`
       + detalle
+      + botonTurnos
       + `<div style="margin-top:8px;opacity:.85">Si igual quieres guardarlo, vuelve a tocar el botón.</div>`;
+    _errEditRojo();
     errEl.style.display='block';
     const btn=document.getElementById('btnGuardarEdit');
     if(btn){ btn.textContent='⚠️ Guardar de todas formas'; btn.style.background='var(--orange)'; }
@@ -1738,6 +1915,7 @@ window.guardarEdicion=async function(){
       dia:calcularDia(fecha),
       semana:calcularSemana(fecha),
       hora:document.getElementById('editHora').value.trim(),
+      turno,
       telefono,
       equipos,
       lugar:document.getElementById('editLugar').value,
@@ -1982,16 +2160,26 @@ function calcularUsados(fechaStr){
   const arriendosDia = ARRIENDOS.filter(a =>
     a.fecha === fechaStr && a.estado !== 'Cancelado'
   );
-  const usados = {};
+  const porFranja = {};       // juego -> {am:n, pm:n}
+  let hayTurnos = false;      // ¿este día tiene arriendos partidos en turnos?
   for(const a of arriendosDia){
+    const fr = franjasDe(a.turno);
+    if(fr.length === 1) hayTurnos = true;
     const equiposNorm = estandarizar(a.equipos || '');
     if(!equiposNorm) continue;
     for(const nombre of equiposNorm.split(', ')){
       const n = nombre.trim();
-      if(n) usados[n] = (usados[n] || 0) + 1;
+      if(!n) continue;
+      porFranja[n] = porFranja[n] || {am:0, pm:0};
+      for(const f of fr) porFranja[n][f]++;
     }
   }
-  return { usados, arriendosDia };
+  // `usados` sigue siendo un número para no romper las vistas que ya lo usaban.
+  // Es el PEOR caso del día (la franja más cargada), así que en un día normal
+  // —donde todo ocupa mañana y tarde— da exactamente lo mismo que antes.
+  const usados = {};
+  for(const n in porFranja) usados[n] = Math.max(porFranja[n].am, porFranja[n].pm);
+  return { usados, porFranja, hayTurnos, arriendosDia };
 }
 
 // ===== MOSTRAR INVENTARIO DIA =====
@@ -2008,9 +2196,12 @@ window.mostrarInventarioDia = function(dia){
   document.getElementById('invPanelTitle').textContent = diaNom+' '+dia+' de '+mesNom;
   document.getElementById('invPanelSub').textContent   = anioStr;
 
-  const { usados, arriendosDia } = calcularUsados(fechaStr);
+  const { usados, porFranja, arriendosDia } = calcularUsados(fechaStr);
 
   // Determinar qué páginas del catálogo incluir (juegos con al menos 1 libre)
+  // Ojo: aquí se usa el criterio ESTRICTO (libre el día completo). Un juego que
+  // sólo queda libre en una franja no se ofrece en el catálogo, para no prometer
+  // por escrito algo que después hay que negociar por turno.
   const paginasLibres = [];
   for(const item of INVENTARIO){
     const ocu  = usados[item.nombre] || 0;
@@ -2063,21 +2254,27 @@ window.mostrarInventarioDia = function(dia){
       if(pct >= 1)      { cls='disponible'; badge = item.total===1 ? 'Libre' : disp+'/'+item.total+' libres'; }
       else if(pct > 0)  { cls='parcial';    badge = disp+'/'+item.total+' libre'+(disp!==1?'s':''); }
       else              { cls='ocupado';    badge = 'Lleno'; }
+      let dot = pct>=1?'green':pct>0?'yellow':'red';
+      // Si ese día el juego está partido en turnos, el número de arriba miente
+      // (muestra el peor caso). Aquí se reemplaza por el detalle mañana/tarde.
+      const det = detalleTurnoJuego(item, porFranja);
+      if(det){ badge = det.badge; dot = det.dcls; cls = det.dcls==='red' ? 'ocupado' : 'parcial'; }
       const quien = ocu > 0
         ? arriendosDia.filter(a => estandarizar(a.equipos||'').includes(item.nombre))
                        .flatMap(a => {
                          const equiposNorm = estandarizar(a.equipos||'');
                          const count = equiposNorm.split(', ').filter(e => e === item.nombre).length;
-                         return Array(count).fill(a.cliente.split(' ')[0]);
+                         const t = normalizarTurno(a.turno);
+                         return Array(count).fill(a.cliente.split(' ')[0] + (t?' '+TURNO_ICONO[t]:''));
                        }).join(', ')
         : '';
       html += `<div class="disp-item ${cls}">
-        <div class="disp-dot ${pct>=1?'green':pct>0?'yellow':'red'}"></div>
+        <div class="disp-dot ${dot}"></div>
         <div class="disp-info">
           <div class="disp-nombre">${item.nombre}</div>
           ${quien ? `<div class="disp-sub">${quien}</div>` : ''}
         </div>
-        <div class="disp-badge ${pct>=1?'green':pct>0?'yellow':'red'}">${badge}</div>
+        <div class="disp-badge ${dot}">${badge}</div>
       </div>`;
     }
     html += '</div></div>';
@@ -2093,7 +2290,7 @@ window.mostrarInventarioDia = function(dia){
       arrHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
         <div>
           <span style="font-weight:700;color:var(--blue3)">${a.cliente}</span>
-          <span style="color:var(--text3);margin-left:8px">${a.hora||'—'}</span>
+          <span style="color:var(--text3);margin-left:8px">${a.hora||'—'}</span>${chipTurno(a.turno,true)}
         </div>
         <div style="text-align:right">
           <div style="color:var(--text2)">${a.equipos||'—'}</div>
@@ -2325,7 +2522,7 @@ function renderCalendario(){
     const fechaStr=String(d).padStart(2,'0')+'/'+mesStr+'/'+anioStr;
     const arriendosDia=arriendosMes.filter(a=>a.fecha===fechaStr);
     if(arriendosDia.length===0) continue;
-    const{usados}=calcularUsados(fechaStr);
+    const{usados,hayTurnos}=calcularUsados(fechaStr);
     const resumen={Inflable:{disp:0,total:0},Electrónico:{disp:0,total:0},Interior:{disp:0,total:0},Adicionales:{disp:0,total:0}};
     for(const item of INVENTARIO){
       const ocu=usados[item.nombre]||0;
@@ -2335,7 +2532,7 @@ function renderCalendario(){
     }
     const dt=new Date(CAL_YEAR,CAL_MONTH,d);
     const montoTotal=arriendosDia.reduce((s,a)=>s+(a.pendiente||0),0);
-    diasConArr.push({d,fechaStr,arriendosDia,resumen,diaNom:DIAS_ORD[dt.getDay()===0?6:dt.getDay()-1],montoTotal});
+    diasConArr.push({d,fechaStr,arriendosDia,resumen,hayTurnos,diaNom:DIAS_ORD[dt.getDay()===0?6:dt.getDay()-1],montoTotal});
   }
 
   if(diasConArr.length===0){
@@ -2345,7 +2542,7 @@ function renderCalendario(){
 
   // Grid compacto estilo calendario — solo días con arriendos
   let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">';
-  for(const{d,fechaStr,arriendosDia,resumen,diaNom,montoTotal} of diasConArr){
+  for(const{d,fechaStr,arriendosDia,resumen,hayTurnos,diaNom,montoTotal} of diasConArr){
     const isHoy=d===hoy.getDate()&&CAL_MONTH===hoy.getMonth()&&CAL_YEAR===hoy.getFullYear();
     const isSel=CAL_DIA_SEL===d;
 
@@ -2377,7 +2574,10 @@ function renderCalendario(){
           <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">${diaNom}</div>
           <div style="font-size:22px;font-weight:800;color:${isHoy?'var(--blue)':'var(--text)'};line-height:1.1">${d}</div>
         </div>
-        <span style="background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px">${arriendosDia.length}</span>
+        <div style="display:flex;align-items:center;gap:4px">
+          ${hayTurnos?`<span title="Este día tiene juegos partidos en turno mañana/tarde" style="font-size:11px">⏱️</span>`:''}
+          <span style="background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px">${arriendosDia.length}</span>
+        </div>
       </div>
       ${dotsHtml}
       <div style="margin-top:6px;padding-top:5px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
@@ -2524,7 +2724,19 @@ function renderTabla(){
     <td style="white-space:nowrap">${a.fecha||'—'}</td>
     <td>${a.dia||'—'}</td>
     <td style="color:var(--text3);font-size:11px;font-weight:700">${a.semana||isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'))||'—'}</td>
-    <td>${a.hora||'—'}</td>
+    <td style="white-space:nowrap">
+      <div>${a.hora||'—'}</div>
+      ${(()=>{
+        const v=normalizarTurno(a.turno);
+        const c=v?TURNO_COLOR[v]:null;
+        return `<select onchange="cambiarTurno('${a.id}',this.value)" class="sel-tabla"
+          title="Turno del día. Úsalo sólo cuando el mismo juego sale a dos eventos la misma fecha."
+          style="margin-top:3px;border:1.5px solid ${c?c.color:'var(--border)'};background:${c?c.bg:'#fff'};color:${c?c.color:'var(--text3)'};font-weight:${v?'800':'400'}">
+          <option value="" ${!v?'selected':''}>☀️ Día</option>
+          ${TURNOS.map(t=>`<option value="${t}" ${v===t?'selected':''}>${TURNO_ICONO[t]} ${t}</option>`).join('')}
+        </select>`;
+      })()}
+    </td>
     <td style="font-size:11px;white-space:nowrap">${(()=>{
       if(!a.telefono) return '—';
       const clean=limpiarTelefono(a.telefono);
@@ -2778,6 +2990,7 @@ window.copiarParaWA=function(a){
   const lineas=[
     `📋 *${a.cliente||'—'}*`,
     `📅 ${[dia+' '+fecha,hora].filter(Boolean).join(' · ')}`,
+    normalizarTurno(a.turno)?`${TURNO_ICONO[normalizarTurno(a.turno)]} Turno ${normalizarTurno(a.turno).toLowerCase()} (el juego sale a otro evento el mismo día)`:'',
     ubicacion?`📍 ${ubicacion}`:'',
     equipos?`🎮 ${equipos}`:'',
     a.lugar?`🏠 ${a.lugar}`:'',
@@ -2910,20 +3123,34 @@ function auditarInventario(soloFuturos){
           continue;
         }
       }
-      const k=a.fecha+'||'+nombreCanon;
-      (porFechaJuego[k]=porFechaJuego[k]||[]).push(a);
+      // Se cuenta FRANJA POR FRANJA: un arriendo de mañana y otro de tarde del
+      // mismo juego comparten fecha, pero no son sobrecupo.
+      for(const f of franjasDe(a.turno)){
+        const k=a.fecha+'||'+nombreCanon+'||'+f;
+        (porFechaJuego[k]=porFechaJuego[k]||[]).push(a);
+      }
     }
   }
 
   // Sobre-agendamientos
   const sobrecupos=[];
+  const peorPorFechaJuego={};   // "fecha||juego" -> registro ya emitido
   for(const k in porFechaJuego){
-    const [fecha,juego]=k.split('||');
+    const [fecha,juego,franja]=k.split('||');
     const lista=porFechaJuego[k];
     const inv=INVENTARIO.find(i=>i.nombre===juego);
-    if(inv && lista.length>inv.total){
-      sobrecupos.push({ fecha, juego, usados:lista.length, total:inv.total, arriendos:lista });
+    if(!(inv && lista.length>inv.total)) continue;
+    // Un arriendo de día completo aparece en las dos franjas: se reporta una
+    // sola vez, quedándose con la franja más cargada.
+    const kk=fecha+'||'+juego;
+    const prev=peorPorFechaJuego[kk];
+    if(prev){
+      if(lista.length>prev.usados){ prev.usados=lista.length; prev.franja=franja; prev.arriendos=lista; }
+      continue;
     }
+    const reg={ fecha, juego, franja, usados:lista.length, total:inv.total, arriendos:lista };
+    peorPorFechaJuego[kk]=reg;
+    sobrecupos.push(reg);
   }
   sobrecupos.sort((a,b)=>{
     const fa=_fechaObj(a.fecha), fb=_fechaObj(b.fecha);
@@ -2957,11 +3184,17 @@ window.revisarInventario=function(){
       </div>
       <div class="val-box" style="max-height:220px;overflow-y:auto;margin-bottom:18px">`;
       for(const s of sobrecupos){
-        const clientes=s.arriendos.map(a=>a.cliente||'—').join(' · ');
+        const clientes=s.arriendos.map(a=>{
+          const t=normalizarTurno(a.turno);
+          return (a.cliente||'—')+(t?' '+TURNO_ICONO[t]:'');
+        }).join(' · ');
+        // Sólo se nombra la franja si hay turnos en juego; si no, es el día entero
+        const hayT=s.arriendos.some(a=>normalizarTurno(a.turno));
+        const franjaTxt=hayT?(s.franja==='am'?' · 🌅 en la mañana':' · 🌇 en la tarde'):'';
         html+=`<div class="val-item">
           <span style="color:var(--red);font-size:16px">🚫</span>
           <div style="flex:1">
-            <strong>${s.fecha}</strong> — ${s.juego}
+            <strong>${s.fecha}</strong> — ${s.juego}${franjaTxt}
             <div style="color:var(--red);font-size:11px;font-weight:700">
               ${s.usados} arriendos y solo tienes ${s.total} ${s.total===1?'unidad':'unidades'}
             </div>
@@ -3061,6 +3294,33 @@ window.cambiarLugar=async function(id,valor){
     const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db,'arriendos',id),{lugar:valor});
     toast(valor?'🏠 Lugar: '+valor:'🏠 Lugar removido','ok');
+    renderTabla();
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+// Cambiar el turno desde la tabla. Antes de aplicarlo revisa el stock con el
+// mismo motor que usa el guardado: pasar de "mañana" a "todo el día" puede
+// sobre-agendar el juego, y eso hay que verlo antes, no después.
+window.cambiarTurno=async function(id,valor){
+  const a=ARRIENDOS.find(x=>x.id===id);
+  if(!a) return;
+  const turno=normalizarTurno(valor);
+  const choques=conflictosDe(id, a.fecha, a.equipos||'', turno);
+  if(choques.length){
+    const txt=choques.map(c=>
+      `• ${c.juego}: quedarían ${c.quedaria} y tienes ${c.stock}`
+      + (c.clientes.length?` — ya lo tiene ${c.clientes.join(', ')}`:'')
+    ).join('\n');
+    if(!confirm(`⚠️ Con ese turno el juego queda sobre-agendado:\n\n${txt}\n\n¿Guardar igual?`)){
+      renderTabla();   // devolver el select a su valor real
+      return;
+    }
+  }
+  a.turno=turno;
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',id),{turno});
+    toast(turno?TURNO_ICONO[turno]+' Turno: '+turno.toLowerCase():'☀️ Turno: todo el día','ok');
     renderTabla();
   }catch(e){toast('Error: '+e.message,'err');}
 };
@@ -3512,7 +3772,7 @@ async function renderDashboard(){
 window.exportarCSV=function(){
   const arr=FILTRADOS.length?FILTRADOS:ARRIENDOS;
   if(!arr.length){toast('Sin datos','err');return;}
-  let csv=['Año;#;Cliente;Dirección;Comuna;Fecha;Día;Semana;Hora;Teléfono;Equipos;Lugar;Superficie;Pendiente;Estado'].concat(arr.map((a,i)=>[a.anio,i+1,a.cliente,a.direccion,a.comuna,a.fecha,a.dia,a.semana,a.hora,a.telefono,a.equipos,a.lugar,a.superficie,a.pendiente||0,a.estado].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(';'))).join('\n');
+  let csv=['Año;#;Cliente;Dirección;Comuna;Fecha;Día;Semana;Hora;Turno;Teléfono;Equipos;Lugar;Superficie;Pendiente;Estado'].concat(arr.map((a,i)=>[a.anio,i+1,a.cliente,a.direccion,a.comuna,a.fecha,a.dia,a.semana,a.hora,normalizarTurno(a.turno)||'Todo el día',a.telefono,a.equipos,a.lugar,a.superficie,a.pendiente||0,a.estado].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(';'))).join('\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='Base_Arriendos_Akimel.csv';a.click();
@@ -3942,7 +4202,7 @@ const MSG_PLANTILLAS = {
     label:'👋 Presentación',
     desc:'Lead de Facebook · saludo + detalle + cuenta',
     color:'#0071ce', bg:'rgba(0,113,206,.1)',
-    build:a=>`¡Hola ${primerNombre(a)}! Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n- ${equiposTexto(a)}${a.lugar?`\n- Lugar de instalación: ${a.lugar}`:''}${a.superficie?`\n- Superficie: ${a.superficie}`:''}${a.fecha?`\n- ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n- Pendiente: ${clp(a.pendiente)}`:''}\n\nEl pago se debe realizar cuando el juego ya esté instalado a la siguiente cuenta:\n\nKimberli Javiera Ávila Herrera\nRUT: 192275873\nMercado Pago\nCuenta Vista\nNúmero de cuenta: 1055705946\navila.kimberly95@gmail.com\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()}!\n${getUrlIG()}`
+    build:a=>`¡Hola ${primerNombre(a)}! Te saluda el equipo de *Akimel*, gracias por contactarnos.\n\nTe confirmo el detalle de tu arriendo:\n- ${equiposTexto(a)}${a.lugar?`\n- Lugar de instalación: ${a.lugar}`:''}${a.superficie?`\n- Superficie: ${a.superficie}`:''}${a.fecha?`\n- ${a.fecha}`:''}${a.hora?` a las ${a.hora} hrs`:''}${normalizarTurno(a.turno)?`\n- Turno ${normalizarTurno(a.turno).toLowerCase()} (el juego se retira al terminar tu bloque)`:''}${a.direccion||a.comuna?`\n- ${[a.direccion,a.comuna].filter(Boolean).join(', ')}`:''}${a.pendiente?`\n- Pendiente: ${clp(a.pendiente)}`:''}\n\nEl pago se debe realizar cuando el juego ya esté instalado a la siguiente cuenta:\n\nKimberli Javiera Ávila Herrera\nRUT: 192275873\nMercado Pago\nCuenta Vista\nNúmero de cuenta: 1055705946\navila.kimberly95@gmail.com\n\nCualquier duda quedamos atentos. ¡Síguenos en Instagram ${getHandleIG()}!\n${getUrlIG()}`
   },
   confirmacion: {
     label:'✅ Confirmar',
@@ -3994,11 +4254,13 @@ function stockTotal(nombre){
 }
 
 // Cuántas unidades de un juego están comprometidas en una fecha (excluyendo cancelados)
-function unidadesUsadasEnFecha(nombreJuego, fechaStr){
+function unidadesUsadasEnFecha(nombreJuego, fechaStr, turnoRef){
   let count = 0;
   (ARRIENDOS||[]).forEach(a=>{
     if(a.fecha !== fechaStr) return;
     if((a.estado||'').toLowerCase() === 'cancelado') return;
+    // Sólo cuentan los arriendos cuya franja se cruza con la que nos importa
+    if(!turnosChocan(a.turno, turnoRef)) return;
     const eqs = (a.equipos||'').split(',').map(s=>s.trim().toLowerCase());
     const nlow = nombreJuego.toLowerCase();
     eqs.forEach(e=>{ if(e === nlow) count++; });
@@ -4017,7 +4279,7 @@ function remateDisponibleParaArriendo(a){
     if(equiposDelCliente.includes(r.nombre.toLowerCase())) return false;
     // Si no hay unidades libres ese día, tampoco
     const total = stockTotal(r.nombre);
-    const usadas = unidadesUsadasEnFecha(r.nombre, fecha);
+    const usadas = unidadesUsadasEnFecha(r.nombre, fecha, a.turno);
     return (total - usadas) > 0;
   });
 }
@@ -4461,7 +4723,7 @@ window.renderDisponibilidad=function(){
     document.getElementById('dispArriendos').innerHTML='';
     return;
   }
-  const{usados,arriendosDia}=calcularUsados(fechaStr);
+  const{usados,porFranja,hayTurnos,arriendosDia}=calcularUsados(fechaStr);
 
   const dt=new Date(input.value+'T12:00:00');
   const diaNom=DIAS_ORD[dt.getDay()===0?6:dt.getDay()-1];
@@ -4491,7 +4753,11 @@ window.renderDisponibilidad=function(){
     <div class="disp-resumen">
       <div class="disp-res-item"><div class="disp-res-num" style="color:var(--green)">${libres}</div><div style="color:var(--text3)">🟢 Disponibles</div></div>
       <div class="disp-res-item"><div class="disp-res-num" style="color:var(--red)">${parciales+ocupados}</div><div style="color:var(--text3)">🔴 Agotados</div></div>
-    </div>`;
+    </div>
+    ${hayTurnos?`<div style="margin-top:10px;font-size:11px;font-weight:700;color:#6d28d9;background:#f5f3ff;border:1px solid #6d28d966;border-radius:8px;padding:7px 10px">
+      ⏱️ Este día tiene arriendos por turno. Los contadores de arriba muestran el peor caso;
+      mira el detalle 🌅/🌇 de cada juego.
+    </div>`:''}`;
 
   // Grid compacto 2 columnas por categoría
   const cats=[
@@ -4512,10 +4778,14 @@ window.renderDisponibilidad=function(){
       else if(pct>0.5){cls='parcial';dcls='red';badge=disp+'/'+item.total+' libres';}
       else if(pct>0){cls='casi';dcls='red';badge=disp+'/'+item.total+' libre';}
       else{cls='ocupado';dcls='red';badge='Ocupado';}
+      // Detalle mañana/tarde cuando ese día el juego está partido en turnos
+      const det=detalleTurnoJuego(item,porFranja);
+      if(det){badge=det.badge;dcls=det.dcls;cls=det.dcls==='red'?'ocupado':'parcial';}
       const quien=ocu>0?arriendosDia.filter(a=>a.equipos&&a.equipos.includes(item.nombre)).flatMap(a=>{
                          const equiposNorm=estandarizar(a.equipos||'');
                          const count=equiposNorm.split(', ').filter(e=>e===item.nombre).length;
-                         return Array(count).fill(a.cliente.split(' ')[0]);
+                         const t=normalizarTurno(a.turno);
+                         return Array(count).fill(a.cliente.split(' ')[0]+(t?' '+TURNO_ICONO[t]:''));
                        }).join(', '):'';
       html+=`<div class="disp-item ${cls}">
         <div class="disp-dot ${dcls}"></div>
@@ -4538,7 +4808,7 @@ window.renderDisponibilidad=function(){
       arrHtml+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
         <div>
           <span style="font-weight:700;color:var(--blue3)">${a.cliente}</span>
-          <span style="color:var(--text3);margin-left:8px">${a.hora||'—'}</span>
+          <span style="color:var(--text3);margin-left:8px">${a.hora||'—'}</span>${chipTurno(a.turno,true)}
         </div>
         <div style="text-align:right">
           <div style="color:var(--text2)">${a.equipos||'—'}</div>
@@ -5844,6 +6114,26 @@ function parsearChat(texto){
       }
     }
 
+    // ── TURNO (mañana / tarde) — OPCIONAL, MUY CONSERVADOR ──
+    // Sólo se toma cuando viene la palabra "turno" o "jornada" delante.
+    // Nunca se deduce de "a las 3 de la tarde": tú instalas en la mañana aunque
+    // el evento parta en la tarde, así que leer eso como turno tarde liberaría
+    // la mañana y volvería a abrir la puerta a un doble agendamiento.
+    // Si aparecen los dos, es un arriendo de día completo → queda en blanco.
+    let turno = '';
+    {
+      const tn   = _sinTilde(bloque);
+      const hayM = /(?:turno|jornada)\s*(?:de\s*)?(?:la\s*)?manana/.test(tn) || /\bturno\s*am\b/.test(tn);
+      const hayT = /(?:turno|jornada)\s*(?:de\s*)?(?:la\s*)?tarde/.test(tn)  || /\bturno\s*pm\b/.test(tn);
+      // Guarda extra: si el mensaje también nombra la otra mitad del día
+      // ("turno mañana, retiro en la tarde"), el juego se queda hasta la tarde
+      // y NO está libre para otro evento. Ante la duda, día completo.
+      const diceTarde  = /\btardes?\b|\bpm\b/.test(tn);
+      const diceManana = /\bmananas?\b|\bam\b/.test(tn);
+      if(hayM && !hayT && !diceTarde)       turno = 'Mañana';
+      else if(hayT && !hayM && !diceManana) turno = 'Tarde';
+    }
+
     let pendiente = 0;
     const pStr = (pm[1] || pm[2] || '').replace(/\./g,'').replace(/,/g,'');
     try { pendiente = parseInt(pStr); if(pendiente < 1000) pendiente *= 1000; } catch(e){}
@@ -5856,6 +6146,7 @@ function parsearChat(texto){
       dia: calcularDia(fecha),
       semana: calcularSemana(fecha),
       hora,
+      turno,
       telefono: tel,
       equipos,
       lugar,
@@ -5893,13 +6184,16 @@ function validarInventario(arr){
         juegosConflicto.push({ juego, desconocido: true });
         continue;
       }
+      // Sólo choca lo que comparte fecha Y franja del día (mañana / tarde)
       const reservados = ARRIENDOS.filter(ex =>
         ex.fecha === a.fecha &&
         ex.estado !== 'Cancelado' &&
+        turnosChocan(ex.turno, a.turno) &&
         ex.equipos && ex.equipos.split(',').map(j=>j.trim()).includes(juego)
       ).length;
       const enLote = arr.slice(0, i).filter(prev =>
         prev.fecha === a.fecha &&
+        turnosChocan(prev.turno, a.turno) &&
         prev.equipos && prev.equipos.split(',').map(j=>j.trim()).includes(juego)
       ).length;
       const totalUsado = reservados + enLote;
