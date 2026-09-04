@@ -441,6 +441,7 @@ select:focus{border-color:var(--blue)}
   <div class="nav-tab" onclick="goTab('recontacto')" id="tab-recontacto">🔁 Recontacto</div>
   <div class="nav-tab" onclick="goTab('subir')" id="tab-subir">➕ Agregar Arriendo</div>
   <div class="nav-tab" onclick="goTab('costos')" id="tab-costos">💰 Costos</div>
+  <div class="nav-tab" onclick="goTab('vehiculos')" id="tab-vehiculos">🚗 Vehículos</div>
   <div class="nav-tab" onclick="goTab('notifs')" id="tab-notifs">🔔 Alertas<span id="notifBadgeTab" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:800;margin-left:5px"></span></div>
 </div>
 
@@ -904,7 +905,76 @@ select:focus{border-color:var(--blue)}
 </div>
 
 
+<style>
+.veh-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin:2px 4px 2px 0}
+.veh-badge.verde{background:#eaf6e6;color:#3a7d28}
+.veh-badge.amar{background:#fff6da;color:#a67c00}
+.veh-badge.rojo{background:#fde5e6;color:#b91c1c}
+.veh-badge.gris{background:#eef2f6;color:#7a93aa}
+.veh-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.btn-mini{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;line-height:1}
+.btn-mini.rojo{background:#fde5e6;border-color:#f3b6b8}
+.veh-field-label{font-size:11px;color:var(--text3);font-weight:700;margin-bottom:4px}
+.veh-input{width:100%;border:2px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'Sora',sans-serif;outline:none;color:var(--text);box-sizing:border-box;background:#fff}
+</style>
+<div class="section" id="sec-vehiculos">
+  <div style="max-width:700px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px">
+      <div style="font-size:18px;font-weight:800;color:var(--blue3)">🚗 Vehículos de la empresa</div>
+      <button class="btn btn-primary" onclick="abrirModalVehiculo()">➕ Agregar vehículo</button>
+    </div>
+    <div id="vehAlertas"></div>
+    <div id="vehLista"></div>
+  </div>
+</div>
 </div><!-- /main -->
+
+<!-- MODAL VEHÍCULO -->
+<div class="modal-edit" id="modalVehiculo" onclick="if(event.target===this)cerrarModalVehiculo()">
+  <div class="modal-edit-box">
+    <div class="modal-edit-title">
+      <span id="vehModalTitle">Agregar vehículo</span>
+      <span onclick="cerrarModalVehiculo()" style="cursor:pointer;color:var(--text3);font-size:22px;line-height:1">✕</span>
+    </div>
+    <input type="hidden" id="vehId">
+    <div style="font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.6px;margin:2px 0 10px">🚗 Identificación</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div><div class="veh-field-label">Patente *</div><input class="veh-input" id="vehPatente" placeholder="ABCD12"></div>
+      <div><div class="veh-field-label">Tipo</div><select class="veh-input" id="vehTipo"><option>Furgón</option><option>Camioneta</option><option>Camión</option><option>Auto</option><option>Otro</option></select></div>
+      <div><div class="veh-field-label">Marca</div><input class="veh-input" id="vehMarca" placeholder="Fotón"></div>
+      <div><div class="veh-field-label">Modelo</div><input class="veh-input" id="vehModelo"></div>
+      <div><div class="veh-field-label">Año</div><input class="veh-input" id="vehAnio" type="number" inputmode="numeric" placeholder="2019"></div>
+      <div><div class="veh-field-label">Color</div><input class="veh-input" id="vehColor"></div>
+    </div>
+    <div style="font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.6px;margin:2px 0 10px">🛢️ Mantención</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div><div class="veh-field-label">Kilometraje actual</div><input class="veh-input" id="vehKmActual" type="number" inputmode="numeric" placeholder="85000"></div>
+      <div><div class="veh-field-label">Próximo cambio de aceite (km)</div><input class="veh-input" id="vehKmAceite" type="number" inputmode="numeric" placeholder="90000"></div>
+    </div>
+    <div style="font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.6px;margin:2px 0 10px">📄 Documentos (fecha de vencimiento)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      <div><div class="veh-field-label">Rev. Técnica</div><input class="veh-input" id="vehRevTec" type="date"></div>
+      <div><div class="veh-field-label">Permiso Circ.</div><input class="veh-input" id="vehPermiso" type="date"></div>
+      <div><div class="veh-field-label">SOAP</div><input class="veh-input" id="vehSoap" type="date"></div>
+    </div>
+    <div style="font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.6px;margin:2px 0 10px">🛡️ Seguro</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div><div class="veh-field-label">Compañía</div><input class="veh-input" id="vehSeguro" placeholder="HDI, BCI, etc."></div>
+      <div><div class="veh-field-label">N° póliza</div><input class="veh-input" id="vehPoliza"></div>
+      <div style="grid-column:1/-1"><div class="veh-field-label">Teléfono asistencia (choque / grúa)</div><input class="veh-input" id="vehTelAsist" placeholder="600 000 0000"></div>
+    </div>
+    <div style="font-size:12px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:.6px;margin:2px 0 10px">🔧 Datos técnicos / notas</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div><div class="veh-field-label">N° motor</div><input class="veh-input" id="vehMotor"></div>
+      <div><div class="veh-field-label">N° chasis (VIN)</div><input class="veh-input" id="vehChasis"></div>
+      <div style="grid-column:1/-1"><div class="veh-field-label">Notas</div><textarea class="veh-input" id="vehNotas" rows="2"></textarea></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn btn-ghost" style="flex:1" onclick="cerrarModalVehiculo()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:2" onclick="guardarVehiculoDesdeForm()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL EDICIÓN SEMANA HISTÓRICA -->
 <div class="modal-edit" id="modalEditSemana" onclick="if(event.target===this)cerrarModalEditSemana()">
@@ -4011,6 +4081,7 @@ window.goTab=function(tab){
       mostrarInventarioDia(hoy.getDate());
   }
   if(tab==='costos') renderCostos();
+  if(tab==='vehiculos'){ if(_vehCargados) renderVehiculos(); else cargarVehiculos().then(renderVehiculos); }
   if(tab==='notifs') actualizarIndicadorPermiso();
   if(tab==='semana') activarTrabajoSemana();
   if(tab==='mensajes') renderMensajes();
@@ -4873,6 +4944,171 @@ setTimeout(()=>{
   const inp=document.getElementById('fechaDisp');
   if(inp&&!inp.value) inp.value=fechaHoy();
 },100);
+
+
+// ═══════════════════════════════════════════════════
+// MÓDULO VEHÍCULOS
+// ═══════════════════════════════════════════════════
+let VEHICULOS=[];
+let _vehCargados=false;
+
+function _vehDiasHasta(fechaYMD){
+  if(!fechaYMD) return null;
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+  const d=new Date(fechaYMD+'T00:00:00');
+  if(isNaN(d.getTime())) return null;
+  return Math.round((d-hoy)/86400000);
+}
+function _vehFechaStr(f){ return f?f.split('-').reverse().join('/'):'—'; }
+function _vehBadgeVenc(fechaYMD, label){
+  const dias=_vehDiasHasta(fechaYMD);
+  if(dias===null) return '<span class="veh-badge gris">'+label+': —</span>';
+  const f=_vehFechaStr(fechaYMD);
+  if(dias<0)   return '<span class="veh-badge rojo">'+label+': Vencida ('+f+')</span>';
+  if(dias<=30) return '<span class="veh-badge amar">'+label+': vence en '+dias+'d ('+f+')</span>';
+  return '<span class="veh-badge verde">'+label+': '+f+'</span>';
+}
+function _vehNum(n){ return (n==null||n==='')?null:Number(n); }
+function _vehKm(n){ return (n==null||n==='')?'—':Number(n).toLocaleString('es-CL')+' km'; }
+
+async function cargarVehiculos(){
+  try{
+    const snap=await getDocs(collection(db,'vehiculos'));
+    VEHICULOS=[];
+    snap.forEach(d=>VEHICULOS.push(Object.assign({id:d.id}, d.data())));
+    VEHICULOS.sort((a,b)=>String(a.patente||'').localeCompare(String(b.patente||'')));
+    _vehCargados=true;
+  }catch(e){ console.error('cargarVehiculos:',e); toast('Error cargando vehículos: '+e.message,'err'); }
+}
+
+function _vehCard(v){
+  const icon = v.tipo==='Camión'?'🚚':v.tipo==='Camioneta'?'🛻':v.tipo==='Auto'?'🚗':'🚐';
+  const sub = [v.marca,v.modelo,v.anio,v.color].filter(Boolean).join(' · ')||'—';
+  let aceite;
+  if(v.kmProxAceite==null){ aceite='<span class="veh-badge gris">Próx. aceite: —</span>'; }
+  else{
+    const prox=Number(v.kmProxAceite).toLocaleString('es-CL');
+    const falta=(v.kmActual!=null)?(v.kmProxAceite-v.kmActual):null;
+    const cls=(falta!=null&&falta<=0)?'rojo':(falta!=null&&falta<1000)?'amar':'verde';
+    const extra=(falta!=null)?(falta<=0?' — pendiente':' (faltan '+Number(falta).toLocaleString('es-CL')+' km)'):'';
+    aceite='<span class="veh-badge '+cls+'">Próx. aceite: '+prox+' km'+extra+'</span>';
+  }
+  let seguro='';
+  if(v.seguro||v.poliza||v.telAsistencia){
+    seguro='<div style="font-size:11px;color:var(--text2);border-top:1px solid var(--border);padding-top:8px;margin-top:8px">🛡️ '+
+      (v.seguro||'—')+(v.poliza?' · Póliza '+v.poliza:'')+(v.telAsistencia?' · ☎ '+v.telAsistencia:'')+'</div>';
+  }
+  let tec='';
+  if(v.nMotor||v.nChasis){
+    tec='<div style="font-size:10px;color:var(--text3);margin-top:4px">'+
+      (v.nMotor?'Motor: '+v.nMotor:'')+((v.nMotor&&v.nChasis)?'  ·  ':'')+(v.nChasis?'Chasis: '+v.nChasis:'')+'</div>';
+  }
+  const notas=v.notas?'<div style="font-size:11px;color:var(--text2);margin-top:6px;font-style:italic">📝 '+v.notas+'</div>':'';
+  return '<div class="veh-card">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'+
+      '<div><div style="font-size:20px;font-weight:800;color:var(--blue3);letter-spacing:1px">'+icon+' '+(v.patente||'—')+'</div>'+
+      '<div style="font-size:12px;color:var(--text2);margin-top:2px">'+sub+'</div></div>'+
+      '<div style="display:flex;gap:6px">'+
+        '<button class="btn-mini" onclick="editarVehiculo(\''+v.id+'\')">✏️</button>'+
+        '<button class="btn-mini rojo" onclick="confirmarEliminarVehiculo(\''+v.id+'\')">🗑</button>'+
+      '</div></div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:6px">'+
+      '<span class="veh-badge gris">Kilometraje: '+_vehKm(v.kmActual)+'</span>'+aceite+'</div>'+
+    '<div style="display:flex;flex-wrap:wrap">'+
+      _vehBadgeVenc(v.fechaRevTec,'Rev. Técnica')+_vehBadgeVenc(v.fechaPermiso,'Permiso Circ.')+_vehBadgeVenc(v.fechaSoap,'SOAP')+'</div>'+
+    seguro+tec+notas+'</div>';
+}
+
+function renderVehiculos(){
+  const cont=document.getElementById('vehLista');
+  const alertBox=document.getElementById('vehAlertas');
+  if(!cont) return;
+  if(!VEHICULOS.length){
+    if(alertBox) alertBox.innerHTML='';
+    cont.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">🚗 Aún no hay vehículos registrados.<br>Toca <b>➕ Agregar vehículo</b> para registrar el primero.</div>';
+    return;
+  }
+  const al=[];
+  for(const v of VEHICULOS){
+    [['Revisión Técnica','fechaRevTec'],['Permiso de Circulación','fechaPermiso'],['SOAP','fechaSoap']].forEach(function(par){
+      const dias=_vehDiasHasta(v[par[1]]);
+      if(dias!==null&&dias<=30){
+        al.push({p:v.patente||'—', t:(dias<0?'❌ '+par[0]+' VENCIDA':'⚠️ '+par[0]+' vence en '+dias+' días'), c:(dias<0?'rojo':'amar')});
+      }
+    });
+    if(v.kmActual!=null&&v.kmProxAceite!=null&&v.kmActual>=v.kmProxAceite){
+      al.push({p:v.patente||'—', t:'🛢️ Cambio de aceite pendiente', c:'rojo'});
+    }
+  }
+  if(alertBox){
+    alertBox.innerHTML = al.length
+      ? '<div style="background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:16px;border-left:4px solid var(--orange)">'+
+        '<div style="font-size:13px;font-weight:800;color:var(--blue3);margin-bottom:8px">🔔 Requiere atención</div>'+
+        al.map(function(a){return '<div style="font-size:12px;margin:5px 0"><b>'+a.p+'</b> &nbsp;<span class="veh-badge '+a.c+'">'+a.t+'</span></div>';}).join('')+'</div>'
+      : '';
+  }
+  cont.innerHTML = VEHICULOS.map(_vehCard).join('');
+}
+
+function _vehSet(id,val){ const el=document.getElementById(id); if(el) el.value=(val==null?'':val); }
+function _vehGet(id){ const el=document.getElementById(id); return el?String(el.value).trim():''; }
+const _VEH_CAMPOS=['vehPatente','vehMarca','vehModelo','vehAnio','vehColor','vehKmActual','vehKmAceite','vehRevTec','vehPermiso','vehSoap','vehSeguro','vehPoliza','vehTelAsist','vehMotor','vehChasis','vehNotas'];
+
+window.abrirModalVehiculo=function(){
+  document.getElementById('vehModalTitle').textContent='➕ Agregar vehículo';
+  _vehSet('vehId','');
+  _VEH_CAMPOS.forEach(function(id){_vehSet(id,'');});
+  document.getElementById('vehTipo').value='Furgón';
+  document.getElementById('modalVehiculo').classList.add('show');
+};
+window.editarVehiculo=function(id){
+  const v=VEHICULOS.find(function(x){return x.id===id;}); if(!v) return;
+  document.getElementById('vehModalTitle').textContent='✏️ Editar vehículo';
+  _vehSet('vehId',v.id); _vehSet('vehPatente',v.patente); document.getElementById('vehTipo').value=v.tipo||'Furgón';
+  _vehSet('vehMarca',v.marca); _vehSet('vehModelo',v.modelo); _vehSet('vehAnio',v.anio); _vehSet('vehColor',v.color);
+  _vehSet('vehKmActual',v.kmActual); _vehSet('vehKmAceite',v.kmProxAceite);
+  _vehSet('vehRevTec',v.fechaRevTec); _vehSet('vehPermiso',v.fechaPermiso); _vehSet('vehSoap',v.fechaSoap);
+  _vehSet('vehSeguro',v.seguro); _vehSet('vehPoliza',v.poliza); _vehSet('vehTelAsist',v.telAsistencia);
+  _vehSet('vehMotor',v.nMotor); _vehSet('vehChasis',v.nChasis); _vehSet('vehNotas',v.notas);
+  document.getElementById('modalVehiculo').classList.add('show');
+};
+window.cerrarModalVehiculo=function(){ document.getElementById('modalVehiculo').classList.remove('show'); };
+
+window.guardarVehiculoDesdeForm=async function(){
+  const patente=_vehGet('vehPatente').toUpperCase();
+  if(!patente){ toast('La patente es obligatoria','err'); return; }
+  let id=_vehGet('vehId'); if(!id) id='veh_'+Date.now();
+  const v={
+    patente:patente, tipo:document.getElementById('vehTipo').value,
+    marca:_vehGet('vehMarca'), modelo:_vehGet('vehModelo'), anio:_vehNum(_vehGet('vehAnio')), color:_vehGet('vehColor'),
+    kmActual:_vehNum(_vehGet('vehKmActual')), kmProxAceite:_vehNum(_vehGet('vehKmAceite')),
+    fechaRevTec:_vehGet('vehRevTec'), fechaPermiso:_vehGet('vehPermiso'), fechaSoap:_vehGet('vehSoap'),
+    seguro:_vehGet('vehSeguro'), poliza:_vehGet('vehPoliza'), telAsistencia:_vehGet('vehTelAsist'),
+    nMotor:_vehGet('vehMotor'), nChasis:_vehGet('vehChasis'), notas:_vehGet('vehNotas')
+  };
+  try{
+    const m=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await m.setDoc(m.doc(db,'vehiculos',id), v, {merge:true});
+    v.id=id;
+    const idx=VEHICULOS.findIndex(function(x){return x.id===id;});
+    if(idx>=0) VEHICULOS[idx]=v; else VEHICULOS.push(v);
+    VEHICULOS.sort(function(a,b){return String(a.patente||'').localeCompare(String(b.patente||''));});
+    cerrarModalVehiculo(); renderVehiculos();
+    toast('Vehículo guardado','ok');
+  }catch(e){ console.error('guardarVehiculo:',e); toast('Error guardando: '+e.message,'err'); }
+};
+
+window.confirmarEliminarVehiculo=async function(id){
+  const v=VEHICULOS.find(function(x){return x.id===id;}); if(!v) return;
+  if(!confirm('¿Eliminar el vehículo '+(v.patente||'')+'? Esta acción no se puede deshacer.')) return;
+  try{
+    await deleteDoc(doc(db,'vehiculos',id));
+    VEHICULOS=VEHICULOS.filter(function(x){return x.id!==id;});
+    renderVehiculos();
+    toast('Vehículo eliminado','ok');
+  }catch(e){ console.error('eliminarVehiculo:',e); toast('Error eliminando: '+e.message,'err'); }
+};
+
 
 
 // ═══════════════════════════════════════════════════
