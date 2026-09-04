@@ -1208,14 +1208,14 @@ function esLineaLugarSuperficie(l){
 
 // Inventario completo con cantidades
 const INVENTARIO = [
-  {num:26,nombre:'Toro en Llamas',          cat:'Inflable',    total:1, kw:'toro,toro en llamas,toro llamas,toro en llama'},
+  {num:26,nombre:'Toro en Llamas',          cat:'Inflable',    total:1, desde:'2026-10-05', kw:'toro,toro en llamas,toro llamas,toro en llama'},
   {num:2, nombre:'Tobogán Obstáculo Danger',cat:'Inflable',    total:1, kw:'danger,obstaculo danger,peligro,obstáculo danger'},
   {num:3, nombre:'Tobogán Obstáculo Robot', cat:'Inflable',    total:1, kw:'robot,obstaculo robot,obstáculo robot,robox'},
-  {num:27,nombre:'Tobogán Obstáculo Aventura Espacial', cat:'Inflable', total:1, kw:'aventura espacial,obstaculo aventura espacial,obstáculo aventura espacial,espacial'},
-  {num:28,nombre:'Tobogán Obstáculo Dino Volcán',       cat:'Inflable', total:1, kw:'dino volcan,dino volcán,obstaculo dino volcan,obstáculo dino volcán,volcan,volcán'},
-  {num:29,nombre:'Tobogán Obstáculo Titán',             cat:'Inflable', total:1, kw:'titan,titán,obstaculo titan,obstáculo titán'},
+  {num:27,nombre:'Tobogán Obstáculo Aventura Espacial', cat:'Inflable', total:1, desde:'2026-10-05', kw:'aventura espacial,obstaculo aventura espacial,obstáculo aventura espacial,espacial'},
+  {num:28,nombre:'Tobogán Obstáculo Dino Volcán',       cat:'Inflable', total:1, desde:'2026-10-05', kw:'dino volcan,dino volcán,obstaculo dino volcan,obstáculo dino volcán,volcan,volcán'},
+  {num:29,nombre:'Tobogán Obstáculo Titán',             cat:'Inflable', total:1, desde:'2026-10-05', kw:'titan,titán,obstaculo titan,obstáculo titán'},
   {num:4, nombre:'Tobogán Pirata',          cat:'Inflable',    total:1, kw:'pirata,tobogan pirata,tobogán pirata,balco'},
-  {num:30,nombre:'Tobogán Dulcelandia',     cat:'Inflable',    total:1, kw:'dulcelandia,dulce landia,dulces,tobogan dulcelandia,tobogán dulcelandia'},
+  {num:30,nombre:'Tobogán Dulcelandia',     cat:'Inflable',    total:1, desde:'2026-10-05', kw:'dulcelandia,dulce landia,dulces,tobogan dulcelandia,tobogán dulcelandia'},
   {num:1, nombre:'Tobogán Dinopoder',       cat:'Inflable',    total:1, kw:'dino,dinosaurio,dinopoder'},
   {num:5, nombre:'Tobogán Marvel',          cat:'Inflable',    total:1, kw:'marvel,advenger,avengers'},
   {num:6, nombre:'Tobogán Mario Bross',     cat:'Inflable',    total:1, kw:'mario,mario bross,mario bros'},
@@ -1223,7 +1223,7 @@ const INVENTARIO = [
   {num:8, nombre:'Tobogán Pro',             cat:'Inflable',    total:2, kw:'tobogan pro,tobogán pro,inflable pro,juego pro,pro'},
   {num:10,nombre:'Tobogán Gold',            cat:'Inflable',    total:1, kw:'gold,juego gold,inflable gold,talbot'},
   {num:11,nombre:'Tobogán Doble Castillo',  cat:'Inflable',    total:1, kw:'doble castillo,castillo doble,castillo'},
-  {num:12,nombre:'Avioncitos Voladores',    cat:'Electrónico', total:2, kw:'avion,aviones,avioncitos,aviones 2,avioncitos 2,avion 2'},
+  {num:12,nombre:'Avioncitos Voladores',    cat:'Electrónico', total:1, extra:[{desde:'2026-11-01',n:1}], kw:'avion,aviones,avioncitos,aviones 2,avioncitos 2,avion 2'},
   {num:13,nombre:'Carrusel Pony',           cat:'Electrónico', total:1, kw:'carrusel pony,carrusel grande,carrusel'},
   {num:14,nombre:'Atrapa Ranita',           cat:'Electrónico', total:2, kw:'ranita,rana,atrapa ranita,ranita 2'},
   {num:16,nombre:'Moto',                    cat:'Electrónico', total:2, kw:'moto verde,moto,moto 2'},
@@ -1234,6 +1234,27 @@ const INVENTARIO = [
   {num:22,nombre:'Jenga',                   cat:'Interior',    total:4, kw:'jenga,jenga gigante,yenga,jenga 2,jenga 3,jenga 4'},
   {num:25,nombre:'Generador',               cat:'Adicionales',  total:1, kw:'generador,generadores,gen'},
 ];
+
+// === Disponibilidad por fecha (juegos y unidades que llegan mas adelante) ===
+function _fechaYMD(fechaStr){
+  const s=String(fechaStr);
+  if(s.length>=10 && s.charAt(4)==='-' && s.charAt(7)==='-') return s.slice(0,10);
+  const p=s.split('/');
+  if(p.length===3) return p[2]+'-'+('0'+p[1]).slice(-2)+'-'+('0'+p[0]).slice(-2);
+  return '';
+}
+// El juego ya esta disponible en esa fecha? (los que llegan despues se ocultan antes)
+function invVisibleEnFecha(item, fechaStr){
+  if(!item.desde) return true;
+  const ymd=_fechaYMD(fechaStr);
+  return ymd==='' ? true : ymd >= item.desde;
+}
+// Stock efectivo en la fecha (suma las unidades extra que llegan despues)
+function invTotalEnFecha(item, fechaStr){
+  let t=item.total;
+  if(item.extra){ const ymd=_fechaYMD(fechaStr); for(const e of item.extra){ if(ymd!=='' && ymd>=e.desde) t+=e.n; } }
+  return t;
+}
 
 const MAPEO={};
 // MAPEO_NORM: las mismas claves pero SIN TILDES. Sirve para que "Fórmula 1"
@@ -1363,13 +1384,14 @@ function _mitadBadge(icono, etiqueta, hayLibre){
 // Detalle mañana/tarde de un juego en un día concreto.
 // Devuelve null cuando el juego ocupa igual las dos franjas (el caso normal),
 // para que las vistas de siempre no cambien en los días sin turnos.
-function detalleTurnoJuego(item, porFranja){
+function detalleTurnoJuego(item, porFranja, totalEff){
+  const tot = (totalEff===undefined) ? item.total : totalEff;
   const pf = porFranja && porFranja[item.nombre];
   if(!pf || pf.am === pf.pm) return null;
-  const libreAm = Math.max(0, item.total - pf.am);
-  const librePm = Math.max(0, item.total - pf.pm);
-  const etAm = item.total === 1 ? (libreAm>0?'Libre':'Lleno') : String(libreAm);
-  const etPm = item.total === 1 ? (librePm>0?'Libre':'Lleno') : String(librePm);
+  const libreAm = Math.max(0, tot - pf.am);
+  const librePm = Math.max(0, tot - pf.pm);
+  const etAm = tot === 1 ? (libreAm>0?'Libre':'Lleno') : String(libreAm);
+  const etPm = tot === 1 ? (librePm>0?'Libre':'Lleno') : String(librePm);
   return {
     libreAm, librePm,
     // badge con color por mitad: cada franja verde/roja según si le queda stock
@@ -2220,8 +2242,9 @@ window.mostrarInventarioDia = function(dia){
   // por escrito algo que después hay que negociar por turno.
   const paginasLibres = [];
   for(const item of INVENTARIO){
+    if(!invVisibleEnFecha(item, fechaStr)) continue;
     const ocu  = usados[item.nombre] || 0;
-    const disp = item.total - ocu;
+    const disp = invTotalEnFecha(item, fechaStr) - ocu;
     if(disp > 0) paginasLibres.push(item.nombre);
   }
 
@@ -2260,21 +2283,22 @@ window.mostrarInventarioDia = function(dia){
   ];
   let html = '';
   for(const {cat,icon,color} of cats){
-    const items = INVENTARIO.filter(i => i.cat === cat);
+    const items = INVENTARIO.filter(i => i.cat === cat && invVisibleEnFecha(i, fechaStr));
     html += `<div class="inv-cat-col"><div class="inv-cat-title" style="color:${color}">${icon} ${cat.toUpperCase()}</div><div class="inv-cat-grid">`;
     for(const item of items){
+      const tot  = invTotalEnFecha(item, fechaStr);
       const ocu  = usados[item.nombre] || 0;
-      const disp = Math.max(0, item.total - ocu);
-      const pct  = item.total > 0 ? disp/item.total : 0;
+      const disp = Math.max(0, tot - ocu);
+      const pct  = tot > 0 ? disp/tot : 0;
       let cls, badge;
-      if(pct >= 1)      { cls='disponible'; badge = item.total===1 ? 'Libre' : disp+'/'+item.total+' libres'; }
-      else if(pct > 0)  { cls='parcial';    badge = disp+'/'+item.total+' libre'+(disp!==1?'s':''); }
+      if(pct >= 1)      { cls='disponible'; badge = tot===1 ? 'Libre' : disp+'/'+tot+' libres'; }
+      else if(pct > 0)  { cls='parcial';    badge = disp+'/'+tot+' libre'+(disp!==1?'s':''); }
       else              { cls='ocupado';    badge = 'Lleno'; }
       let dot = pct>=1?'green':pct>0?'yellow':'red';
       let badgeCls = dot;   // clase de color del badge (se neutraliza si hay turnos)
       // Si ese día el juego está partido en turnos, el número de arriba miente
       // (muestra el peor caso). Aquí se reemplaza por el detalle mañana/tarde.
-      const det = detalleTurnoJuego(item, porFranja);
+      const det = detalleTurnoJuego(item, porFranja, tot);
       if(det){ badge = det.badge; dot = det.dcls; cls = det.dcls==='red' ? 'ocupado' : 'parcial'; badgeCls=''; }
       const quien = ocu > 0
         ? arriendosDia.filter(a => estandarizar(a.equipos||'').includes(item.nombre))
@@ -4749,9 +4773,11 @@ window.renderDisponibilidad=function(){
   // Resumen rápido
   let libres=0,parciales=0,ocupados=0;
   for(const item of INVENTARIO){
+    if(!invVisibleEnFecha(item, fechaStr)) continue;
+    const tot=invTotalEnFecha(item, fechaStr);
     const ocu=usados[item.nombre]||0;
-    const disp=item.total-ocu;
-    if(disp>=item.total) libres++;
+    const disp=tot-ocu;
+    if(disp>=tot) libres++;
     else if(disp>0) parciales++;
     else ocupados++;
   }
@@ -4784,20 +4810,21 @@ window.renderDisponibilidad=function(){
   ];
   let html='';
   for(const{cat,icon,color} of cats){
-    const items=INVENTARIO.filter(i=>i.cat===cat);
+    const items=INVENTARIO.filter(i=>i.cat===cat && invVisibleEnFecha(i, fechaStr));
     html+=`<div class="disp-cat-title" style="color:${color}">${icon} ${cat}</div><div class="disp-grid">`;
     for(const item of items){
+      const tot=invTotalEnFecha(item, fechaStr);
       const ocu=usados[item.nombre]||0;
-      const disp=Math.max(0,item.total-ocu);
-      const pct=disp/item.total;
+      const disp=Math.max(0,tot-ocu);
+      const pct=disp/tot;
       let cls,dcls,badge,badgeCls;
-      if(pct>=1){cls='disponible';dcls='green';badge=item.total===1?'Libre':disp+'/'+item.total+' libres';}
-      else if(pct>0.5){cls='parcial';dcls='red';badge=disp+'/'+item.total+' libres';}
-      else if(pct>0){cls='casi';dcls='red';badge=disp+'/'+item.total+' libre';}
+      if(pct>=1){cls='disponible';dcls='green';badge=tot===1?'Libre':disp+'/'+tot+' libres';}
+      else if(pct>0.5){cls='parcial';dcls='red';badge=disp+'/'+tot+' libres';}
+      else if(pct>0){cls='casi';dcls='red';badge=disp+'/'+tot+' libre';}
       else{cls='ocupado';dcls='red';badge='Ocupado';}
       badgeCls=dcls;
       // Detalle mañana/tarde cuando ese día el juego está partido en turnos
-      const det=detalleTurnoJuego(item,porFranja);
+      const det=detalleTurnoJuego(item,porFranja,tot);
       if(det){badge=det.badge;dcls=det.dcls;cls=det.dcls==='red'?'ocupado':'parcial';badgeCls='';}
       const quien=ocu>0?arriendosDia.filter(a=>a.equipos&&a.equipos.includes(item.nombre)).flatMap(a=>{
                          const equiposNorm=estandarizar(a.equipos||'');
