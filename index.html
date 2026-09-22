@@ -565,11 +565,20 @@ select:focus{border-color:var(--blue)}
           <button id="btnCompartirCatalogoCompleto" onclick="generarCatalogoCompletoPDF()" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 14px;background:#0071ce;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(0,113,206,.35)">
             📚 Catálogo completo
           </button>
+          <button id="btnTodosVideos" onclick="enviarTodosLosVideos()" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(124,58,237,.35)">
+            🎬 Todos los videos
+          </button>
           <button id="btnCompartirCatalogo" onclick="generarCatalogoPDF()" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 14px;background:#25d366;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(37,211,102,.35)">
             📄 Catálogo disponible
           </button>
           <button id="btnEnviarVideos" onclick="enviarVideosDisponibles()" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 14px;background:#8b5cf6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(139,92,246,.35)">
-            🎥 Enviar videos
+            🎥 Videos disponibles
+          </button>
+          <button id="btnVideosElectronicos" onclick="enviarVideosElectronicos()" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 14px;background:#fa6400;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(250,100,0,.35)">
+            🎮 Videos electrónicos
+          </button>
+          <button id="btnVideosElectronicosDisp" onclick="enviarVideosElectronicosDisponibles()" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 14px;background:#d97706;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;box-shadow:0 2px 8px rgba(217,119,6,.35)">
+            🕹️ Videos electrónicos disponibles
           </button>
         </div>
       </div>
@@ -2344,13 +2353,27 @@ window.mostrarInventarioDia = function(dia){
     btnVid.setAttribute('data-videos', JSON.stringify(conVid));
   }
 
-  // Mostrar/ocultar botón catálogo completo (siempre visible si hay arriendos ese día)
+  // Botón videos electrónicos DISPONIBLES: solo electrónicos+interior libres esa fecha con media
+  const btnVidElecDisp = document.getElementById('btnVideosElectronicosDisp');
+  if(btnVidElecDisp){
+    const catElecInt = new Set(INVENTARIO.filter(i => i.cat === 'Electrónico' || i.cat === 'Interior').map(i => i.nombre));
+    const conVidElec = paginasLibres.filter(n => VIDEOS_JUEGO[n] && catElecInt.has(n));
+    btnVidElecDisp.style.display = conVidElec.length > 0 ? 'inline-flex' : 'none';
+    btnVidElecDisp.setAttribute('data-videos', JSON.stringify(conVidElec));
+  }
+
+  // Botón catálogo completo: SIEMPRE visible (todos los juegos, no depende de arriendos)
   const btnCompleto = document.getElementById('btnCompartirCatalogoCompleto');
   if(btnCompleto){
-    btnCompleto.style.display = arriendosDia.length > 0 ? 'inline-flex' : 'none';
+    btnCompleto.style.display = 'inline-flex';
     btnCompleto.setAttribute('data-fecha',   fechaStr);
     btnCompleto.setAttribute('data-dianom',  diaNom);
   }
+  // Botones de conjunto fijo (todos los videos / electrónicos): SIEMPRE visibles
+  const btnTodosVid = document.getElementById('btnTodosVideos');
+  if(btnTodosVid) btnTodosVid.style.display = 'inline-flex';
+  const btnVidElec = document.getElementById('btnVideosElectronicos');
+  if(btnVidElec) btnVidElec.style.display = 'inline-flex';
 
   // Render grid categorías
   const cats = [
@@ -2504,13 +2527,11 @@ window.generarCatalogoPDF = async function(){
 };
 
 // ===== ENVIAR VIDEOS (solo videos, sin PDF: así WhatsApp los muestra como video con miniatura) =====
-window.enviarVideosDisponibles = async function(){
-  const btn = document.getElementById('btnEnviarVideos');
+// Helper compartido: comparte los videos/fotos de una lista de juegos (solo archivos)
+async function _compartirVideosDeJuegos(btn, nombres){
   if(!btn) return;
-  const juegos   = JSON.parse(btn.getAttribute('data-videos') || '[]');
-  const conVideo = juegos.filter(n => VIDEOS_JUEGO[n]);
-  if(!conVideo.length){ toast('No hay videos para los juegos disponibles','err'); return; }
-
+  const conVideo = (nombres||[]).filter(n => VIDEOS_JUEGO[n]);
+  if(!conVideo.length){ toast('No hay videos para enviar','err'); return; }
   const orig = btn.innerHTML;
   btn.innerHTML = '⏳ Cargando videos...';
   btn.style.pointerEvents = 'none';
@@ -2519,10 +2540,9 @@ window.enviarVideosDisponibles = async function(){
     btn.innerHTML = orig;
     btn.style.pointerEvents = 'auto';
     if(!vids.length){ toast('No se pudieron cargar los videos','err'); return; }
-
     if(navigator.canShare && navigator.canShare({ files: vids })){
       try{
-        await navigator.share({ files: vids }); // solo archivos de video (sin texto ni PDF)
+        await navigator.share({ files: vids }); // solo archivos de video/foto (sin texto ni PDF)
       }catch(e){
         if(e.name !== 'AbortError'){ toast('No se pudo compartir los videos','err'); }
       }
@@ -2534,6 +2554,36 @@ window.enviarVideosDisponibles = async function(){
     btn.style.pointerEvents = 'auto';
     toast('Error: '+err.message,'err');
   }
+}
+
+// Videos de los juegos DISPONIBLES en la fecha seleccionada
+window.enviarVideosDisponibles = async function(){
+  const btn = document.getElementById('btnEnviarVideos');
+  if(!btn) return;
+  const juegos = JSON.parse(btn.getAttribute('data-videos') || '[]');
+  await _compartirVideosDeJuegos(btn, juegos);
+};
+
+// TODOS los videos/fotos del catálogo (no depende de la fecha)
+window.enviarTodosLosVideos = async function(){
+  const btn = document.getElementById('btnTodosVideos');
+  const todos = INVENTARIO.map(i => i.nombre).filter(n => VIDEOS_JUEGO[n]);
+  await _compartirVideosDeJuegos(btn, todos);
+};
+
+// Videos/fotos de juegos ELECTRÓNICOS + INTERIOR (no depende de la fecha)
+window.enviarVideosElectronicos = async function(){
+  const btn = document.getElementById('btnVideosElectronicos');
+  const lista = INVENTARIO.filter(i => i.cat === 'Electrónico' || i.cat === 'Interior').map(i => i.nombre).filter(n => VIDEOS_JUEGO[n]);
+  await _compartirVideosDeJuegos(btn, lista);
+};
+
+// Videos/fotos de juegos ELECTRÓNICOS + INTERIOR DISPONIBLES en la fecha seleccionada
+window.enviarVideosElectronicosDisponibles = async function(){
+  const btn = document.getElementById('btnVideosElectronicosDisp');
+  if(!btn) return;
+  const juegos = JSON.parse(btn.getAttribute('data-videos') || '[]');
+  await _compartirVideosDeJuegos(btn, juegos);
 };
 
 // ===== CATÁLOGO COMPLETO =====
