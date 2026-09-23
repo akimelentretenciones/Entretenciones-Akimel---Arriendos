@@ -779,7 +779,7 @@ select:focus{border-color:var(--blue)}
       <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Pega el texto del chat semanal.</div>
       <div id="panelPegar">
         <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Copia el chat completo de WhatsApp y pégalo aquí:</div>
-        <textarea class="paste-area" id="pasteArea" placeholder="[01-04-26, 10:00:00 a.m.] Alamiro Maximiliano: Nombre Juan Pérez&#10;Rio illapel 44&#10;San Joaquín&#10;18 de abril&#10;15:00&#10;+56971978155&#10;Inflable Marvel&#10;Mesa jockey&#10;Taca Taca&#10;Pendiente: 124.000"></textarea>
+        <textarea class="paste-area" id="pasteArea" placeholder="[01-04-26, 10:00:00 a.m.] Alamiro Maximiliano: Nombre Juan Pérez&#10;Rio illapel 44&#10;San Joaquín&#10;18 de abril&#10;15:00&#10;+56971978155&#10;Inflable Marvel&#10;Mesa jockey&#10;Taca Taca&#10;Pendiente: 124.000&#10;Horario tarde"></textarea>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="procesarTexto()">⚡ Procesar Arriendo</button>
           <button class="btn btn-ghost" onclick="pegarPortapapeles()">📋 Pegar</button>
@@ -6460,7 +6460,7 @@ function parsearChat(texto){
     }
 
     // ── TURNO (mañana / tarde) — OPCIONAL, MUY CONSERVADOR ──
-    // Sólo se toma cuando viene la palabra "turno" o "jornada" delante.
+    // Sólo se toma cuando viene "turno", "jornada", "horario" o "sólo" delante.
     // Nunca se deduce de "a las 3 de la tarde": tú instalas en la mañana aunque
     // el evento parta en la tarde, así que leer eso como turno tarde liberaría
     // la mañana y volvería a abrir la puerta a un doble agendamiento.
@@ -6468,8 +6468,8 @@ function parsearChat(texto){
     let turno = '';
     {
       const tn   = _sinTilde(bloque);
-      const hayM = /(?:turno|jornada)\s*(?:de\s*)?(?:la\s*)?manana/.test(tn) || /\bturno\s*am\b/.test(tn);
-      const hayT = /(?:turno|jornada)\s*(?:de\s*)?(?:la\s*)?tarde/.test(tn)  || /\bturno\s*pm\b/.test(tn);
+      const hayM = /(?:turno|jornada|horario|solo)\s*(?:de\s*)?(?:la\s*)?manana/.test(tn) || /\b(?:turno|horario)\s*am\b/.test(tn);
+      const hayT = /(?:turno|jornada|horario|solo)\s*(?:de\s*)?(?:la\s*)?tarde/.test(tn)  || /\b(?:turno|horario)\s*pm\b/.test(tn);
       // Guarda extra: si el mensaje también nombra la otra mitad del día
       // ("turno mañana, retiro en la tarde"), el juego se queda hasta la tarde
       // y NO está libre para otro evento. Ante la duda, día completo.
