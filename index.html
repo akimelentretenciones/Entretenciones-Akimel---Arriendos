@@ -2546,9 +2546,15 @@ async function _compartirVideosDeJuegos(btn, nombres){
     btn.innerHTML = orig;
     btn.style.pointerEvents = 'auto';
     if(!vids.length){ toast('No se pudieron cargar los videos','err'); return; }
-    if(navigator.canShare && navigator.canShare({ files: vids })){
+    // WhatsApp reordena los archivos por nombre al recibirlos. Les ponemos un
+    // prefijo numérico (01_, 02_...) según el orden del inventario para que
+    // lleguen ordenados. El prefijo no se ve: en fotos/videos WhatsApp muestra
+    // la imagen, no el nombre del archivo.
+    const vidsOrden = vids.map((f, i) =>
+      new File([f], String(i+1).padStart(2,'0') + '_' + (f.name || ('media'+(i+1))), { type: f.type }));
+    if(navigator.canShare && navigator.canShare({ files: vidsOrden })){
       try{
-        await navigator.share({ files: vids }); // solo archivos de video/foto (sin texto ni PDF)
+        await navigator.share({ files: vidsOrden }); // solo archivos de video/foto (sin texto ni PDF)
       }catch(e){
         if(e.name !== 'AbortError'){ toast('No se pudo compartir los videos','err'); }
       }
