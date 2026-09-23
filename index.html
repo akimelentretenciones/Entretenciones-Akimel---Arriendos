@@ -2550,8 +2550,10 @@ async function _compartirVideosDeJuegos(btn, nombres){
     // prefijo numérico (01_, 02_...) según el orden del inventario para que
     // lleguen ordenados. El prefijo no se ve: en fotos/videos WhatsApp muestra
     // la imagen, no el nombre del archivo.
+    const _t0 = Date.now();
     const vidsOrden = vids.map((f, i) =>
-      new File([f], String(i+1).padStart(2,'0') + '_' + (f.name || ('media'+(i+1))), { type: f.type }));
+      new File([f], String(i+1).padStart(2,'0') + '_' + (f.name || ('media'+(i+1))),
+        { type: f.type, lastModified: _t0 + i*1000 }));
     if(navigator.canShare && navigator.canShare({ files: vidsOrden })){
       try{
         await navigator.share({ files: vidsOrden }); // solo archivos de video/foto (sin texto ni PDF)
