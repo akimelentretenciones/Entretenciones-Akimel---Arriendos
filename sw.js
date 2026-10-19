@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════
-// AKIMEL — Service Worker v7
+// AKIMEL — Service Worker v8
 // ═══════════════════════════════════════════════════
 // Rutas RELATIVAS (sin "/" inicial) para funcionar en GitHub Pages
 // bajo el subdirectorio /Entretenciones-Akimel---Arriendos/
-const CACHE_NAME = 'akimel-v7';
+const CACHE_NAME = 'akimel-v8';
 const ASSETS = [
   './',
   'index.html',
