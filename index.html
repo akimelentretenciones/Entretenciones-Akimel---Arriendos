@@ -1185,7 +1185,7 @@ try{
 }catch(e){ console.warn('Chart.register falló:', e); }
 let ARRIENDOS=[], FILTRADOS=[], PAGINA=1, POR_PAGINA=50, AÑO_DASH='ambos', CHARTS={};
 let ultimosProcesados=[]; // arriendos recién procesados (habilitan el botón de presentación)
-let MSG_MODO='semana', MSG_OFFSET=0; // Mensajería: filtro 'semana'|'mes', offset>=0 hacia el futuro
+let MSG_MODO='semana', MSG_OFFSET=0; // Mensajería: filtro 'semana'|'mes', offset 0=actual, >0 futuro, <0 pasado
 
 // Colores y datos por trabajador (usado en dropdown 🙋 y filtro de la tabla)
 const TRABAJADORES_COLOR = {
@@ -4158,7 +4158,7 @@ window.goTab=function(tab){
   if(tab==='vehiculos'){ if(_vehCargados) renderVehiculos(); else cargarVehiculos().then(renderVehiculos); }
   if(tab==='notifs') actualizarIndicadorPermiso();
   if(tab==='semana') activarTrabajoSemana();
-  if(tab==='mensajes') renderMensajes();
+  if(tab==='mensajes'){ MSG_MODO='semana'; MSG_OFFSET=0; poblarMsgPeriodos(); renderMensajes(); } // al entrar, siempre la semana en curso
   if(tab==='recontacto') renderRecontacto();
 };
 
@@ -4488,7 +4488,7 @@ function msgRangoSemana(){
   return [lunes,domingo];
 }
 
-// ── Rango [inicio,fin] según modo ('semana'|'mes') y offset (>=0 hacia el futuro) ──
+// ── Rango [inicio,fin] según modo ('semana'|'mes') y offset (0=actual, >0 futuro, <0 pasado) ──
 function msgRango(modo, offset){
   const hoy = new Date();
   if(modo === 'mes'){
@@ -4502,24 +4502,32 @@ function msgRango(modo, offset){
   return [lunes, domingo];
 }
 
+// Mínimo offset permitido hacia el pasado (para enviar feedback de arriendos recientes)
+function msgOffsetMin(){ return MSG_MODO === 'mes' ? -6 : -8; }
+
 const MSG_MESES_F=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-// Rellena el dropdown con el período actual + los siguientes (solo futuro)
+// Rellena el dropdown con períodos pasados (hasta msgOffsetMin), el actual y los futuros
 function poblarMsgPeriodos(){
   const sel = document.getElementById('msgPeriodoSelect');
   if(!sel) return;
   const fmt = d => String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+  const MIN = Math.min(msgOffsetMin(), MSG_OFFSET); // incluye el pasado permitido
   const N = Math.max(12, MSG_OFFSET); // siempre incluye el período seleccionado
   let html = '';
-  for(let o=0; o<=N; o++){
+  for(let o=MIN; o<=N; o++){
     const [ini,fin] = msgRango(MSG_MODO, o);
     let label;
     if(MSG_MODO === 'mes'){
       const base = MSG_MESES_F[ini.getMonth()]+' '+ini.getFullYear();
-      label = o===0 ? base+' (actual)' : (o===1 ? base+' (próximo)' : base);
+      label = o===0 ? base+' (actual)' : (o===1 ? base+' (próximo)' : (o===-1 ? base+' (anterior)' : base));
     }else{
       const rango = fmt(ini)+' al '+fmt(fin);
-      const nom = o===0 ? 'Semana actual' : (o===1 ? 'Próxima semana' : 'Semana del '+fmt(ini));
+      let nom;
+      if(o===0) nom='Semana actual';
+      else if(o===1) nom='Próxima semana';
+      else if(o===-1) nom='Semana anterior';
+      else nom='Semana del '+fmt(ini);
       label = nom+' · '+rango;
     }
     html += '<option value="'+o+'"'+(o===MSG_OFFSET?' selected':'')+'>'+label+'</option>';
@@ -4550,13 +4558,13 @@ window.msgSetModo = function(modo){
 };
 window.msgStep = function(d){
   const next = MSG_OFFSET + d;
-  if(next < 0) return; // no se permite ir al pasado
+  if(next < msgOffsetMin()) return; // límite hacia el pasado
   MSG_OFFSET = next;
   poblarMsgPeriodos();
   renderMensajes();
 };
 window.msgSetPeriodo = function(v){
-  MSG_OFFSET = Math.max(0, parseInt(v,10) || 0);
+  MSG_OFFSET = Math.max(msgOffsetMin(), parseInt(v,10) || 0);
   renderMensajes();
 };
 
@@ -4569,7 +4577,7 @@ function renderMensajes(){
   if(_sel && !_sel.options.length) poblarMsgPeriodos();
   actualizarToggleMsg();
   const btnPrev = document.getElementById('msgPrev');
-  if(btnPrev){ btnPrev.disabled = MSG_OFFSET<=0; btnPrev.style.opacity = MSG_OFFSET<=0?'.4':'1'; btnPrev.style.cursor = MSG_OFFSET<=0?'not-allowed':'pointer'; }
+  if(btnPrev){ const atMin = MSG_OFFSET<=msgOffsetMin(); btnPrev.disabled = atMin; btnPrev.style.opacity = atMin?'.4':'1'; btnPrev.style.cursor = atMin?'not-allowed':'pointer'; }
 
   const [ini,fin] = msgRango(MSG_MODO, MSG_OFFSET);
   const fmt = d => String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
