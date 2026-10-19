@@ -4502,8 +4502,8 @@ function msgRango(modo, offset){
   return [lunes, domingo];
 }
 
-// Mínimo offset permitido hacia el pasado (para enviar feedback de arriendos recientes)
-function msgOffsetMin(){ return MSG_MODO === 'mes' ? -6 : -8; }
+// Mínimo offset permitido hacia el pasado: solo 1 período anterior (1 semana / 1 mes)
+function msgOffsetMin(){ return -1; }
 
 const MSG_MESES_F=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
