@@ -1295,6 +1295,7 @@ const INVENTARIO = [
   {num:32,nombre:'Obstáculo Rayo',          cat:'Inflable',    total:1, kw:'rayo,rayos,obstaculo rayo,obstáculo rayo,obstaculo rayos'},
   {num:31,nombre:'Robot Acuático',          cat:'Inflable',    total:1, grupo:'robot', kw:'robot acuatico,robot acuático,acuatico,acuático,robot con agua,robot agua'},
   {num:33,nombre:'Tobogán Robot',           cat:'Inflable',    total:1, grupo:'robot', kw:'tobogan robot,tobogán robot,robot sin agua,robot sin acuatico,robot sin acuático,robot seco'},
+  {num:34,nombre:'Tobogán Robot Pelotitas',  cat:'Inflable',    total:1, grupo:'robot', soloAgenda:true, kw:'tobogan robot pelotitas,tobogán robot pelotitas,robot pelotitas,robot con pelotitas,robot pelotas,robot con pelotas'},
   {num:4, nombre:'Tobogán Pirata',          cat:'Inflable',    total:1, kw:'pirata,tobogan pirata,tobogán pirata,balco'},
   {num:30,nombre:'Tobogán Dulcelandia',     cat:'Inflable',    total:1, desde:'2026-10-05', kw:'dulcelandia,dulce landia,dulces,tobogan dulcelandia,tobogán dulcelandia'},
   {num:1, nombre:'Tobogán Dinopoder',       cat:'Inflable',    total:1, kw:'dino,dinosaurio,dinopoder'},
@@ -2427,6 +2428,7 @@ window.mostrarInventarioDia = function(dia){
   const paginasLibres = [];
   for(const item of INVENTARIO){
     if(!invVisibleEnFecha(item, fechaStr)) continue;
+    if(item.soloAgenda) continue; // se agenda, pero no se ofrece a clientes
     const ocu  = usados[item.nombre] || 0;
     const disp = invTotalEnFecha(item, fechaStr) - ocu;
     if(disp > 0) paginasLibres.push(item.nombre);
@@ -2704,7 +2706,7 @@ window.generarCatalogoCompletoPDF = async function(){
   const fechaTexto = `${dd}/${mm}/${yyyy}`;
 
   // Mensaje de texto — catálogo completo
-  const todoJuegos = INVENTARIO.map(i => `• ${i.nombre}`).join('\n');
+  const todoJuegos = INVENTARIO.filter(i => !i.soloAgenda).map(i => `• ${i.nombre}`).join('\n');
   const mensaje = `📚 ¡Hola! Aquí está nuestro catálogo completo de juegos disponibles para la fecha ${fechaTexto}:\n\n${todoJuegos}\n\n¡Contáctanos para reservar! 😊`;
 
   // Construir PDF con jsPDF usando todas las imágenes
