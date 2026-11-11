@@ -368,23 +368,24 @@ select:focus{border-color:var(--blue)}
 
 /* ===== Vista Arriendos: ocultar columnas que sólo se usan en Trabajo Semana =====
    Orden de columnas: 1 # · 2 Cliente · 3 Dirección · 4 Comuna · 5 Fecha · 6 Día · 7 Sem · 8 Hora ·
-   9 Teléfono · 10 WA · 11 Equipos · 12 LUGAR · 13 SUPERFICIE · 14 Monto · 15 Instalación · 16 Pagado ·
-   17 Pago · 18 Copiar · 19 Trabajador · 20 Equipo · 21 Retiro · 22 Waze · 23 Acciones
-   En Arriendos se ocultan: WA (10), Instalación (15), Pagado (16), Copiar (18), Trabajador (19), Equipo (20).
-   Lugar y Superficie se muestran en AMBAS vistas.
+   9 Instalar desde · 10 Teléfono · 11 WA · 12 Equipos · 13 LUGAR · 14 SUPERFICIE · 15 Monto · 16 Instalación ·
+   17 Pagado · 18 Pago · 19 Copiar · 20 Trabajador · 21 Equipo · 22 Retiro · 23 Waze · 24 Acciones
+   En Arriendos se ocultan: WA (11), Instalación (16), Pagado (17), Copiar (19), Trabajador (20), Equipo (21).
+   "Instalar desde", Lugar y Superficie se muestran en AMBAS vistas.
+   Si agregas o quitas una columna, corre estos números.
    También ocultamos el botón "Marcar pasados como pagados" */
-#sec-arriendos table thead th:nth-child(10),
-#sec-arriendos table thead th:nth-child(15),
+#sec-arriendos table thead th:nth-child(11),
 #sec-arriendos table thead th:nth-child(16),
-#sec-arriendos table thead th:nth-child(18),
+#sec-arriendos table thead th:nth-child(17),
 #sec-arriendos table thead th:nth-child(19),
 #sec-arriendos table thead th:nth-child(20),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(10),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(15),
+#sec-arriendos table thead th:nth-child(21),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(11),
 #sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(16),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(18),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(17),
 #sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(19),
-#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(20){
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(20),
+#sec-arriendos table tbody tr:not(.sep-dia-semana) td:nth-child(21){
   display:none !important;
 }
 /* Selects compactos de Lugar / Superficie dentro de la tabla */
@@ -670,8 +671,8 @@ select:focus{border-color:var(--blue)}
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th title="¿Dónde se instala? Casa propia / Sede / Club house">🏠 Lugar</th><th title="Superficie donde se instala el inflable">🌱 Superficie</th><th>Monto</th><th>Instalación</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th title="Trabajador asignado">🙋</th><th title="Pago registrado por el equipo">💬 Equipo</th><th title="Retiro">Retiro 🚚</th><th title="Abrir en Waze">🗺️ Waze</th><th></th></tr></thead>
-      <tbody id="tablaBody"><tr><td colspan="23" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
+      <thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Comuna</th><th>Fecha</th><th>Día</th><th>Sem.</th><th>Hora</th><th title="Desde qué hora se puede instalar (lo informa el cliente)">🔧 Instalar</th><th>Teléfono</th><th>WA</th><th>Equipos</th><th title="¿Dónde se instala? Casa propia / Sede / Club house">🏠 Lugar</th><th title="Superficie donde se instala el inflable">🌱 Superficie</th><th>Monto</th><th>Instalación</th><th title="Pagado">✓</th><th>Pago</th><th title="Copiar para WhatsApp">📋</th><th title="Trabajador asignado">🙋</th><th title="Pago registrado por el equipo">💬 Equipo</th><th title="Retiro">Retiro 🚚</th><th title="Abrir en Waze">🗺️ Waze</th><th></th></tr></thead>
+      <tbody id="tablaBody"><tr><td colspan="24" style="text-align:center;padding:32px;color:var(--text3)">Cargando...</td></tr></tbody>
     </table>
   </div>
   <div class="pagination">
@@ -3065,7 +3066,7 @@ function renderTabla(){
   document.getElementById('paginaInfo').textContent=`${inicio+1}-${fin} de ${total}`;
   const tbody=document.getElementById('tablaBody');
   const pagina=FILTRADOS.slice(inicio,fin);
-  if(!pagina.length){tbody.innerHTML=`<tr><td colspan="23" style="text-align:center;padding:32px;color:var(--text3)">Sin resultados</td></tr>`;return;}
+  if(!pagina.length){tbody.innerHTML=`<tr><td colspan="24" style="text-align:center;padding:32px;color:var(--text3)">Sin resultados</td></tr>`;return;}
   const sumaTotal=FILTRADOS.reduce((s,a)=>s+(a.pendiente||0),0);
   const sumaPag=pagina.reduce((s,a)=>s+(a.pendiente||0),0);
   tbody.innerHTML=pagina.map((a,i)=>`<tr>
@@ -3078,7 +3079,6 @@ function renderTabla(){
     <td style="color:var(--text3);font-size:11px;font-weight:700">${a.semana||isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'))||'—'}</td>
     <td style="white-space:nowrap">
       <div>${a.hora||'—'}</div>
-      ${a.horaInstalacion?`<div style="font-size:10px;color:#a16207;font-weight:700;margin-top:2px" title="Desde qué hora se puede instalar">🔧 desde ${a.horaInstalacion}</div>`:''}
       ${(()=>{
         const v=normalizarTurno(a.turno);
         const c=v?TURNO_COLOR[v]:null;
@@ -3089,6 +3089,12 @@ function renderTabla(){
           ${TURNOS.map(t=>`<option value="${t}" ${v===t?'selected':''}>${TURNO_ICONO[t]} ${t}</option>`).join('')}
         </select>`;
       })()}
+    </td>
+    <td style="text-align:center">
+      <input type="text" value="${_esc(a.horaInstalacion||'')}"
+        onchange="guardarHoraInstalacion('${a.id}',this.value)"
+        placeholder="ej: 10:00" title="Desde qué hora se puede instalar"
+        style="font-size:10px;padding:3px 6px;border-radius:6px;border:1.5px solid ${a.horaInstalacion?'#a16207':'var(--border)'};background:${a.horaInstalacion?'rgba(161,98,7,.10)':'#fff'};color:${a.horaInstalacion?'#a16207':'var(--text3)'};font-family:'Sora',sans-serif;font-weight:${a.horaInstalacion?'700':'400'};width:90px;outline:none">
     </td>
     <td style="font-size:11px;white-space:nowrap">${(()=>{
       if(!a.telefono) return '—';
@@ -3232,7 +3238,7 @@ function renderTabla(){
     </td>
   </tr>`).join('')+`
   <tr style="background:var(--bg3);font-weight:700">
-    <td colspan="13" style="padding:10px 14px;font-size:12px;color:var(--text3)">
+    <td colspan="14" style="padding:10px 14px;font-size:12px;color:var(--text3)">
       TOTAL ${total} registros ${total>POR_PAGINA?'· Pág: '+clp(sumaPag):''}
     </td>
     <td style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:var(--blue)">${clp(sumaTotal)}</td>
@@ -3715,6 +3721,19 @@ window.asignarTrabajador=async function(id,valor){
     await updateDoc(docFn(db,'arriendos',id),{trabajadorAsignado:valor});
     const nom=(TRABAJADORES_COLOR[valor]&&TRABAJADORES_COLOR[valor].nombre)||valor;
     toast(valor?'👷 Asignado a '+nom:'👷 Asignación removida','ok');
+    renderTabla();
+  }catch(e){toast('Error: '+e.message,'err');}
+};
+
+window.guardarHoraInstalacion=async function(id,valor){
+  const a=ARRIENDOS.find(x=>x.id===id);
+  if(!a) return;
+  valor=String(valor||'').trim();
+  a.horaInstalacion=valor;
+  try{
+    const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await updateDoc(docFn(db,'arriendos',id),{horaInstalacion:valor});
+    toast(valor?'🔧 Instalar desde '+valor+' guardado':'🔧 Horario de instalación removido','ok');
     renderTabla();
   }catch(e){toast('Error: '+e.message,'err');}
 };
