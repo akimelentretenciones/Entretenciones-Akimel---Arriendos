@@ -659,6 +659,8 @@ select:focus{border-color:var(--blue)}
         <option value="leo" style="color:#5fb446">Leo</option>
         <option value="cristofer" style="color:#fa6400">Cristófer</option>
         <option value="martin" style="color:#a855f7">Martín</option>
+        <option value="seba" style="color:#de1c24">Seba</option>
+        <option value="villegas" style="color:#db2777">Villegas</option>
         <option value="alamiro" style="color:#0891b2">Alamiro</option>
         <option value="__sin">— Sin asignar</option>
       </select>
@@ -1156,6 +1158,8 @@ select:focus{border-color:var(--blue)}
           <option value="leo">Leo</option>
           <option value="cristofer">Cristófer</option>
           <option value="martin">Martín</option>
+          <option value="seba">Seba</option>
+          <option value="villegas">Villegas</option>
           <option value="alamiro">Alamiro</option>
         </select>
       </div>
@@ -1209,6 +1213,8 @@ const TRABAJADORES_COLOR = {
   leo:       {nombre:'Leo',       color:'#5fb446', bg:'rgba(95,180,70,.14)'},   // verde
   cristofer: {nombre:'Cristófer', color:'#fa6400', bg:'rgba(250,100,0,.12)'},   // naranjo
   martin:    {nombre:'Martín',    color:'#a855f7', bg:'rgba(168,85,247,.12)'},  // morado
+  seba:      {nombre:'Seba',      color:'#de1c24', bg:'rgba(222,28,36,.10)'},   // rojo
+  villegas:  {nombre:'Villegas',  color:'#db2777', bg:'rgba(219,39,119,.10)'},  // rosado
   alamiro:   {nombre:'Alamiro',   color:'#0891b2', bg:'rgba(8,145,178,.12)'},   // cyan (dueño)
 };
 let CAL_YEAR=new Date().getFullYear(), CAL_MONTH=new Date().getMonth(), CAL_DIA_SEL=null;
@@ -3179,6 +3185,8 @@ function renderTabla(){
           <option value="leo" ${t==='leo'?'selected':''}>Leo</option>
           <option value="cristofer" ${t==='cristofer'?'selected':''}>Cristófer</option>
           <option value="martin" ${t==='martin'?'selected':''}>Martín</option>
+          <option value="seba" ${t==='seba'?'selected':''}>Seba</option>
+          <option value="villegas" ${t==='villegas'?'selected':''}>Villegas</option>
           <option value="alamiro" ${t==='alamiro'?'selected':''}>Alamiro</option>
         </select>`;
       })()}
@@ -3705,8 +3713,8 @@ window.asignarTrabajador=async function(id,valor){
   try{
     const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
     await updateDoc(docFn(db,'arriendos',id),{trabajadorAsignado:valor});
-    const nombres={'cristobal':'Cristóbal','leo':'Leo','cristofer':'Cristófer','martin':'Martín'};
-    toast(valor?'👷 Asignado a '+nombres[valor]:'👷 Asignación removida','ok');
+    const nom=(TRABAJADORES_COLOR[valor]&&TRABAJADORES_COLOR[valor].nombre)||valor;
+    toast(valor?'👷 Asignado a '+nom:'👷 Asignación removida','ok');
     renderTabla();
   }catch(e){toast('Error: '+e.message,'err');}
 };
