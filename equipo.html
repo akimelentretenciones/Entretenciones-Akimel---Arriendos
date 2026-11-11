@@ -201,9 +201,18 @@ const EMAIL_NOMBRE = {
 // ── Lugar de instalación y Superficie (SOLO LECTURA para el equipo) ──
 // Los valores se editan únicamente desde la app del administrador.
 const LUGAR_COLOR = {
-  'Casa propia': {color:'#0071ce', bg:'rgba(0,113,206,.10)'},   // azul
-  'Sede':        {color:'#a855f7', bg:'rgba(168,85,247,.10)'},  // morado
-  'Club house':  {color:'#0891b2', bg:'rgba(8,145,178,.10)'},   // cyan
+  'Casa propia':      {color:'#0071ce', bg:'rgba(0,113,206,.10)'},
+  'Departamento':     {color:'#4f46e5', bg:'rgba(79,70,229,.10)'},
+  'Parcela':          {color:'#15803d', bg:'rgba(21,128,61,.10)'},
+  'Sede':             {color:'#a855f7', bg:'rgba(168,85,247,.10)'},
+  'Club house':       {color:'#0891b2', bg:'rgba(8,145,178,.10)'},
+  'Iglesia':          {color:'#b45309', bg:'rgba(180,83,9,.10)'},
+  'Cancha':           {color:'#16a34a', bg:'rgba(22,163,74,.10)'},
+  'Colegio':          {color:'#dc2626', bg:'rgba(220,38,38,.09)'},
+  'Jardín infantil':  {color:'#db2777', bg:'rgba(219,39,119,.09)'},
+  'Salón de eventos': {color:'#9333ea', bg:'rgba(147,51,234,.09)'},
+  'Empresa':          {color:'#475569', bg:'rgba(71,85,105,.10)'},
+  'Parque / Plaza':   {color:'#65a30d', bg:'rgba(101,163,13,.10)'},
 };
 const SUPERFICIE_COLOR = {
   'Pasto':    {color:'#5fb446', bg:'rgba(95,180,70,.12)'},   // verde
@@ -211,7 +220,9 @@ const SUPERFICIE_COLOR = {
   'Gravilla': {color:'#fa6400', bg:'rgba(250,100,0,.10)'},   // naranjo
   'Tierra':   {color:'#a16207', bg:'rgba(161,98,7,.10)'},    // café
 };
-const LUGAR_ICONO = {'Casa propia':'&#127968;','Sede':'&#127970;','Club house':'&#127963;&#65039;'};
+const LUGAR_ICONO = {'Casa propia':'&#127968;','Departamento':'&#127970;','Parcela':'&#127795;','Sede':'&#127970;',
+  'Club house':'&#127963;&#65039;','Iglesia':'&#9962;','Cancha':'&#9917;','Colegio':'&#127979;',
+  'Jardín infantil':'&#129528;','Salón de eventos':'&#127881;','Empresa':'&#128188;','Parque / Plaza':'&#127794;'};
 const SUPERFICIE_ICONO = {'Pasto':'&#127807;','Cemento':'&#129521;','Gravilla':'&#129704;','Tierra':'&#127756;'};
 
 // Devuelve un badge de solo lectura (o un guion si el dato no está cargado)
@@ -219,8 +230,13 @@ function badgeRO(valor, mapaColor, mapaIcono) {
   var v = (valor || '').trim();
   if(!v) return '<span class="ro-vacio">&mdash;</span>';
   var c = mapaColor[v];
-  if(!c) return '<span class="ro-vacio">'+v+'</span>';
   var ico = mapaIcono[v] || '';
+  if(!c) {
+    // Valor escrito por el cliente que no es un tipo conocido: se muestra igual
+    c = {color:'#64748b', bg:'rgba(100,116,139,.10)'};
+    if(mapaIcono === LUGAR_ICONO) ico = '&#128205;';
+    v = v.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  }
   return '<span class="badge-ro" style="color:'+c.color+';background:'+c.bg+';border-color:'+c.color+'33">'
     + (ico ? ico+' ' : '') + v + '</span>';
 }
@@ -623,7 +639,7 @@ window.cambiarInstalacion = async function(id, valor) {
 // Si el navegador tiene guardada una version distinta, borra el cache viejo
 // del Service Worker y recarga UNA vez. Esto evita que el equipo siga viendo
 // una version antigua de la app despues de una actualizacion.
-const APP_VERSION = 'v4-ubicacion';
+const APP_VERSION = 'v5-lugar';
 
 (async function(){
   try {

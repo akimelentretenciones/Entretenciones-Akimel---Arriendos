@@ -1106,12 +1106,13 @@ select:focus{border-color:var(--blue)}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="edit-field">
         <label class="edit-label">🏠 Lugar de instalación</label>
-        <select class="edit-input" id="editLugar">
-          <option value="">— Sin definir —</option>
-          <option value="Casa propia">Casa propia</option>
-          <option value="Sede">Sede</option>
-          <option value="Club house">Club house</option>
-        </select>
+        <input class="edit-input" id="editLugar" list="listaLugares" placeholder="Ej: Casa, Iglesia, Parcela..." autocomplete="off">
+        <datalist id="listaLugares">
+          <option value="Casa propia"><option value="Departamento"><option value="Parcela">
+          <option value="Sede"><option value="Club house"><option value="Iglesia"><option value="Cancha">
+          <option value="Colegio"><option value="Jardín infantil"><option value="Salón de eventos">
+          <option value="Empresa"><option value="Parque / Plaza">
+        </datalist>
       </div>
       <div class="edit-field">
         <label class="edit-label">🌱 Superficie</label>
@@ -1208,14 +1209,28 @@ let MODO_TRABAJO_SEMANA=false;
 // Campos opcionales: los arriendos antiguos quedan en blanco ('')
 // y se completan editando o desde el chat de agendamiento.
 // ═══════════════════════════════════════════════════
-const LUGARES = ['Casa propia','Sede','Club house'];
+// Tipos de lugar reconocidos. Si el cliente dice otra cosa, se guarda TAL CUAL
+// lo escribió (ver lugarDesdeTexto): no se pierde información.
+const LUGARES = ['Casa propia','Departamento','Parcela','Sede','Club house','Iglesia','Cancha',
+                 'Colegio','Jardín infantil','Salón de eventos','Empresa','Parque / Plaza'];
 const SUPERFICIES = ['Pasto','Cemento','Gravilla','Tierra'];
 
 const LUGAR_COLOR = {
-  'Casa propia': {color:'#0071ce', bg:'rgba(0,113,206,.10)'},   // azul
-  'Sede':        {color:'#a855f7', bg:'rgba(168,85,247,.10)'},  // morado
-  'Club house':  {color:'#0891b2', bg:'rgba(8,145,178,.10)'},   // cyan
+  'Casa propia':      {color:'#0071ce', bg:'rgba(0,113,206,.10)'},   // azul
+  'Departamento':     {color:'#4f46e5', bg:'rgba(79,70,229,.10)'},   // índigo
+  'Parcela':          {color:'#15803d', bg:'rgba(21,128,61,.10)'},   // verde oscuro
+  'Sede':             {color:'#a855f7', bg:'rgba(168,85,247,.10)'},  // morado
+  'Club house':       {color:'#0891b2', bg:'rgba(8,145,178,.10)'},   // cyan
+  'Iglesia':          {color:'#b45309', bg:'rgba(180,83,9,.10)'},    // ámbar
+  'Cancha':           {color:'#16a34a', bg:'rgba(22,163,74,.10)'},   // verde
+  'Colegio':          {color:'#dc2626', bg:'rgba(220,38,38,.09)'},   // rojo
+  'Jardín infantil':  {color:'#db2777', bg:'rgba(219,39,119,.09)'},  // rosado
+  'Salón de eventos': {color:'#9333ea', bg:'rgba(147,51,234,.09)'},  // violeta
+  'Empresa':          {color:'#475569', bg:'rgba(71,85,105,.10)'},   // pizarra
+  'Parque / Plaza':   {color:'#65a30d', bg:'rgba(101,163,13,.10)'},  // lima
 };
+// Lugar escrito por el cliente que no calza con ningún tipo: gris neutro
+const LUGAR_COLOR_OTRO = {color:'#64748b', bg:'rgba(100,116,139,.10)'};
 const SUPERFICIE_COLOR = {
   'Pasto':    {color:'#5fb446', bg:'rgba(95,180,70,.12)'},   // verde
   'Cemento':  {color:'#7a93aa', bg:'rgba(122,147,170,.14)'}, // gris
@@ -1230,6 +1245,15 @@ const LUGAR_KW = {
   'sede':'Sede', 'sede social':'Sede', 'sede vecinal':'Sede', 'junta de vecinos':'Sede', 'sede junta de vecinos':'Sede',
   'club house':'Club house', 'clubhouse':'Club house', 'club-house':'Club house',
   'quincho del condominio':'Club house', 'condominio':'Club house', 'salon condominio':'Club house',
+  'departamento':'Departamento', 'depto':'Departamento', 'dpto':'Departamento', 'depa':'Departamento', 'edificio':'Departamento',
+  'parcela':'Parcela', 'fundo':'Parcela', 'quinta':'Parcela', 'campo':'Parcela', 'sitio':'Parcela',
+  'iglesia':'Iglesia', 'capilla':'Iglesia', 'parroquia':'Iglesia', 'templo':'Iglesia',
+  'cancha':'Cancha', 'multicancha':'Cancha', 'estadio':'Cancha', 'gimnasio':'Cancha', 'polideportivo':'Cancha',
+  'colegio':'Colegio', 'escuela':'Colegio', 'liceo':'Colegio',
+  'jardin infantil':'Jardín infantil', 'sala cuna':'Jardín infantil',
+  'salon de eventos':'Salón de eventos', 'centro de eventos':'Salón de eventos', 'local de eventos':'Salón de eventos', 'salon':'Salón de eventos',
+  'empresa':'Empresa', 'oficina':'Empresa', 'fabrica':'Empresa',
+  'parque':'Parque / Plaza', 'plaza':'Parque / Plaza', 'plazoleta':'Parque / Plaza',
 };
 const SUPERFICIE_KW = {
   'pasto':'Pasto', 'cesped':'Pasto', 'césped':'Pasto', 'pastito':'Pasto', 'pasto sintetico':'Pasto', 'pasto sintético':'Pasto',
@@ -1249,14 +1273,30 @@ function normalizarLugar(v){
   const t = _sinTilde(v).replace(/[.*_]+$/,'').trim();
   if(!t) return '';
   for(const canon of LUGARES){ if(_sinTilde(canon) === t) return canon; }
-  // De la clave más larga a la más corta para que "casa propia" gane sobre "casa"
-  const keys = Object.keys(LUGAR_KW).sort((a,b)=>b.length-a.length);
-  for(const k of keys){
-    const re = new RegExp('(?:^|\\s)'+_sinTilde(k).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|$)');
-    if(re.test(t)) return LUGAR_KW[k];
+  // Gana la palabra que aparece PRIMERO en el texto ("casa frente a la plaza" → Casa);
+  // si dos empiezan en el mismo lugar, la más larga ("casa propia" gana sobre "casa").
+  const tt = ' '+t.replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ')+' ';
+  let mejor = null;
+  for(const k of Object.keys(LUGAR_KW)){
+    const kk = _sinTilde(k);
+    const i = tt.indexOf(' '+kk+' ');
+    if(i === -1) continue;
+    if(!mejor || i < mejor.i || (i === mejor.i && kk.length > mejor.len)) mejor = {i, len:kk.length, v:LUGAR_KW[k]};
   }
-  return '';
+  return mejor ? mejor.v : '';
 }
+
+// Tipo reconocido, o si no calza con ninguno, el texto del cliente limpio.
+// Nunca descarta lo que el cliente escribió.
+function lugarDesdeTexto(v){
+  const canon = normalizarLugar(v);
+  if(canon) return canon;
+  let t = String(v||'').replace(/[*_]+/g,' ').replace(/\s+/g,' ').trim().replace(/^[:=.,\-\s]+|[:=.,\-\s]+$/g,'');
+  if(!t) return '';
+  if(t.length > 40) t = t.slice(0,40).trim()+'…';
+  return t.charAt(0).toUpperCase()+t.slice(1);
+}
+window.lugarDesdeTexto = lugarDesdeTexto;
 
 // Devuelve un valor canónico de SUPERFICIES o '' si no reconoce nada
 function normalizarSuperficie(v){
@@ -1278,6 +1318,8 @@ const _VALORES_PUROS = new Set([
   ...LUGARES.map(_sinTilde), ...SUPERFICIES.map(_sinTilde),
   'casa propia','casa particular','sede','sede social','sede vecinal','junta de vecinos',
   'club house','clubhouse','condominio',
+  'departamento','depto','parcela','iglesia','capilla','parroquia','cancha','multicancha','gimnasio',
+  'colegio','escuela','jardin infantil','sala cuna','salon de eventos','centro de eventos','empresa','parque','plaza',
   'pasto','cesped','pasto sintetico','cemento','concreto','hormigon','pavimento','radier',
   'gravilla','grava','ripio','maicillo','tierra',
 ]);
@@ -1285,7 +1327,7 @@ const _VALORES_PUROS = new Set([
 // ¿Esta línea es una declaración de Lugar o Superficie? (etiqueta explícita o valor puro)
 function esLineaLugarSuperficie(l){
   const t = _sinTilde(l);
-  if(/(?:lugar|superficie|tipo\s*de\s*(?:lugar|superficie|piso|suelo)|se\s*instala\s*en|donde\s*se\s*instala)\s*[:=]/.test(t)) return true;
+  if(/(?:lugar(?:\s*del?\s*evento|\s*de\s*instalacion)?|superficie|tipo\s*de\s*(?:lugar|superficie|piso|suelo)|se\s*instala\s*en|donde\s*se\s*instala)\s*[:=]/.test(t)) return true;
   const limpio = t.replace(/[^a-z\s]/g,' ').replace(/\s+/g,' ').trim();
   return _VALORES_PUROS.has(limpio);
 }
@@ -2147,7 +2189,7 @@ window.guardarEdicion=async function(){
       turno,
       telefono,
       equipos,
-      lugar:document.getElementById('editLugar').value,
+      lugar:lugarDesdeTexto(document.getElementById('editLugar').value),
       superficie:document.getElementById('editSuperficie').value,
       pendiente:parseInt(document.getElementById('editPendiente').value)||0,
       estado:document.getElementById('editEstado').value,
@@ -3048,15 +3090,19 @@ function renderTabla(){
     <td style="text-align:center">
       ${(()=>{
         const v = a.lugar||'';
-        const info = LUGAR_COLOR[v];
+        const info = LUGAR_COLOR[v] || (v ? LUGAR_COLOR_OTRO : null);
         const color  = info ? info.color : 'var(--text3)';
         const bg     = info ? info.bg    : '#fff';
         const border = info ? info.color : 'var(--border)';
+        const vEsc   = String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+        const extra  = (v && !LUGARES.includes(v)) ? `<option value="${vEsc}" selected>${vEsc}</option>` : '';
         return `<select onchange="cambiarLugar('${a.id}',this.value)" class="sel-tabla"
-          title="¿Dónde se instala el juego?"
+          title="¿Dónde es el evento?"
           style="border:1.5px solid ${border};background:${bg};color:${color};font-weight:${v?'700':'400'}">
           <option value="" ${!v?'selected':''}>—</option>
+          ${extra}
           ${LUGARES.map(l=>`<option value="${l}" ${v===l?'selected':''}>${l}</option>`).join('')}
+          <option value="__otro__">✏️ Otro…</option>
         </select>`;
       })()}
     </td>
@@ -3582,6 +3628,11 @@ window.corregirNombresJuegos=async function(){
 window.cambiarLugar=async function(id,valor){
   const a=ARRIENDOS.find(x=>x.id===id);
   if(!a) return;
+  if(valor==='__otro__'){
+    const txt=prompt('¿Dónde es el evento? (ej: Iglesia, Bomberos, Gimnasio municipal)', a.lugar||'');
+    if(txt===null){ renderTabla(); return; }   // canceló: deja el valor anterior
+    valor=lugarDesdeTexto(txt);
+  }
   a.lugar=valor;
   try{
     const{updateDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
@@ -6614,12 +6665,20 @@ function parsearChat(texto){
     }
     equipos = estandarizar(equipos);
 
-    // ── LUGAR DE INSTALACIÓN (casa propia / sede / club house) — OPCIONAL ──
+    // ── LUGAR DEL EVENTO — OPCIONAL ──
+    // Con etiqueta ("Lugar: Iglesia", "Lugar del evento: parcela"): si no calza con
+    // un tipo conocido se guarda lo que escribió el cliente. La etiqueta debe ir al
+    // inicio de la línea, para no confundir frases como "en lugar de...".
     // Si el cliente no lo informa, queda en blanco y se completa después editando.
     let lugar = '';
-    const lgm = bloque.match(/lugar(?:\s*de\s*instalaci[oó]n)?[:\s=.*-]+(.+)/i)
-             || bloque.match(/(?:se\s*instala\s*en|d[oó]nde\s*se\s*instala|tipo\s*de\s*lugar)[:\s=.*-]+(.+)/i);
-    if(lgm) lugar = normalizarLugar(lgm[1].split('\n')[0]);
+    const lgm = bloque.match(/(?:^|\n)\s*[-*•]*\s*lugar(?:\s*del?\s*evento|\s*de\s*(?:la\s*)?instalaci[oó]n)?\s*([:=\-]+|\s)\s*(.+)/i)
+             || bloque.match(/(?:^|\n)\s*[-*•]*\s*(?:se\s*instala\s*en|d[oó]nde\s*se\s*instala|tipo\s*de\s*lugar)\s*([:=\-]+|\s)\s*(.+)/i);
+    if(lgm){
+      const val = lgm[2].split('\n')[0];
+      // Con ":" se respeta lo que escribió el cliente aunque no sea un tipo conocido.
+      // Sin ":" sólo vale si es un tipo reconocido (evita "en lugar de pirata...").
+      lugar = /[:=\-]/.test(lgm[1]) ? lugarDesdeTexto(val) : normalizarLugar(val);
+    }
     if(!lugar){
       // Sin etiqueta: buscar una línea que sea SÓLO el valor (ej: una línea que diga "Sede")
       for(const l of lineas){
