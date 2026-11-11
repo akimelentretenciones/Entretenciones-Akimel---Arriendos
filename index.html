@@ -1091,6 +1091,16 @@ select:focus{border-color:var(--blue)}
         </select>
       </div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="edit-field">
+        <label class="edit-label">🔧 Instalar desde</label>
+        <input class="edit-input" id="editHoraInstalacion" placeholder="Ej: 9:00 / en la mañana">
+      </div>
+      <div class="edit-field">
+        <label class="edit-label">🔙 Hora de retiro</label>
+        <input class="edit-input" id="editHoraRetiro" placeholder="Ej: 20:00 / en la noche">
+      </div>
+    </div>
     <div id="editTurnoHint" style="font-size:11px;color:var(--text3);margin:-8px 0 12px;line-height:1.45">
       Deja <b>Todo el día</b> salvo que el mismo juego salga dos veces esa fecha.
       En ese caso marca un arriendo como <b>mañana</b> y el otro como <b>tarde</b>.
@@ -2024,6 +2034,8 @@ window.abrirEdicion=function(id){
   document.getElementById('editComuna').value=a.comuna||'';
   document.getElementById('editFecha').value=a.fecha||'';
   document.getElementById('editHora').value=a.hora||'';
+  document.getElementById('editHoraInstalacion').value=a.horaInstalacion||'';
+  document.getElementById('editHoraRetiro').value=a.horaRetiro||'';
   document.getElementById('editTurno').value=normalizarTurno(a.turno);
   document.getElementById('editTelefono').value=a.telefono||'';
   document.getElementById('editEquipos').value=a.equipos||'';
@@ -2186,6 +2198,8 @@ window.guardarEdicion=async function(){
       dia:calcularDia(fecha),
       semana:calcularSemana(fecha),
       hora:document.getElementById('editHora').value.trim(),
+      horaInstalacion:document.getElementById('editHoraInstalacion').value.trim(),
+      horaRetiro:document.getElementById('editHoraRetiro').value.trim(),
       turno,
       telefono,
       equipos,
@@ -3058,6 +3072,7 @@ function renderTabla(){
     <td style="color:var(--text3);font-size:11px;font-weight:700">${a.semana||isoWeek(new Date((a.fecha||'').split('/').reverse().join('-')+'T12:00'))||'—'}</td>
     <td style="white-space:nowrap">
       <div>${a.hora||'—'}</div>
+      ${a.horaInstalacion?`<div style="font-size:10px;color:#a16207;font-weight:700;margin-top:2px" title="Desde qué hora se puede instalar">🔧 desde ${a.horaInstalacion}</div>`:''}
       ${(()=>{
         const v=normalizarTurno(a.turno);
         const c=v?TURNO_COLOR[v]:null;
@@ -3185,7 +3200,7 @@ function renderTabla(){
       })()}
     </td>
     <td style="text-align:center">
-      <input type="text" value="${a.horaRetiro||''}"
+      <input type="text" value="${_esc(a.horaRetiro||'')}"
         onchange="guardarHoraRetiro('${a.id}',this.value)"
         placeholder="ej: 22:00 a 22:30"
         style="font-size:10px;padding:3px 6px;border-radius:6px;border:1.5px solid ${a.horaRetiro?'var(--green)':'var(--border)'};background:${a.horaRetiro?'rgba(34,197,94,.1)':'#fff'};color:${a.horaRetiro?'var(--green)':'var(--text3)'};font-family:'Sora',sans-serif;font-weight:${a.horaRetiro?'600':'400'};width:100px;outline:none">
@@ -3329,6 +3344,8 @@ window.copiarParaWA=function(a){
     `📋 *${a.cliente||'—'}*`,
     `📅 ${[dia+' '+fecha,hora].filter(Boolean).join(' · ')}`,
     normalizarTurno(a.turno)?`${TURNO_ICONO[normalizarTurno(a.turno)]} Turno ${normalizarTurno(a.turno).toLowerCase()} (el juego sale a otro evento el mismo día)`:'',
+    a.horaInstalacion?`🔧 Instalar desde: ${a.horaInstalacion}`:'',
+    a.horaRetiro?`🔙 Retiro: ${a.horaRetiro}`:'',
     ubicacion?`📍 ${ubicacion}`:'',
     a.ubicacion?`🧭 ${/^https?:/i.test(a.ubicacion)?a.ubicacion:'https://maps.google.com/?q='+a.ubicacion}`:'',
     equipos?`🎮 ${equipos}`:'',
@@ -4860,7 +4877,7 @@ function msgFilaHtml(a, n){
     <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.direccion||'—'}</td>
     <td>${a.comuna||'—'}</td>
     <td style="white-space:nowrap">${a.fecha||'—'}</td>
-    <td>${a.hora||'—'}</td>
+    <td>${a.hora||'—'}${a.horaInstalacion?`<div style="font-size:10px;color:#a16207;font-weight:700;margin-top:2px" title="Desde qué hora se puede instalar">🔧 desde ${a.horaInstalacion}</div>`:''}</td>
     <td style="white-space:nowrap">${telCell}</td>
     <td style="min-width:140px;max-width:200px">${equiposCell}</td>
     <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue);white-space:nowrap">${a.pendiente?clp(a.pendiente):'—'}</td>
@@ -6397,6 +6414,39 @@ function urlNavegacion(a){
 }
 window.urlNavegacion = urlNavegacion;
 
+// ═══ HORARIOS DE INSTALACIÓN Y RETIRO (los informa el cliente) ═══
+// "Desde qué hora podemos instalar" y "Hora de retiro" pueden venir como número
+// ("9:00", "20 hrs") o como palabras ("en la mañana", "cuando termine"): se guarda
+// el texto tal cual. El retiro se guarda en `horaRetiro`, el mismo campo que ve y
+// completa el equipo en su app.
+const _RE_INSTALACION = /^[^a-z0-9áéíóúñ]*(?:desde\s*qu[eé]\s*hora\s*(?:podemos|pueden|se\s*puede)?\s*(?:ir\s*a\s*)?instalar|hora\s*(?:de\s*)?instalaci[oó]n|instalar\s*desde|instalaci[oó]n\s*desde|se\s*puede\s*instalar\s*desde|hora\s*(?:para\s*)?instalar|instalaci[oó]n\s*[:=])\s*\??\s*(?:[:=\-]+\s*)?(.*)$/i;
+const _RE_RETIRO = /^[^a-z0-9áéíóúñ]*(?:(?:hora|horario)\s*(?:de\s*|del\s*|para\s*(?:el\s*)?)?retir(?:o|ar)|retiro\s*[:=\-]|retirar\s*[:=\-])\s*\??\s*(?:[:=\-]+\s*)?(.*)$/i;
+function _limpiarValorHora(v){
+  let t = String(v||'').replace(/\([^)]*\)/g,' ').replace(/[*_]+/g,' ').replace(/\s+/g,' ').trim();
+  t = t.replace(/^[:=.,\-\s]+|[.,\-\s]+$/g,'');
+  if(t.length > 40) t = t.slice(0,40).trim()+'…';
+  return t;
+}
+// Saca del bloque las líneas de instalación y retiro (para que sus horas no se
+// confundan con la hora del evento) y devuelve sus valores.
+function extraerHorasInstRetiro(bloque){
+  let horaInstalacion = '', horaRetiro = '';
+  const resto = [];
+  for(const linea of String(bloque||'').split('\n')){
+    const l = linea.trim();
+    let m;
+    if((m = l.match(_RE_INSTALACION))){ if(!horaInstalacion) horaInstalacion = _limpiarValorHora(m[1]); continue; }
+    if((m = l.match(_RE_RETIRO))){ if(!horaRetiro) horaRetiro = _limpiarValorHora(m[1]); continue; }
+    resto.push(linea);
+  }
+  return {horaInstalacion, horaRetiro, bloque: resto.join('\n')};
+}
+// Pistas de la plantilla que el cliente no reemplazó: "(pasto / cemento / ...)".
+// Sin esto, la pista se leía como si el cliente hubiese elegido la primera opción.
+function quitarPistasPlantilla(t){
+  return String(t||'').replace(/\([^)\n]*\/[^)\n]*\)/g,' ');
+}
+
 function parsearChat(texto){
   const [, fin] = extraerRangoGrupo(texto);
   let anioGrupo = '2026';
@@ -6432,6 +6482,7 @@ function parsearChat(texto){
     // coordenadas no se confundan con el monto, la fecha o el teléfono.
     const ubicacion = extraerUbicacion(bloque);
     if(ubicacion) bloque = quitarUbicacion(bloque).trim();
+    bloque = quitarPistasPlantilla(bloque);
 
     // Pendiente: "Pendiente 158.000" / "Pendiente: 158.000" / "158.000"
     let pm = bloque.match(/pendiente[:\s][^\d\n]{0,10}?(\d{2,3}[.,]\d{3})/i)
@@ -6449,10 +6500,16 @@ function parsearChat(texto){
     const estado = /cancel/i.test(bloque) ? 'Cancelado' : 'Pendiente';
 
     // Normalizar etiquetas que vengan pegadas en una sola línea
-    const campos = ['Dirección','Direccion','Comuna','Fecha de evento','Fecha evento','Hora de evento','Hora evento','Número de celular','Número celular','Numero de celular','Numero celular','Número','Celular','Juegos','Juego','Lugar de instalación','Lugar de instalacion','Lugar','Superficie','Pendiente'];
+    const campos = ['Dirección','Direccion','Comuna','Fecha de evento','Fecha evento','Hora de evento','Hora evento','Número de celular','Número celular','Numero de celular','Numero celular','Número','Celular','Juegos','Juego','Lugar de instalación','Lugar de instalacion','Lugar','Superficie','Pendiente',
+                    'Desde qué hora podemos instalar','Desde que hora podemos instalar','Hora de instalación','Hora de instalacion','Hora de retiro','Hora retiro'];
     for(const c of campos){
       bloque = bloque.replace(new RegExp('(\\s+)('+c+')','gi'), '\n$2');
     }
+    // Horarios de instalación y retiro: se leen y se sacan ANTES de buscar la hora
+    // del evento, para que "retiro 20:00" no se tome como hora del evento.
+    const _hir = extraerHorasInstRetiro(bloque);
+    const horaInstalacion = _hir.horaInstalacion, horaRetiro = _hir.horaRetiro;
+    bloque = _hir.bloque;
     const lineas = bloque.split('\n').map(l => l.trim().replace(/^[-*•]+/,'')).filter(l => l.trim());
 
     // CLIENTE
@@ -6671,8 +6728,8 @@ function parsearChat(texto){
     // inicio de la línea, para no confundir frases como "en lugar de...".
     // Si el cliente no lo informa, queda en blanco y se completa después editando.
     let lugar = '';
-    const lgm = bloque.match(/(?:^|\n)\s*[-*•]*\s*lugar(?:\s*del?\s*evento|\s*de\s*(?:la\s*)?instalaci[oó]n)?\s*([:=\-]+|\s)\s*(.+)/i)
-             || bloque.match(/(?:^|\n)\s*[-*•]*\s*(?:se\s*instala\s*en|d[oó]nde\s*se\s*instala|tipo\s*de\s*lugar)\s*([:=\-]+|\s)\s*(.+)/i);
+    const lgm = bloque.match(/(?:^|\n)\s*[-*•]*\s*lugar(?:\s*del?\s*evento|\s*de\s*(?:la\s*)?instalaci[oó]n)?[ \t]*([:=\-]+|[ \t])[ \t]*(.*)/i)
+             || bloque.match(/(?:^|\n)\s*[-*•]*\s*(?:se\s*instala\s*en|d[oó]nde\s*se\s*instala|tipo\s*de\s*lugar)[ \t]*([:=\-]+|[ \t])[ \t]*(.*)/i);
     if(lgm){
       const val = lgm[2].split('\n')[0];
       // Con ":" se respeta lo que escribió el cliente aunque no sea un tipo conocido.
@@ -6693,8 +6750,8 @@ function parsearChat(texto){
 
     // ── SUPERFICIE (pasto / cemento / gravilla / tierra) — OPCIONAL ──
     let superficie = '';
-    const spm = bloque.match(/superficie[:\s=.*-]+(.+)/i)
-             || bloque.match(/tipo\s*de\s*(?:superficie|piso|suelo|terreno)[:\s=.*-]+(.+)/i);
+    const spm = bloque.match(/superficie[: \t=.*-]+(.+)/i)
+             || bloque.match(/tipo\s*de\s*(?:superficie|piso|suelo|terreno)[: \t=.*-]+(.+)/i);
     if(spm) superficie = normalizarSuperficie(spm[1].split('\n')[0]);
     if(!superficie){
       for(const l of lineas){
@@ -6740,6 +6797,8 @@ function parsearChat(texto){
       dia: calcularDia(fecha),
       semana: calcularSemana(fecha),
       hora,
+      horaInstalacion,
+      horaRetiro,
       turno,
       telefono: tel,
       equipos,
