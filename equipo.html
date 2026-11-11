@@ -387,6 +387,54 @@ function cargarArriendos(workerKey, nombre) {
   })();
 }
 
+// ── Ubicación exacta del cliente (link de Google Maps / Waze o coordenadas) ──
+// La carga el administrador. Si existe, se navega directo a ese punto; si no,
+// se usa la dirección escrita como siempre.
+function coordsDeUbicacion(u) {
+  var s = String(u||'');
+  try { s = decodeURIComponent(s); } catch(e) {}
+  var pats = [
+    /[?&](?:q|ll|query|destination|daddr|center)=(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/i,
+    /@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/,
+    /!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+    /^\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$/
+  ];
+  for(var i = 0; i < pats.length; i++) {
+    var m = s.match(pats[i]);
+    if(m) {
+      var lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+      if(Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return {lat:lat, lng:lng};
+    }
+  }
+  return null;
+}
+function urlPorDireccion(a) {
+  if(!a.direccion && !a.comuna) return '';
+  var q = encodeURIComponent([a.direccion||'', a.comuna||'', 'Chile'].filter(function(x){return x;}).join(', '));
+  return 'https://waze.com/ul?q='+q+'&navigate=yes';
+}
+var BTN_WAZE = 'display:inline-flex;align-items:center;gap:4px;background:rgba(51,204,255,.15);color:#0d8bb8;border:1.5px solid rgba(51,204,255,.5);border-radius:6px;padding:6px 10px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap';
+var BTN_EXACTO = 'display:inline-flex;align-items:center;gap:4px;background:rgba(95,180,70,.15);color:#3d8a2a;border:1.5px solid rgba(95,180,70,.55);border-radius:6px;padding:6px 10px;font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap';
+function celdaNavegacion(a) {
+  var ub = String(a.ubicacion||'').trim();
+  var porDir = urlPorDireccion(a);
+  if(ub) {
+    var c = coordsDeUbicacion(ub);
+    var urlExacta = c ? 'https://waze.com/ul?ll='+c.lat+','+c.lng+'&navigate=yes'
+                 : (/^https?:/i.test(ub) ? ub : '');
+    if(urlExacta) {
+      var esMaps = !c && !/waze\.com/i.test(ub);
+      var html = '<a href="'+urlExacta+'" target="_blank" rel="noopener" title="Ubicación exacta enviada por el cliente" style="'+BTN_EXACTO+'">'
+        + '&#128205; '+(esMaps ? 'Ir (Maps)' : 'Ir exacto')+'</a>';
+      // Link corto de Google Maps: Waze no lo puede leer, así que dejamos también Waze por dirección
+      if(esMaps && porDir) html += '<div style="margin-top:4px"><a href="'+porDir+'" target="_blank" rel="noopener" style="font-size:10px;color:#0d8bb8;font-weight:700">Waze por direcci&oacute;n</a></div>';
+      return html;
+    }
+  }
+  if(porDir) return '<a href="'+porDir+'" target="_blank" rel="noopener" style="'+BTN_WAZE+'">&#128506;&#65039; Ir</a>';
+  return '<span style="color:var(--text3);font-size:11px">&mdash;</span>';
+}
+
 // ── Render fila ──
 function renderFila(a, num) {
   var id = a.id;
@@ -413,20 +461,14 @@ function renderFila(a, num) {
   var comunaSub = a.comuna ? '<br><span style="color:var(--text3);font-size:11px">'+a.comuna+'</span>' : '';
   var savedPago = pg ? '<div class="saved-chip">&#10003; '+(pg==='transferencia'?'Transf.':'Efectivo')+'</div>' : '';
   var savedRetiro = hr ? '<div class="saved-chip">&#10003; '+hr+'</div>' : '';
-  // Botón Waze: arma URL con dirección + comuna + Chile
-  var wazeCell = '<span style="color:var(--text3);font-size:11px">&mdash;</span>';
-  if(a.direccion || a.comuna) {
-    var wazeQuery = encodeURIComponent([a.direccion||'', a.comuna||'', 'Chile'].filter(function(x){return x;}).join(', '));
-    var wazeUrl = 'https://waze.com/ul?q='+wazeQuery+'&navigate=yes';
-    wazeCell = '<a href="'+wazeUrl+'" target="_blank" rel="noopener" '
-      + 'style="display:inline-flex;align-items:center;gap:4px;background:rgba(51,204,255,.15);color:#0d8bb8;border:1.5px solid rgba(51,204,255,.5);border-radius:6px;padding:6px 10px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">'
-      + '&#128506;&#65039; Ir</a>';
-  }
+  // Navegación: ubicación exacta del cliente si existe; si no, Waze por dirección
+  var wazeCell = celdaNavegacion(a);
+  var chipUbic = a.ubicacion ? '<br><span style="color:#3d8a2a;font-size:10px;font-weight:700">&#128205; Ubicaci&oacute;n exacta</span>' : '';
   var bc = a.estado==='Instalado' ? 'badge-ok' : a.estado==='Retirado' ? 'badge-canc' : 'badge-pend';
   return '<tr>'
     + '<td style="color:var(--text3)">'+num+'</td>'
     + '<td style="font-weight:700;color:var(--blue3)">'+(a.cliente||'&mdash;')+'</td>'
-    + '<td style="font-size:12px">'+(a.direccion||'&mdash;')+comunaSub+'</td>'
+    + '<td style="font-size:12px">'+(a.direccion||'&mdash;')+comunaSub+chipUbic+'</td>'
     + '<td style="font-weight:600">'+(a.hora||'&mdash;')+'</td>'
     + '<td>'+telLink+'</td>'
     + '<td><div class="equipos-cell">'+(etags||'&mdash;')+'</div></td>'
@@ -581,7 +623,7 @@ window.cambiarInstalacion = async function(id, valor) {
 // Si el navegador tiene guardada una version distinta, borra el cache viejo
 // del Service Worker y recarga UNA vez. Esto evita que el equipo siga viendo
 // una version antigua de la app despues de una actualizacion.
-const APP_VERSION = 'v3-lona';
+const APP_VERSION = 'v4-ubicacion';
 
 (async function(){
   try {

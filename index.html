@@ -1062,6 +1062,11 @@ select:focus{border-color:var(--blue)}
       <label class="edit-label">Dirección *</label>
       <input class="edit-input" id="editDireccion" placeholder="Dirección del evento">
     </div>
+    <div class="edit-field">
+      <label class="edit-label">📍 Ubicación del cliente (opcional)</label>
+      <input class="edit-input" id="editUbicacion" placeholder="Pega el link de Google Maps / Waze o las coordenadas">
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">Si la cargas, el equipo llega directo al punto exacto.</div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="edit-field">
         <label class="edit-label">Comuna</label>
@@ -1973,6 +1978,7 @@ window.abrirEdicion=function(id){
   document.getElementById('editId').value=id;
   document.getElementById('editCliente').value=a.cliente||'';
   document.getElementById('editDireccion').value=a.direccion||'';
+  document.getElementById('editUbicacion').value=a.ubicacion||'';
   document.getElementById('editComuna').value=a.comuna||'';
   document.getElementById('editFecha').value=a.fecha||'';
   document.getElementById('editHora').value=a.hora||'';
@@ -2057,6 +2063,13 @@ window.guardarEdicion=async function(){
   if(!fecha) faltantes.push('Fecha');
   if(!telefono) faltantes.push('Teléfono');
   if(!equipos) faltantes.push('Equipos');
+  const ubicRaw=document.getElementById('editUbicacion').value.trim();
+  const ubicacion=extraerUbicacion(ubicRaw);
+  if(ubicRaw && !ubicacion){
+    errEl.textContent='📍 No reconozco la ubicación. Pega el link de Google Maps / Waze o coordenadas (ej: -33.4489,-70.6693).';
+    errEl.style.display='block';
+    return;
+  }
 
   if(faltantes.length){
     errEl.textContent='⚠️ Campos obligatorios: '+faltantes.join(', ');
@@ -2125,6 +2138,7 @@ window.guardarEdicion=async function(){
     const datos={
       cliente,
       direccion,
+      ubicacion,
       comuna:document.getElementById('editComuna').value.trim(),
       fecha,
       dia:calcularDia(fecha),
@@ -3134,9 +3148,11 @@ function renderTabla(){
       ${(()=>{
         const dir = (a.direccion||'').trim();
         const com = (a.comuna||'').trim();
-        if(!dir && !com) return '<span style="color:var(--text3);font-size:11px">—</span>';
-        const query = encodeURIComponent([dir, com, 'Chile'].filter(Boolean).join(', '));
-        const url = `https://waze.com/ul?q=${query}&navigate=yes`;
+        const nav = urlNavegacion(a);
+        if(!nav) return '<span style="color:var(--text3);font-size:11px">—</span>';
+        const url = nav.url;
+        if(nav.exacto) return `<a href="${url}" target="_blank" rel="noopener" title="Ubicación exacta enviada por el cliente"
+          style="display:inline-flex;align-items:center;gap:4px;background:rgba(95,180,70,.15);color:#3d8a2a;border:1.5px solid rgba(95,180,70,.55);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap">📍 ${nav.maps?'Maps':'Ir'}</a>`;
         return `<a href="${url}" target="_blank" rel="noopener" title="Abrir en Waze: ${(dir+' '+com).replace(/"/g,'&quot;')}"
           style="display:inline-flex;align-items:center;gap:4px;background:rgba(51,204,255,.15);color:#0d8bb8;border:1.5px solid rgba(51,204,255,.5);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;text-decoration:none;font-family:'Sora',sans-serif;white-space:nowrap">🗺️ Ir</a>`;
       })()}
@@ -3268,6 +3284,7 @@ window.copiarParaWA=function(a){
     `📅 ${[dia+' '+fecha,hora].filter(Boolean).join(' · ')}`,
     normalizarTurno(a.turno)?`${TURNO_ICONO[normalizarTurno(a.turno)]} Turno ${normalizarTurno(a.turno).toLowerCase()} (el juego sale a otro evento el mismo día)`:'',
     ubicacion?`📍 ${ubicacion}`:'',
+    a.ubicacion?`🧭 ${/^https?:/i.test(a.ubicacion)?a.ubicacion:'https://maps.google.com/?q='+a.ubicacion}`:'',
     equipos?`🎮 ${equipos}`:'',
     a.lugar?`🏠 ${a.lugar}`:'',
     a.superficie?`🌱 Superficie: ${a.superficie}`:'',
@@ -6277,6 +6294,58 @@ function extraerRangoGrupo(texto){
 }
 
 // ─── Parsear chat completo ─────
+// ═══ UBICACIÓN DEL CLIENTE (link de mapa o coordenadas) ═══
+// El cliente manda su ubicación por WhatsApp (link de Google Maps / Waze o
+// coordenadas). Se guarda en el campo `ubicacion` y el equipo navega directo
+// a ese punto, sin depender de que Waze entienda la dirección escrita.
+const _RE_LINK_MAPA = /(?:https?:\/\/)?(?:maps\.app\.goo\.gl\/[^\s)<>"']+|goo\.gl\/maps\/[^\s)<>"']+|(?:www\.)?google\.[a-z.]{2,6}\/maps[^\s)<>"']*|maps\.google\.[a-z.]{2,6}\/[^\s)<>"']*|(?:www\.|ul\.)?waze\.com\/[^\s)<>"']+)/i;
+const _RE_COORD = /(-?\d{1,2}\.\d{4,})\s*,\s*(-?\d{1,3}\.\d{4,})/;
+function extraerUbicacion(texto){
+  const t = String(texto||'');
+  const l = t.match(_RE_LINK_MAPA);
+  if(l){ let u = l[0].replace(/[.,;:!?]+$/,''); if(!/^https?:/i.test(u)) u = 'https://'+u; return u; }
+  const c = t.match(_RE_COORD);
+  if(c) return c[1]+','+c[2];
+  return '';
+}
+function quitarUbicacion(texto){
+  return String(texto||'')
+    .replace(new RegExp(_RE_LINK_MAPA.source,'gi'),' ')
+    .replace(new RegExp(_RE_COORD.source,'g'),' ');
+}
+// Coordenadas {lat,lng} contenidas en un link o texto (o null si no trae)
+function coordsDeUbicacion(u){
+  let s = String(u||'');
+  try{ s = decodeURIComponent(s); }catch(e){}
+  const pats = [
+    /[?&](?:q|ll|query|destination|daddr|center)=(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/i,
+    /@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/,
+    /!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+    /^\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$/
+  ];
+  for(const p of pats){
+    const m = s.match(p);
+    if(m){ const lat=parseFloat(m[1]), lng=parseFloat(m[2]);
+      if(Math.abs(lat)<=90 && Math.abs(lng)<=180) return {lat,lng}; }
+  }
+  return null;
+}
+// Mejor destino para navegar: ubicación exacta si existe; si no, la dirección.
+// Devuelve {url, exacto, maps} o null.
+function urlNavegacion(a){
+  const ub = String(a.ubicacion||'').trim();
+  if(ub){
+    const c = coordsDeUbicacion(ub);
+    if(c) return {url:`https://waze.com/ul?ll=${c.lat},${c.lng}&navigate=yes`, exacto:true, maps:false};
+    if(/waze\.com/i.test(ub)) return {url:ub, exacto:true, maps:false};
+    if(/^https?:/i.test(ub)) return {url:ub, exacto:true, maps:true};   // link corto de Google Maps
+  }
+  const dir=(a.direccion||'').trim(), com=(a.comuna||'').trim();
+  if(!dir && !com) return null;
+  return {url:`https://waze.com/ul?q=${encodeURIComponent([dir,com,'Chile'].filter(Boolean).join(', '))}&navigate=yes`, exacto:false, maps:false};
+}
+window.urlNavegacion = urlNavegacion;
+
 function parsearChat(texto){
   const [, fin] = extraerRangoGrupo(texto);
   let anioGrupo = '2026';
@@ -6308,12 +6377,23 @@ function parsearChat(texto){
     if(bloque.length < 15) continue;
     if(/cifrados|audio omitido|imagen omitida|video omitido|Creaste el grupo|sticker omitido|documento omitido/i.test(bloque)) continue;
 
+    // UBICACIÓN: se saca ANTES que todo, para que los números del link o de las
+    // coordenadas no se confundan con el monto, la fecha o el teléfono.
+    const ubicacion = extraerUbicacion(bloque);
+    if(ubicacion) bloque = quitarUbicacion(bloque).trim();
+
     // Pendiente: "Pendiente 158.000" / "Pendiente: 158.000" / "158.000"
     let pm = bloque.match(/pendiente[:\s][^\d\n]{0,10}?(\d{2,3}[.,]\d{3})/i)
           || bloque.match(/pendiente[:\s][^\d\n]{0,10}?(\d{4,6})/i)
           || bloque.match(/(\d{2,3}[.,]\d{3})\s*(?:pendiente|pesos)/i)
           || bloque.match(/(?:^|\n)\s*(\d{2,3}[.,]\d{3})\s*(?:\n|$)/);
-    if(!pm) continue;
+    if(!pm){
+      // Mensaje que es SOLO la ubicación (ej: reenviada justo después del arriendo):
+      // se asigna al arriendo anterior si todavía no tiene una.
+      const prev = arriendos[arriendos.length-1];
+      if(ubicacion && prev && !prev.ubicacion) prev.ubicacion = ubicacion;
+      continue;
+    }
 
     const estado = /cancel/i.test(bloque) ? 'Cancelado' : 'Pendiente';
 
@@ -6596,6 +6676,7 @@ function parsearChat(texto){
       cliente,
       direccion: dir,
       comuna,
+      ubicacion,
       fecha,
       dia: calcularDia(fecha),
       semana: calcularSemana(fecha),
